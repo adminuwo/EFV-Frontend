@@ -691,3 +691,26 @@ input:-webkit-autofill:active {
         font-size: 12px;
     }
 }
+
+/* ---------- Auth Separator ---------- */
+.auth-separator {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.auth-separator::before,
+.auth-separator::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.auth-separator span {
+    padding: 0 15px;
+    letter-spacing: 1px;
+}

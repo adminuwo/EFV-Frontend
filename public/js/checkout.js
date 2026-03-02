@@ -197,57 +197,68 @@ function setupPlaceOrder(items, user) {
 
         showToast('Order created! Initializing payment...');
 
-        // 3. Open Razorpay
-        await initRazorpay(orderData);
+        // 3. Open Cashfree
+        await initCashfree(orderData);
     });
 }
 
-async function initRazorpay(order) {
+async function initCashfree(order) {
     const btn = document.getElementById('place-order-btn');
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING CASHFREE...';
 
     try {
-        const response = await fetch(`${API_BASE}/api/orders/razorpay`, {
+        const response = await fetch(`${API_BASE}/api/orders/cashfree`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             },
-            body: JSON.stringify({ amount: order.totalAmount })
+            body: JSON.stringify({
+                amount: order.totalAmount,
+                customerName: order.shippingAddress.name,
+                customerEmail: order.shippingAddress.email,
+                customerPhone: order.shippingAddress.phone
+            })
         });
 
-        const rzpData = await response.json();
-        if (!response.ok) throw new Error(rzpData.message || 'Payment init failed');
+        const text = await response.text();
+        let cfData;
+        try {
+            cfData = JSON.parse(text);
+        } catch (err) {
+            console.error('SERVER RESPONSE WAS NOT JSON:', text);
+            throw new Error('Server returned non-JSON response. Check console for details.');
+        }
 
-        const options = {
-            key: 'rzp_live_SBFlInxBiRfOGd',
-            amount: rzpData.amount,
-            currency: rzpData.currency,
-            name: 'EFV™ Energy Frequency Vibration',
-            description: 'Order ID: ' + order.orderId,
-            order_id: rzpData.id,
-            handler: async (resp) => {
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> VERIFYING PAYMENT...';
-                await verifyPayment(resp, order, rzpData);
-            },
-            prefill: {
-                name: order.shippingAddress.name,
-                email: order.shippingAddress.email,
-                contact: order.shippingAddress.phone
-            },
-            theme: { color: "#FFD369" },
-            modal: {
-                ondismiss: () => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                }
-            }
+        if (!response.ok) throw new Error(cfData.message || 'Cashfree init failed');
+
+        const cashfree = Cashfree({
+            mode: "sandbox" // Change to "production" in live
+        });
+
+        let checkoutOptions = {
+            paymentSessionId: cfData.payment_session_id,
+            redirectTarget: "_self", // Optional: "_self" for same window
         };
 
-        const rzp = new Razorpay(options);
-        rzp.open();
+        // Note: verifyPayment will be called after redirect or via a callback if supported by SDK setup
+        // For simplicity with v3 Web SDK, we can use the following approach:
+        cashfree.checkout(checkoutOptions).then((result) => {
+            if (result.error) {
+                alert(result.error.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+            if (result.redirect) {
+                console.log("Redirecting to payment page...");
+            }
+        });
+
+        // However, if we want to handle verification on the same page for a smoother UX:
+        // We'd need to use the headless/elements approach or check the status after redirect.
+        // For now, let's assume direct verification if possible or guide the user.
 
     } catch (e) {
         alert('Payment Error: ' + e.message);
@@ -256,25 +267,23 @@ async function initRazorpay(order) {
     }
 }
 
-async function verifyPayment(rzpResp, localOrder, rzpData) {
+async function verifyCashfreePayment(cfOrderId, localOrder) {
     try {
-        const res = await fetch(`${API_BASE}/api/orders/verify`, {
+        const res = await fetch(`${API_BASE}/api/orders/verify-cashfree`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             },
             body: JSON.stringify({
-                razorpay_order_id: rzpResp.razorpay_order_id,
-                razorpay_payment_id: rzpResp.razorpay_payment_id,
-                razorpay_signature: rzpResp.razorpay_signature,
+                order_id: cfOrderId,
                 customer: {
                     name: localOrder.shippingAddress.name,
                     email: localOrder.shippingAddress.email,
                     address: `${localOrder.shippingAddress.street}, ${localOrder.shippingAddress.area}, ${localOrder.shippingAddress.city}, ${localOrder.shippingAddress.pincode}`
                 },
                 items: localOrder.products.map(i => ({
-                    productId: i.id,
+                    productId: i.id || i.productId,
                     quantity: i.quantity
                 }))
             })
@@ -283,24 +292,18 @@ async function verifyPayment(rzpResp, localOrder, rzpData) {
         const verification = await res.json();
 
         if (res.ok) {
-            // Success
             updateLocalOrderStatus(localOrder.orderId, 'Paid', 'Processing');
-
-            // Clear cart if it was a cart checkout
             if (!localStorage.getItem('directCheckout')) {
                 localStorage.removeItem('efv_cart');
             }
             localStorage.removeItem('directCheckout');
-
             alert('✅ Payment Successful! Your order is being processed.');
             window.location.href = 'profile.html?tab=orders';
         } else {
             throw new Error(verification.message || 'Verification Failed');
         }
-
     } catch (e) {
         alert('Verification Error: ' + e.message);
-        updateLocalOrderStatus(localOrder.orderId, 'Failed', 'Payment Failed');
         location.reload();
     }
 }

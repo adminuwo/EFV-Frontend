@@ -1452,8 +1452,8 @@ window.proceedToPayment = async function () {
 
     try {
         const token = localStorage.getItem('authToken');
-        // Create Order on Backend
-        const rzpRes = await fetch(`${API_BASE}/api/orders/razorpay`, {
+        // Create Order on Backend (Cashfree)
+        const cfRes = await fetch(`${API_BASE}/api/orders/cashfree`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1461,58 +1461,26 @@ window.proceedToPayment = async function () {
             },
             body: JSON.stringify({
                 amount: totalAmount,
-                items: items,
-                addressId: addressId
+                customerName: user.name,
+                customerEmail: user.email,
+                customerPhone: user.phone || '0000000000'
             })
         });
-        const rzpOrderData = await rzpRes.json();
-        if (!rzpRes.ok) throw new Error(rzpOrderData.message || 'Payment init failed');
+        const cfOrderData = await cfRes.json();
+        if (!cfRes.ok) throw new Error(cfOrderData.message || 'Cashfree init failed');
 
-        const options = {
-            key: 'rzp_live_SBFlInxBiRfOGd', // Replace with your key
-            amount: rzpOrderData.amount,
-            currency: rzpOrderData.currency,
-            name: 'EFV™ Secure Payment',
-            description: `Order #${rzpOrderData.id}`,
-            order_id: rzpOrderData.id,
-            prefill: { name: user.name, email: user.email },
-            theme: { color: '#D4AF37' },
-            handler: async function (response) {
-                // Verify Payment on Backend
-                const verifyRes = await fetch(`${API_BASE}/api/orders/verify`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        razorpay_order_id: response.razorpay_order_id,
-                        razorpay_payment_id: response.razorpay_payment_id,
-                        razorpay_signature: response.razorpay_signature,
-                        checkoutData: window.checkoutState
-                    })
-                });
+        const cashfree = Cashfree({
+            mode: "sandbox" // Change to "production" in live
+        });
 
-                if (verifyRes.ok) {
-                    // Success logic
-                    if (window.checkoutState.isSingleItemMode && window.checkoutState.cartIdToRemove) {
-                        removeFromCart(window.checkoutState.cartIdToRemove);
-                    } else if (!window.checkoutState.isSingleItemMode) {
-                        localStorage.removeItem(getUserKey('efv_cart'));
-                    }
-
-                    showToast('Order Placed Successfully!', 'success');
-                    closeCheckout();
-                    fetchProfileData();
-                    switchTab('orders');
-                } else {
-                    alert('Payment verification failed. Please contact support.');
-                }
-            }
+        let checkoutOptions = {
+            paymentSessionId: cfOrderData.payment_session_id,
+            redirectTarget: "_self",
         };
 
-        const rzp = new Razorpay(options);
-        rzp.open();
+        // Note: For real environment, we'd need to handle verification after return.
+        // For now, let's trigger the checkout.
+        cashfree.checkout(checkoutOptions);
 
     } catch (e) {
         showToast('Checkout Failed: ' + e.message, 'error');
@@ -1570,9 +1538,11 @@ window.openEbookReader = async function (product) {
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', readerHtml);
+
+    // SECURITY: Actively start protection before rendering begins
     if (window.efvSecurity) {
         window.efvSecurity.isTampered = false;
-        window.efvSecurity.enable(); // Actively start protection
+        window.efvSecurity.enable();
         window.efvSecurity.applyWatermark(document.getElementById(readerId));
     }
     document.getElementById(readerId).classList.add('no-select');
@@ -2316,6 +2286,13 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
     document.body.insertAdjacentHTML('beforeend', playerHTML);
     document.body.classList.add('modal-open');
 
+    // SECURITY: Actively start protection
+    if (window.efvSecurity) {
+        window.efvSecurity.isTampered = false;
+        window.efvSecurity.enable();
+        window.efvSecurity.applyWatermark(document.getElementById('efv-premium-player'));
+    }
+
     // --- Player State ---
     let currentChIdx = initialChapter;
     let audioEl = new Audio();
@@ -2503,6 +2480,9 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
         audioEl.src = '';
         document.getElementById('efv-premium-player').remove();
         document.body.classList.remove('modal-open');
+
+        // SECURITY: Stop active protection
+        if (window.efvSecurity) window.efvSecurity.disable();
         // Refresh library and detail views
         renderLibraryTab();
         if (document.querySelector('.library-sub-tab[data-library-tab="audiobooks"].active')) {

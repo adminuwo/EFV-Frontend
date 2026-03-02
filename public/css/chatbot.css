@@ -15,15 +15,32 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
+    background: transparent;
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+    box-shadow: none;
     transition: all 0.3s ease;
-    color: #000;
+    color: #F4D03F;
+    animation: efv-icon-blink 2s infinite ease-in-out;
+}
+
+@keyframes efv-icon-blink {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: drop-shadow(0 0 5px #F4D03F);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(0.85);
+        filter: drop-shadow(0 0 2px #F4D03F);
+    }
 }
 
 .efv-chat-button:hover {
@@ -32,13 +49,7 @@
 }
 
 .efv-pulse-ring {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border: 2px solid #d4af37;
-    border-radius: 50%;
-    animation: efv-pulse 2s infinite;
-    pointer-events: none;
+    display: none;
 }
 
 @keyframes efv-pulse {
@@ -61,10 +72,49 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    opacity: 1;
-    animation: efv-tooltip-fade 3s ease-in-out infinite;
+    opacity: 0;
+    /* Invisible by default */
     pointer-events: none;
     z-index: 9999;
+}
+
+/* New: Periodic Blink Class (Used by Chat JS) */
+.efv-blink-active {
+    animation: efv-blink-periodic 5s linear forwards;
+    /* Increased duration to allow for fade in/out */
+}
+
+@keyframes efv-blink-periodic {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    10% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    30%,
+    50%,
+    70%,
+    90% {
+        opacity: 0.5;
+        transform: scale(1.05);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
 }
 
 .efv-curved-arrow {
@@ -102,30 +152,57 @@
     display: none;
 }
 
+/* Chat Window Overlay (Background Blur) */
+.efv-chat-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9999998;
+    /* Just below chat window */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.efv-chat-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
 /* Chat Window */
 .efv-chat-window {
     position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 400px;
+    top: 50%;
+    left: 50%;
+    width: 380px;
+    /* Slimmer for premium look */
     height: 600px;
-    background: linear-gradient(135deg, rgba(10, 10, 10, 0.8) 0%, rgba(26, 26, 46, 0.8) 100%);
+    max-height: 85vh;
+    background: linear-gradient(135deg, rgba(3, 5, 9, 0.98) 0%, rgba(11, 19, 43, 0.98) 100%);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
-    border-radius: 20px;
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.1);
+    border-radius: 24px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(212, 175, 55, 0.15);
     display: flex;
     flex-direction: column;
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translate(-50%, -45%) scale(0.9);
+    /* Starts slightly lower and smaller */
     pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 9999999;
 }
 
 .efv-chat-window.active {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate(-50%, -50%) scale(1);
+    /* Perfectly centered */
     pointer-events: all;
 }
 
@@ -376,18 +453,38 @@
 
 @media (max-width: 480px) {
     .efv-chat-window {
-        width: calc(100% - 30px) !important;
-        height: calc(100vh - 120px) !important;
-        max-height: calc(100vh - 120px) !important;
-        bottom: 85px !important;
-        right: 15px !important;
-        border-radius: 20px !important;
+        width: 90% !important;
+        height: 80vh !important;
+        max-height: 80vh !important;
+        /* Centered on mobile too as requested */
+        top: 50% !important;
+        left: 50% !important;
+        right: auto !important;
+        bottom: auto !important;
+        border-radius: 24px !important;
+        transform: translate(-50%, -45%) scale(0.9) !important;
+    }
+
+    .efv-chat-window.active {
+        transform: translate(-50%, -50%) scale(1) !important;
     }
 
     .efv-chat-button {
         bottom: 15px;
         right: 15px;
-        width: 55px;
-        height: 55px;
+        width: 45px;
+        /* Reduced from 55px/60px */
+        height: 45px;
+        /* Reduced from 55px/60px */
+    }
+
+    .efv-chat-button svg {
+        width: 32px;
+        height: 32px;
+    }
+
+    .efv-chat-tooltip {
+        bottom: 65px;
+        right: 45px;
     }
 }

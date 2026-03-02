@@ -11,22 +11,41 @@ class EFVChatbot {
     init() {
         this.injectHTML();
         this.attachEventListeners();
+        this.startPeriodicBlink();
+    }
+
+    startPeriodicBlink() {
+        const tooltip = document.querySelector('.efv-chat-tooltip');
+        if (!tooltip) return;
+
+        const triggerBlink = () => {
+            tooltip.classList.add('efv-blink-active');
+            setTimeout(() => {
+                tooltip.classList.remove('efv-blink-active');
+            }, 5000); // Wait for the 5s CSS animation to complete
+        };
+
+        // Repeat every 3 minutes (180,000ms)
+        setInterval(triggerBlink, 180000);
     }
 
     injectHTML() {
         const chatHTML = `
             <div id="efv-chatbot">
+                <!-- Background Blur Overlay -->
+                <div id="efv-chat-overlay" class="efv-chat-overlay"></div>
+
                 <!-- Floating Chat Button -->
                 <button id="efv-chat-toggle" class="efv-chat-button" aria-label="Open EFV Intelligence">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 1C12 1 12.5 9.5 23 12C12.5 14.5 12 23 12 23C12 23 11.5 14.5 1 12C11.5 9.5 12 1 12 1Z" fill="#F4D03F"/>
+                        <path d="M5 4C5 4 5.2 6 7.5 6.5C5.2 7 5 9 5 9C5 9 4.8 7 2.5 6.5C4.8 6 5 4 5 4Z" fill="#F4D03F" opacity="0.6"/>
                     </svg>
-                    <span class="efv-pulse-ring"></span>
                 </button>
                 
                 <!-- Tooltip with curved arrow -->
                 <div class="efv-chat-tooltip">
-                    <span class="efv-tooltip-text">Ask AI about EFV<sup>™</sup></span>
+                    <span class="efv-tooltip-text">EFV BOT</span>
                     <svg class="efv-curved-arrow" xmlns="http://www.w3.org/2000/svg" width="60" height="40" viewBox="0 0 60 40">
                         <path d="M 10 5 Q 15 35, 50 35" stroke="#d4af37" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
                         <defs>
@@ -91,26 +110,40 @@ class EFVChatbot {
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.sendMessage();
         });
+
+        // Click overlay to close
+        const overlay = document.getElementById('efv-chat-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', () => this.closeChat());
+        }
     }
 
     toggleChat() {
         this.isOpen = !this.isOpen;
         const chatWindow = document.getElementById('efv-chat-window');
         const toggleBtn = document.getElementById('efv-chat-toggle');
+        const overlay = document.getElementById('efv-chat-overlay');
 
         if (this.isOpen) {
             chatWindow.classList.add('active');
+            if (overlay) overlay.classList.add('active');
             toggleBtn.style.display = 'none';
         } else {
             chatWindow.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
             toggleBtn.style.display = 'flex';
         }
     }
 
     closeChat() {
         this.isOpen = false;
-        document.getElementById('efv-chat-window').classList.remove('active');
-        document.getElementById('efv-chat-toggle').style.display = 'flex';
+        const chatWindow = document.getElementById('efv-chat-window');
+        const toggleBtn = document.getElementById('efv-chat-toggle');
+        const overlay = document.getElementById('efv-chat-overlay');
+
+        if (chatWindow) chatWindow.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+        if (toggleBtn) toggleBtn.style.display = 'flex';
     }
 
     async sendMessage() {

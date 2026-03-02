@@ -139,6 +139,8 @@ class EFVSecurity {
             .security-locked nav, 
             .security-locked footer,
             .security-locked .reader-overlay,
+            .security-locked .efv-audio-player-overlay,
+            .security-locked .audiobook-detail-overlay,
             .security-locked .product-modal-overlay,
             .security-locked .tc-modal-overlay,
             .security-locked .modal-overlay {
@@ -163,10 +165,6 @@ class EFVSecurity {
                 z-index: 2000000 !important;
             }
             .security-locked-blank {
-                display: block !important;
-                background: black !important;
-            }
-            .security-locked-blank > *:not(#security-overlay):not(#security-watermark-container) {
                 display: none !important;
             }
             .security-blur #security-shield {
@@ -181,6 +179,8 @@ class EFVSecurity {
             .security-blur nav, 
             .security-blur footer,
             .security-blur .reader-overlay,
+            .security-blur .efv-audio-player-overlay,
+            .security-blur .audiobook-detail-overlay,
             .security-blur .product-modal-overlay,
             .security-blur .tc-modal-overlay {
                 filter: blur(100px) !important;
@@ -245,173 +245,127 @@ class EFVSecurity {
 
     detectShortcuts() {
         window.addEventListener('keydown', e => {
-            // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U (View Source)
+            // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U (View Source), Ctrl+S (Save)
             const isInspect = (e.key === 'F12') ||
                 (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-                (e.ctrlKey && e.key === 'u');
+                (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S'));
 
             // Ctrl+P (Print)
-            const isPrint = (e.ctrlKey && e.key === 'p');
+            const isPrint = (e.ctrlKey && (e.key === 'p' || e.key === 'P'));
 
-            // PrintScreen Detection
-            const isPrintScreen = (e.key === 'PrintScreen');
+            // PrintScreen Detection (Keydown is faster than keyup for blocking)
+            const isPrintScreen = (e.key === 'PrintScreen' || e.keyCode === 44);
 
-            // Windows + Shift + S / R (Snippet Tool)
+            // Windows + Shift + S / R (Snippet Tool) - Hard to catch but we try
             const isWinSnippet = (e.metaKey && e.shiftKey && (e.key === 'S' || e.key === 'R' || e.key === 's' || e.key === 'r'));
 
-            // Alt + PrintScreen
-            const isAltPrintScreen = (e.altKey && e.key === 'PrintScreen');
+            // Mac Shortcuts (Cmd+Shift+3/4/5)
+            const isMacSnippet = (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5'));
 
-            if (isInspect) {
-                e.preventDefault();
-                this.triggerViolation("Inspection Tools Detected (" + e.key + ")");
-            }
+            if (isInspect || isPrint || isPrintScreen || isWinSnippet || isMacSnippet) {
+                if (this.isProtected) {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-            if (isPrint) {
-                e.preventDefault();
-                this.triggerViolation("Print Shortcut Detected");
-            }
-
-            if (isPrintScreen || isAltPrintScreen || isWinSnippet) {
-                e.preventDefault();
-                this.lockContent("Screenshot Shortcut Detected"); // Instant blanking
-                this.handlePrintScreen(isWinSnippet ? "Win+Shift+S/R Shortcut" : "PrintScreen Key");
-            }
-        });
-    }
-
-    handlePrintScreen(reason) {
-        // Just trigger violation (Red Alert), no black screen
-        console.warn(`🛡️ Security: Triggering Red Alert due to ${reason}`);
-        this.triggerViolation(`Screen Capture Attempt Detected (${reason})`);
-    }
-
-    detectDevTools() {
-        // Trick 1: Window size difference
-        const threshold = 160;
-        setInterval(() => {
-            const widthDiff = window.outerWidth - window.innerWidth > threshold;
-            const heightDiff = window.outerHeight - window.innerHeight > threshold;
-            if (widthDiff || heightDiff) {
-                this.triggerViolation("DevTools Detected (Window Geometry)");
-            }
-        }, 1000);
-
-        // Trick 2: Console profiling detection
-        let devtools = { open: false, orientation: null };
-        const threshold2 = 160;
-        const emit = (state) => { if (state) this.triggerViolation("DevTools Opened"); };
-
-        setInterval(() => {
-            const widthThreshold = window.outerWidth - window.innerWidth > threshold2;
-            const heightThreshold = window.outerHeight - window.innerHeight > threshold2;
-            const orientation = widthThreshold ? 'vertical' : 'horizontal';
-
-            if (!(heightThreshold && widthThreshold) &&
-                ((window.Firebug && window.Firebug.chrome && window.Firebug.chrome.isInitialized) || widthThreshold || heightThreshold)) {
-                if (!devtools.open || devtools.orientation !== orientation) {
-                    emit(true);
+                    if (isPrintScreen || isWinSnippet || isMacSnippet) {
+                        alert("Security: Screen capture is disabled on this platform.");
+                        this.triggerViolation("Screenshot/Recording Attempt (" + e.key + ")");
+                    } else {
+                        alert("Security: Developer tools and printing are disabled.");
+                        this.triggerViolation("Unauthorized Tool Access (" + e.key + ")");
+                    }
                 }
-                devtools.open = true;
-                devtools.orientation = orientation;
-            } else {
-                devtools.open = false;
-                devtools.orientation = null;
             }
-        }, 500);
+        }, true);
 
-        // Trick 3: Debugger loop (optional, but requested for "aggressive detection")
-        // This will slow down DevTools significantly if open
-        (function () {
-            const detect = function () {
-                const start = Date.now();
-                debugger;
-                const end = Date.now();
-                if (end - start > 100) {
-                    // console.warn("DevTools presence detected via debugger speed.");
+        // Also catch on keyup for redundancy
+        window.addEventListener('keyup', e => {
+            if (e.key === 'PrintScreen' || e.keyCode === 44) {
+                if (this.isProtected) {
+                    this.lockContent("PrintScreen Detected");
+                    this.triggerViolation("PrintScreen Key Captured");
                 }
-            };
-            // setInterval(detect, 2000); // Disabling for now to avoid freezing helper tools unless in "Super Aggressive" mode
-        })();
-
-        // Trick 4: Element ID trick
-        const div = document.createElement('div');
-        Object.defineProperty(div, 'id', {
-            get: () => {
-                this.triggerViolation("DevTools Inspection Attempt (Element ID Getter)");
-                return 'security-check';
             }
-        });
-        // console.log(div); // This triggers if console is open and elements are inspected
-    }
-
-    detectScreenCapture() {
-        // Monitoring display-capture API usage if possible
-        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-            const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
-            navigator.mediaDevices.getDisplayMedia = (constraints) => {
-                this.triggerViolation("Unauthorized getDisplayMedia request");
-                return Promise.reject(new Error("Security Policy: Screen capture is disabled."));
-            };
-        }
+        }, true);
     }
 
     handleVisibility() {
         // 1. Sudden blur events -> Trigger Violation
         window.addEventListener('blur', () => {
-            this.lastFocusTime = Date.now();
-            this.triggerViolation("Window Focus Lost");
+            if (this.isProtected) {
+                this.lastFocusTime = Date.now();
+                // Instead of blackout, we just blur the content
+                this.lockContent("Focus Lost");
+
+                // If focus stays lost for too long, it might be a capture tool
+                this.captureCheckTimeout = setTimeout(() => {
+                    if (!document.hasFocus() && this.isActive) {
+                        // We keep it blurred but don't show the hard red alert yet
+                    }
+                }, 100);
+            }
         });
 
         window.addEventListener('focus', () => {
-            const now = Date.now();
-            const focusGap = now - this.lastFocusTime;
+            if (this.isProtected && !this.isTampered) {
+                const now = Date.now();
+                const focusGap = now - this.lastFocusTime;
 
-            if (focusGap < 800 && focusGap > 50) {
-                this.triggerViolation("Rapid Focus Loss/Return (Snipping Tool)");
+                if (focusGap < 1000 && focusGap > 10) {
+                    this.triggerViolation("Rapid Focus Return (Screen Snapped)");
+                } else {
+                    this.unlockContent();
+                }
             }
         });
 
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                this.triggerViolation("Tab Hidden/Changed (App Switcher Detected)");
+            if (document.visibilityState === 'hidden' && this.isProtected) {
+                this.lockContent("Tab Backgrounded");
+                this.triggerViolation("Security: Content hidden during tab switch");
             }
         });
 
         // 2. Mouse Leave Detection -> Trigger Violation
         document.addEventListener('mouseleave', () => {
-            if (this.isProtected) this.triggerViolation("Cursor Left Window Boundary");
+            if (this.isProtected) {
+                // Blur slightly when mouse leaves (common for recording bars)
+                document.body.classList.add('security-blur');
+            }
         });
 
-        // 3. Aggressive Focus Polling -> Trigger Violation
-        setInterval(() => {
-            if (!document.hasFocus() && this.isProtected && !this.isTampered) {
-                this.triggerViolation("Focus Polling (Lost)");
+        document.addEventListener('mouseenter', () => {
+            if (this.isProtected && !this.isTampered) {
+                this.unlockContent();
             }
-        }, 50);
+        });
 
-        // 4. Window Resize Detection -> Trigger Violation
+        // 3. Aggressive Focus Polling
+        setInterval(() => {
+            if (this.isProtected && !document.hasFocus() && !this.isTampered) {
+                this.lockContent("Persistent Focus Loss");
+            }
+        }, 100);
+
+        // 4. Window Resize Detection
         let lastSize = { w: window.innerWidth, h: window.innerHeight };
         window.addEventListener('resize', () => {
+            if (!this.isProtected) return;
             const dw = Math.abs(window.innerWidth - lastSize.w);
             const dh = Math.abs(window.innerHeight - lastSize.h);
-            if (dw > 5 || dh > 5) {
-                this.triggerViolation("Window Size Tampered/Orientation Change");
-                this.updateWatermark(); // Re-align instantly
+            if (dw > 20 || dh > 20) {
+                this.triggerViolation("Window Size Tampered");
+                this.updateWatermark();
                 lastSize = { w: window.innerWidth, h: window.innerHeight };
             }
         });
     }
 
     lockContent(reason) {
+        if (!this.isProtected) return;
         // console.log("🔒 Locking content: " + reason);
         document.body.classList.add('security-blur');
         this.pauseMedia();
-
-        // If it's a hard event like blur, we might want to trigger violation if it happens too many times
-        if (reason === 'Window Blur' || reason === 'Focus Polling') {
-            // We just blur for now to avoid false positives, but keep it tight
-        }
     }
 
     unlockContent() {
@@ -467,16 +421,13 @@ class EFVSecurity {
 
     triggerViolation(reason) {
         if (!this.isActive) return; // Only trigger if actively protecting content
-        if (this.isTampered) return; // Don't trigger multiple alerts
-
-        console.error(`🚨 SECURITY VIOLATION: ${reason}`);
         this.isTampered = true;
 
         // Log to backend (Mock)
         this.logViolation(reason);
 
-        // Instantly: Blank everything, Blur, Red Alert Overlay, Stop Media
-        document.body.classList.add('security-locked', 'security-locked-blank');
+        // We use blur instead of blanking out the whole screen
+        document.body.classList.add('security-locked');
         this.pauseMedia();
 
         // Dispatch event for other modules to react (e.g. destroy buffers)

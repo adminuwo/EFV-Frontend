@@ -107,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>Login Securely</span>
                     <div class="loader"></div>
                 </button>
+
             </form>
 
             <!-- Sign Up Form -->
@@ -164,6 +165,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="loader"></div>
                 </button>
             </form>
+
+            <div class="auth-separator">
+                <span>OR</span>
+            </div>
+
+            <div id="google-login-container" style="display: flex; justify-content: center; margin-top: 10px;"></div>
+
             <!-- Forgot Password Flow -->
             <div id="forgot-password-flow" style="display: none;">
                 <div style="display: flex; align-items: center; margin-bottom: 20px;">
@@ -2696,12 +2704,87 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAutoLogin();
     updateCartUI();
 
-    // Forced Library Sync on load if token exists
-    if (localStorage.getItem('authToken')) {
-        setTimeout(() => {
-            syncLibraryWithBackend().catch(e => console.error('Early sync failed:', e));
-        }, 100);
+    // --- GOOGLE LOGIN FRONTEND ---
+    function initGoogleAuth() {
+        if (typeof google === 'undefined') {
+            console.warn("Google library not loaded yet, retrying in 500ms...");
+            setTimeout(initGoogleAuth, 500);
+            return;
+        }
+
+        const clientId = "743928421487-tgh59ajhsmuk5ltomsooj46lials3hpt.apps.googleusercontent.com";
+
+        google.accounts.id.initialize({
+            client_id: clientId,
+            callback: handleGoogleCredentialResponse,
+            cancel_on_tap_outside: false
+        });
+
+        google.accounts.id.renderButton(
+            document.getElementById("google-login-container"),
+            {
+                theme: "outline",
+                size: "large",
+                width: 300,
+                logo_alignment: "left",
+                shape: "pill"
+            }
+        );
+
+        // Optional: One Tap
+        // google.accounts.id.prompt(); 
     }
+
+    async function handleGoogleCredentialResponse(response) {
+        console.log("Google Auth Response Received");
+        try {
+            const res = await fetch(`${API_BASE}/api/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: response.credential })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.token) {
+                // Success! Store user and token
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('efv_user', JSON.stringify({
+                    _id: data._id,
+                    name: data.name,
+                    email: data.email,
+                    role: data.role,
+                    avatar: data.avatar
+                }));
+
+                showToast(`Welcome, ${data.name}! ✨`);
+
+                // Close modal
+                const modal = document.getElementById('auth-modal');
+                if (modal) {
+                    modal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+
+                // Sync Library
+                syncLibraryWithBackend();
+
+                // Force UI Update
+                updateCartUI();
+
+                // Redirect if on login-specific flow or just refresh state
+                setTimeout(() => {
+                    location.reload(); // Refresh to update all UI components globally
+                }, 1500);
+            } else {
+                showToast('❌ Google Login Failed: ' + (data.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Google Auth Error:', error);
+            showToast('❌ Google connection error');
+        }
+    }
+
+    initGoogleAuth();
 });
 
 function showResumeOption(title, progressLabel, onResume, onRestart) {
