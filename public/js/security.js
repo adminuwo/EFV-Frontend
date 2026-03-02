@@ -41,8 +41,8 @@ class EFVSecurity {
         // 3. Start Protection Mechanisms
         this.preventInteractions();
         this.detectShortcuts();
-        this.detectDevTools();
-        this.detectScreenCapture();
+        if (typeof this.detectDevTools === 'function') this.detectDevTools();
+        if (typeof this.detectScreenCapture === 'function') this.detectScreenCapture();
         this.handleVisibility();
 
         // 4. Start Watermark
@@ -459,6 +459,22 @@ class EFVSecurity {
         };
         console.table(logData);
         // fetch('/api/security/log', { method: 'POST', body: JSON.stringify(logData) });
+    }
+
+    detectDevTools() {
+        // Simple console-based detection
+        const check = () => {
+            const threshold = 160;
+            if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
+                if (this.isProtected) this.triggerViolation("Developer Tools Opened (Resize)");
+            }
+        };
+        window.addEventListener('resize', check);
+    }
+
+    detectScreenCapture() {
+        // Mock implementation - real capture detection is limited in browsers
+        // We rely on focus loss and shortcuts mostly
     }
 }
 

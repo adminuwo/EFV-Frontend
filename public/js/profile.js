@@ -743,7 +743,17 @@ function renderNotificationsTab(filter = 'all') {
         return;
     }
 
-    let notifications = profile.notifications;
+    let notifications = [...profile.notifications];
+
+    // Pin Welcome notification to top, rest sorted by newest first
+    const welcomeNotes = notifications.filter(n =>
+        (n.title || '').toLowerCase().includes('welcome') || (n.message || '').toLowerCase().includes('welcome')
+    );
+    const otherNotes = notifications.filter(n =>
+        !(n.title || '').toLowerCase().includes('welcome') && !(n.message || '').toLowerCase().includes('welcome')
+    );
+    otherNotes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    notifications = [...welcomeNotes, ...otherNotes];
 
     // Apply filter
     if (filter !== 'all') {
@@ -1448,7 +1458,7 @@ window.proceedToPayment = async function () {
 
     const subtotal = items.reduce((sum, i) => sum + (parseFloat(i.price) * (parseInt(i.quantity) || 1)), 0);
     const tax = subtotal * 0.18;
-    const totalAmount = subtotal + tax;
+    const totalAmount = Math.round((subtotal + tax) * 100) / 100;
 
     try {
         const token = localStorage.getItem('authToken');
@@ -1467,7 +1477,10 @@ window.proceedToPayment = async function () {
             })
         });
         const cfOrderData = await cfRes.json();
-        if (!cfRes.ok) throw new Error(cfOrderData.message || 'Cashfree init failed');
+        if (!cfRes.ok) {
+            console.error('Cashfree API Error Details:', cfOrderData.error);
+            throw new Error(cfOrderData.message || 'Cashfree init failed');
+        }
 
         const cashfree = Cashfree({
             mode: "sandbox" // Change to "production" in live
