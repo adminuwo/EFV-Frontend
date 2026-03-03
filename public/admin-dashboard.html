@@ -166,17 +166,26 @@
                     </div>
                 </div>
 
-                                <!-- Strategic Management Access -->
+                <!-- Strategic Management Access -->
                 <div class="stats-grid" style="grid-template-columns: 1fr; margin-top: 25px;">
-                    <button class="stat-card glass-panel shine-hover" onclick="location.href='partners.html'" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid var(--gold-text); background: rgba(212, 175, 55, 0.05); width: 100%; border-radius: 12px; border: none;">
+                    <button class="stat-card glass-panel shine-hover" onclick="location.href='partners.html'"
+                        style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid var(--gold-text); background: rgba(212, 175, 55, 0.05); width: 100%; border-radius: 12px; border: none;">
                         <div style="display: flex; align-items: center; gap: 20px;">
-                            <div class="icon-box gold" style="width: 50px; height: 50px; font-size: 1.2rem; background: rgba(212, 175, 55, 0.2);"><i class="fas fa-handshake"></i></div>
+                            <div class="icon-box gold"
+                                style="width: 50px; height: 50px; font-size: 1.2rem; background: rgba(212, 175, 55, 0.2);">
+                                <i class="fas fa-handshake"></i>
+                            </div>
                             <div class="stat-info" style="text-align: left;">
-                                <h3 style="margin: 0 0 5px 0; color: var(--gold-text); font-family: 'Cinzel'; letter-spacing: 1px;">Partner Marketing Manager</h3>
-                                <p style="margin: 0; opacity: 0.7; font-size: 0.9rem;">Oversee coupons, track marketing performance, and coordinate payouts.</p>
+                                <h3
+                                    style="margin: 0 0 5px 0; color: var(--gold-text); font-family: 'Cinzel'; letter-spacing: 1px;">
+                                    Partner Marketing Manager</h3>
+                                <p style="margin: 0; opacity: 0.7; font-size: 0.9rem;">Oversee coupons, track marketing
+                                    performance, and coordinate payouts.</p>
                             </div>
                         </div>
-                        <span class="btn btn-gold small" style="padding: 10px 20px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Access Dashboard <i class="fas fa-arrow-right"></i></span>
+                        <span class="btn btn-gold small"
+                            style="padding: 10px 20px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Access
+                            Dashboard <i class="fas fa-arrow-right"></i></span>
                     </button>
                 </div>
 
@@ -874,23 +883,41 @@
                             <h3>View Reports</h3>
                             <p>Sales & Growth Analytics</p>
                         </div>
-                      <div class="stat-card glass-panel shine-hover" onclick="location.href='partners.html'">
-                          <div class="icon-box gold"><i class="fas fa-handshake"></i></div>
-                          <div class="stat-info">
-                              <h3>Partner Marketing</h3>
-                              <p>Manage affiliates and coupons</p>
-                          </div>
-                      </div>
+                        <div class="stat-card glass-panel shine-hover" onclick="location.href='partners.html'">
+                            <div class="icon-box gold"><i class="fas fa-handshake"></i></div>
+                            <div class="stat-info">
+                                <h3>Partner Marketing</h3>
+                                <p>Manage affiliates and coupons</p>
+                            </div>
+                        </div>
                     </button>
                 </div>
             </section>
 
             <!-- ORDERS MANAGEMENT PAGE -->
             <section id="admin-orders" class="content-section">
-                <header class="content-header">
-                    <h1>Orders <span class="gold-text">Management</span></h1>
-                    <p>Track and manage customer purchases</p>
-                </header>
+                <div class="content-header"
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 1px solid rgba(255,211,105,0.1); padding-bottom: 20px;">
+                    <div>
+                        <h1 style="margin:0; font-size: 2.2rem; text-transform: uppercase; letter-spacing: 2px;">Orders
+                            <span class="gold-text">Management</span>
+                        </h1>
+                        <p style="margin: 5px 0 0; opacity: 0.6;">Track and manage customer purchases</p>
+                    </div>
+                    <div class="filter-wrapper"
+                        style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                        <label
+                            style="font-size: 0.7rem; font-weight: 700; color: var(--gold-text); text-transform: uppercase; letter-spacing: 1px;">Filter
+                            By Product Type</label>
+                        <select id="admin-order-filter-type" onchange="filterAdminOrders()"
+                            style="padding: 12px 20px; background: rgba(0,0,0,0.5); border: 2px solid var(--gold-text); border-radius: 10px; color: white; font-family: 'Cinzel', serif; font-weight: 700; cursor: pointer; min-width: 200px; box-shadow: 0 0 15px rgba(255,211,105,0.1);">
+                            <option value="all">ALL ORDERS</option>
+                            <option value="physical">PHYSICAL BOOKS</option>
+                            <option value="EBOOK">E-BOOKS</option>
+                            <option value="AUDIOBOOK">AUDIOBOOKS</option>
+                        </select>
+                    </div>
+                </div>
 
                 <!-- Order Controls -->
                 <div class="admin-controls glass-panel"

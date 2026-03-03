@@ -102,7 +102,14 @@ function getZoneFromPincode(pincode) {
     return 'D';
 }
 
-function calculateShipping() {
+function calculateShipping(items = []) {
+    // Only charge shipping if there's at least one physical item
+    const hasPhysical = items.some(item =>
+        (item.type === 'HARDCOVER' || item.type === 'PAPERBACK' || item.category === 'Physical')
+    );
+
+    if (!hasPhysical) return 0;
+
     const pin = document.getElementById('ship-pincode').value;
     const zone = getZoneFromPincode(pin);
     if (!zone) return 0;
@@ -284,7 +291,7 @@ function renderSummary(items, isRefresh = false) {
         `;
     }).join('');
 
-    const shippingCharge = calculateShipping();
+    const shippingCharge = calculateShipping(currentCheckoutItems);
     const codCharge = calculateCOD(subtotal);
 
     document.getElementById('summary-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
@@ -377,7 +384,7 @@ function setupPlaceOrder(items, user) {
 
         // Calculate Totals using dynamic logic
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const shipping = calculateShipping();
+        const shipping = calculateShipping(items);
         const cod = calculateCOD(subtotal);
         let discount = 0;
         if (appliedCoupon) {

@@ -2194,9 +2194,11 @@ window.loadAdminOrdersFull = async function () {
 window.filterAdminOrders = function () {
     const tbody = document.getElementById('admin-orders-table-body');
     const searchInput = document.getElementById('admin-order-search');
+    const typeEl = document.getElementById('admin-order-filter-type');
     if (!tbody) return;
 
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const typeFilter = typeEl ? typeEl.value : 'all';
 
     if (!Array.isArray(allAdminOrders)) {
         console.warn("allAdminOrders is not an array:", allAdminOrders);
@@ -2209,7 +2211,20 @@ window.filterAdminOrders = function () {
         const id = String(o.orderId || o._id || '').toLowerCase();
         const name = (o.customer && o.customer.name || '').toLowerCase();
         const phone = (o.customer && o.customer.phone || '').toLowerCase();
-        return id.includes(searchTerm) || name.includes(searchTerm) || phone.includes(searchTerm);
+
+        const matchesSearch = id.includes(searchTerm) || name.includes(searchTerm) || phone.includes(searchTerm);
+
+        let matchesType = true;
+        if (typeFilter !== 'all' && o.items) {
+            matchesType = o.items.some(item => {
+                if (typeFilter === 'physical') {
+                    return ['HARDCOVER', 'PAPERBACK'].includes(item.type);
+                }
+                return item.type === typeFilter;
+            });
+        }
+
+        return matchesSearch && matchesType;
     });
 
     tbody.innerHTML = '';
@@ -2247,7 +2262,7 @@ window.filterAdminOrders = function () {
             <td style="padding: 12px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <button class="btn btn-outline small" onclick="viewAdminOrderDetail('${o._id}')">View</button>
-                    ${(o.paymentStatus === 'Paid' && !o.shipmentId && o.items.some(i => ['HARDCOVER', 'PAPERBACK'].includes(i.type))) ?
+                    ${(!o.shipmentId && o.items.some(i => ['HARDCOVER', 'PAPERBACK'].includes(i.type))) ?
                 `<button class="btn btn-gold tiny" onclick="window.createNimbusShipment('${o._id}')" id="ship-btn-${o._id}" style="font-size: 0.65rem; padding: 4px 8px;"><i class="fas fa-truck"></i> Ship</button>` :
                 (o.shipmentId ? `<span style="color:#2ecc71; font-size:0.75rem;"><i class="fas fa-check"></i> Shipped</span>` : '')
             }
