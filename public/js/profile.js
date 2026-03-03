@@ -66,11 +66,25 @@ window.loadAdminProductsFull = async function () {
 };
 
 window.addEventListener('efv-security-violation', () => {
-    // Destroy "decrypted buffers" (clear canvases)
+    // 1. Destroy "decrypted buffers" (clear canvases)
     const canvases = document.querySelectorAll('canvas');
     canvases.forEach(canvas => {
         const ctx = canvas.getContext('2d');
         if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    // 2. Kill all audio/video immediately
+    document.querySelectorAll('audio, video').forEach(media => {
+        media.pause();
+        media.src = '';
+        media.load();
+        media.remove();
+    });
+
+    // 3. Clear sensitive overlays
+    document.querySelectorAll('.reader-overlay, .efv-audio-player-overlay').forEach(el => {
+        el.style.display = 'none';
+        el.remove();
     });
 });
 
@@ -1554,9 +1568,7 @@ window.openEbookReader = async function (product) {
 
     // SECURITY: Actively start protection before rendering begins
     if (window.efvSecurity) {
-        window.efvSecurity.isTampered = false;
         window.efvSecurity.enable();
-        window.efvSecurity.applyWatermark(document.getElementById(readerId));
     }
     document.getElementById(readerId).classList.add('no-select');
 
@@ -2301,9 +2313,7 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
 
     // SECURITY: Actively start protection
     if (window.efvSecurity) {
-        window.efvSecurity.isTampered = false;
         window.efvSecurity.enable();
-        window.efvSecurity.applyWatermark(document.getElementById('efv-premium-player'));
     }
 
     // --- Player State ---

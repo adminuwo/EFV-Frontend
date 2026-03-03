@@ -395,9 +395,9 @@
     }
 
     .logo {
-        align-items: center !important;
-        /* Center the stack: Icon above Text */
-        text-align: center !important;
+        align-items: flex-start !important;
+        /* Align logo content to left */
+        text-align: left !important;
         gap: 2px !important;
     }
 

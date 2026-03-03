@@ -418,119 +418,12 @@ function setupPlaceOrder(items, user) {
             await placeCODOrder(orderData, appliedCoupon ? appliedCoupon.code : null);
         } else {
             showToast('Initializing Online Payment...');
-            await initRazorpay(orderData, appliedCoupon ? appliedCoupon.code : null);
+            await initCashfree(orderData, appliedCoupon ? appliedCoupon.code : null);
         }
     });
 }
 
-async function initRazorpay(order, couponCode = null) {
-    const btn = document.getElementById('place-order-btn');
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING RAZORPAY...';
 
-    try {
-        // 1. Get Razorpay Config (Key)
-        const configRes = await fetch(`${API_BASE}/api/orders/config`);
-        const { razorpayKeyId } = await configRes.json();
-
-        // 2. Create Order on Backend
-        const response = await fetch(`${API_BASE}/api/orders/razorpay`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-            },
-            body: JSON.stringify({
-                amount: Math.round(order.totalAmount * 100), // Convert to paisa
-                currency: 'INR'
-            })
-        });
-
-        const rzpData = await response.json();
-        if (!response.ok) throw new Error(rzpData.message || 'Razorpay order creation failed');
-
-        // 3. Open Razorpay Checkout
-        const options = {
-            key: razorpayKeyId,
-            amount: rzpData.amount,
-            currency: rzpData.currency || 'INR',
-            name: "EFV™ Marketplace",
-            description: "Book Purchase",
-            image: "img/AISA.svg",
-            order_id: rzpData.id,
-            handler: async function (response) {
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> VERIFYING PAYMENT...';
-                // 4. Verify Payment
-                await verifyRazorpayPayment(response, order, couponCode);
-            },
-            prefill: {
-                name: order.shippingAddress.name,
-                email: order.shippingAddress.email,
-                contact: order.shippingAddress.phone
-            },
-            notes: {
-                order_id: order.orderId
-            },
-            theme: {
-                color: "#FFD369"
-            },
-            modal: {
-                ondismiss: function () {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                }
-            }
-        };
-
-        const rzp = new Razorpay(options);
-        rzp.open();
-
-    } catch (e) {
-        alert('Payment Error: ' + e.message);
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-    }
-}
-
-async function verifyRazorpayPayment(rzpResponse, localOrder, couponCode) {
-    try {
-        const res = await fetch(`${API_BASE}/api/orders/verify`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-            },
-            body: JSON.stringify({
-                razorpay_order_id: rzpResponse.razorpay_order_id,
-                razorpay_payment_id: rzpResponse.razorpay_payment_id,
-                razorpay_signature: rzpResponse.razorpay_signature,
-                checkoutData: {
-                    items: localOrder.products,
-                    address: localOrder.shippingAddress
-                },
-                couponCode: couponCode
-            })
-        });
-
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.message || 'Verification Failed');
-
-        if (!localStorage.getItem('directCheckout')) {
-            localStorage.removeItem('efv_cart');
-        }
-        localStorage.removeItem('directCheckout');
-
-        showToast('✅ Payment Successful!');
-        setTimeout(() => {
-            window.location.href = 'profile.html?tab=orders';
-        }, 1500);
-
-    } catch (e) {
-        alert('Verification Error: ' + e.message);
-        location.reload();
-    }
-}
 
 async function placeCODOrder(orderData, couponCode) {
     const btn = document.getElementById('place-order-btn');
@@ -581,6 +474,10 @@ async function initCashfree(order, couponCode = null) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING CASHFREE...';
 
     try {
+        // Fetch config to get mode
+        const configRes = await fetch(`${API_BASE}/api/orders/config`);
+        const { cashfreeMode } = await configRes.json();
+
         const response = await fetch(`${API_BASE}/api/orders/cashfree`, {
             method: 'POST',
             headers: {
@@ -608,7 +505,7 @@ async function initCashfree(order, couponCode = null) {
         if (!response.ok) throw new Error(cfData.message || 'Cashfree init failed');
 
         const cashfree = Cashfree({
-            mode: "sandbox" // Change to "production" in live
+            mode: cashfreeMode || "sandbox"
         });
 
         let checkoutOptions = {
