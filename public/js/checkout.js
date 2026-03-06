@@ -2,6 +2,7 @@ const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG
 
 let appliedCoupon = null;
 let checkoutSubtotal = 0;
+let isDigitalOrder = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     const user = JSON.parse(localStorage.getItem('efv_user'));
@@ -34,6 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
         checkoutItems = cart;
     }
 
+    // Detect Digital Order
+    isDigitalOrder = checkoutItems.some(item => {
+        const type = (item.type || '').toUpperCase();
+        const id = (item.productId || item.id || '').toLowerCase();
+        return type === 'EBOOK' || type === 'AUDIOBOOK' || type.includes('DIGITAL') || id.includes('ebook') || id.includes('audio');
+    });
+
     if (checkoutItems.length === 0) {
         alert('No items to checkout.');
         window.location.href = 'marketplace.html';
@@ -60,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!urlCoupon) localStorage.removeItem('efv_applied_coupon');
     }
 
-    setupPaymentModeHandlers();
+    setupPaymentModeHandlers(checkoutItems);
 });
 
 // --- NEW SHIPPING & COD LOGIC ---
@@ -104,16 +112,29 @@ function getZoneFromPincode(pincode) {
 
 function calculateShipping(items = []) {
     // Only charge shipping if there's at least one physical item
-    const hasPhysical = items.some(item =>
-        (item.type === 'HARDCOVER' || item.type === 'PAPERBACK' || item.category === 'Physical')
-    );
+    const hasPhysical = items.some(item => {
+        const type = (item.type || '').toUpperCase();
+        const category = (item.category || '').toLowerCase();
+        const id = (item.id || '').toLowerCase();
+
+        // Check 1: Explicit Type/Category
+        if (type === 'HARDCOVER' || type === 'PAPERBACK' || type === 'PHYSICAL' || category === 'physical') return true;
+
+        // Check 2: Fallback for older cart items via ID (if it doesn't contain digital indicators)
+        const isDigitalId = id.includes('audio') || id.includes('ebook') || id.includes('digital');
+        if (!isDigitalId && (id.includes('hard') || id.includes('paper') || id.includes('vol'))) return true;
+
+        return false;
+    });
 
     if (!hasPhysical) return 0;
 
     const pin = document.getElementById('ship-pincode').value;
     const zone = getZoneFromPincode(pin);
     if (!zone) return 0;
-    return EKART_RATES[zone] || 0;
+
+    const rate = EKART_RATES[zone] || EKART_RATES['D']; // Default to 'D' if zone logic fails
+    return rate;
 }
 
 function calculateCOD(subtotal) {
@@ -122,9 +143,39 @@ function calculateCOD(subtotal) {
     return COD_CHARGES.BASE + (subtotal * COD_CHARGES.PERCENTAGE);
 }
 
-function setupPaymentModeHandlers() {
+function setupPaymentModeHandlers(items = []) {
     const radios = document.querySelectorAll('input[name="payment-mode"]');
     const placeBtn = document.getElementById('place-order-btn');
+    const optionCod = document.getElementById('option-cod');
+    const onlineOpt = document.getElementById('option-online');
+
+    // 1. Check for Digital Products (EBOOK / AUDIOBOOK)
+    const hasDigital = isDigitalOrder || items.some(item => {
+        const type = (item.type || '').toUpperCase();
+        const id = (item.productId || item.id || '').toLowerCase();
+        return type === 'EBOOK' || type === 'AUDIOBOOK' || type.includes('DIGITAL') || id.includes('ebook') || id.includes('audio');
+    });
+
+    if (hasDigital) {
+        if (optionCod) {
+            // HIDE COD OPTION as requested
+            optionCod.style.display = 'none';
+
+            // Ensure Online is selected
+            const onlineRadio = document.querySelector('input[name="payment-mode"][value="Online"]');
+            if (onlineRadio) {
+                onlineRadio.checked = true;
+                if (onlineOpt) onlineOpt.classList.add('active');
+            }
+        }
+    } else {
+        // Show COD if no digital product
+        if (optionCod) {
+            optionCod.style.display = 'flex';
+            const codRadio = optionCod.querySelector('input');
+            if (codRadio) codRadio.disabled = false;
+        }
+    }
 
     radios.forEach(radio => {
         radio.addEventListener('change', () => {
@@ -135,10 +186,10 @@ function setupPaymentModeHandlers() {
             // Toggle COD row visibility
             const codRow = document.getElementById('cod-charge-row');
             if (radio.value === 'COD') {
-                codRow.style.display = 'flex';
+                if (codRow) codRow.style.display = 'flex';
                 placeBtn.innerHTML = 'PLACE ORDER <i class="fas fa-arrow-right"></i>';
             } else {
-                codRow.style.display = 'none';
+                if (codRow) codRow.style.display = 'none';
                 placeBtn.innerHTML = 'PAY NOW <i class="fas fa-arrow-right"></i>';
             }
 
@@ -396,6 +447,16 @@ function setupPlaceOrder(items, user) {
         }
 
         const isCOD = document.querySelector('input[name="payment-mode"]:checked').value === 'COD';
+
+        if (isCOD && isDigitalOrder) {
+            alert('Digital items (E-book/Audiobook) cannot be purchased via COD. Please select Online Payment.');
+            // Force reset UI
+            const optionCod = document.getElementById('option-cod');
+            if (optionCod) optionCod.style.display = 'none';
+            document.querySelector('input[name="payment-mode"][value="Online"]').checked = true;
+            return;
+        }
+
         const finalAmount = Math.max(0, subtotal - discount + shipping + cod);
         const orderId = 'EFV-' + Date.now() + Math.floor(Math.random() * 1000);
 

@@ -711,7 +711,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 price,
                                 quantity: qty,
                                 language: card.getAttribute('data-language') || '',
-                                subtitle: card.getAttribute('data-subtitle') || ''
+                                subtitle: card.getAttribute('data-subtitle') || '',
+                                type: (card.getAttribute('data-type') || 'PHYSICAL').toUpperCase()
                             };
 
                             modal.classList.remove('active');
@@ -857,150 +858,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const quantityToAdd = parseInt(customQty) || 1;
 
-        if (isDigitalProduct) {
-            // TESTING MODE: Direct Update to Library (Bypassing Cart/Payment for Testing)
-            const libKey = getUserKey('efv_digital_library');
-            let library = JSON.parse(localStorage.getItem(libKey)) || [];
+        // Standard Cart Flow for all products (Physical & Digital)
+        const type = (card.getAttribute('data-type') || 'PHYSICAL').toUpperCase();
+        const existing = cart.find(item => item.id === id);
 
-            // IMPORTANT: Only check by ID — audiobook and ebook of same volume share the same name/title.
-            // Name-based check would falsely report ebook as owned when only audiobook is owned.
-            const alreadyOwned = library.some(item =>
-                item.id === id || item.productId === id
-            );
-
-            if (!alreadyOwned) {
-                const user = JSON.parse(localStorage.getItem('efv_user'));
-                const token = localStorage.getItem('authToken');
-
-                // ⚠️ KEY FIX: Call backend FIRST and AWAIT it, then redirect.
-                // Previously, the confirm+redirect happened BEFORE the backend call finished,
-                // causing a race condition where the library page loaded before the item was saved.
-
-                if (user && token) {
-                    // Show loading state
-                    const purchasingMsg = `Purchasing "${name}"... Please wait.`;
-                    console.log('🛒 Starting backend purchase...');
-
-                    try {
-                        const response = await fetch(`${API_BASE}/api/orders/test-digital`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({
-                                productId: id,
-                                price: price,
-                                name: name,
-                                type: id.includes('audio') ? 'AUDIOBOOK' : 'EBOOK'
-                            })
-                        });
-                        const data = await response.json();
-
-                        if (data.success) {
-                            console.log('✅ Digital Test Purchase Success (backend saved):', data);
-
-                            // Now add to localStorage (backend is already saved)
-                            library.push({
-                                id: id,
-                                productId: id,
-                                name: name,
-                                title: name,
-                                language: language,
-                                subtitle: subtitle,
-                                type: id.includes('audio') ? 'Audiobook' : 'E-Book',
-                                thumbnail: card.querySelector('img') ? card.querySelector('img').src : 'img/vol1-cover.png',
-                                date: new Date().toLocaleDateString()
-                            });
-                            localStorage.setItem(libKey, JSON.stringify(library));
-
-                            // Add to purchase history
-                            const historyKey = getUserKey('efv_purchase_history');
-                            let history = JSON.parse(localStorage.getItem(historyKey)) || [];
-                            history.push({ name, price, quantity: 1, date: new Date().toLocaleDateString() });
-                            localStorage.setItem(historyKey, JSON.stringify(history));
-
-                            // NOW redirect (backend is saved, so library page will have the item)
-                            if (confirm(`✅ "${name}" purchased successfully!\n\nGo to My Library now?`)) {
-                                document.location.href = 'profile.html?tab=library';
-                            }
-                        } else {
-                            console.warn('⚠️ Backend purchase failed:', data.message);
-                            alert(`Purchase failed: ${data.message}\n\nPlease try again or contact support.`);
-                        }
-                    } catch (err) {
-                        console.error('Backend purchase error:', err);
-                        // Fallback: save locally and show warning
-                        library.push({
-                            id: id, productId: id, name, title: name,
-                            type: id.includes('audio') ? 'Audiobook' : 'E-Book',
-                            thumbnail: card.querySelector('img') ? card.querySelector('img').src : 'img/vol1-cover.png',
-                            date: new Date().toLocaleDateString()
-                        });
-                        localStorage.setItem(libKey, JSON.stringify(library));
-                        if (confirm(`"${name}" added to Library (offline mode).\nNote: May not sync across devices.\n\nGo to My Library?`)) {
-                            document.location.href = 'profile.html?tab=library';
-                        }
-                    }
-                } else {
-                    // Not logged in — save locally and prompt login
-                    library.push({
-                        id: id, productId: id, name, title: name,
-                        type: id.includes('audio') ? 'Audiobook' : 'E-Book',
-                        thumbnail: card.querySelector('img') ? card.querySelector('img').src : 'img/vol1-cover.png',
-                        date: new Date().toLocaleDateString()
-                    });
-                    localStorage.setItem(libKey, JSON.stringify(library));
-                    if (confirm(`"${name}" added to Library!\n\nGo to My Library now?`)) {
-                        document.location.href = 'profile.html?tab=library';
-                    }
-                }
-
-            } else {
-                if (confirm(`You already own "${name}".\n\nGo to Library?`)) {
-                    document.location.href = 'profile.html?tab=library';
-                }
-            }
-
-            // 3. Update UI
-            if (typeof updateLibraryDisplay === 'function') updateLibraryDisplay();
-            if (typeof updateMarketplaceButtons === 'function') updateMarketplaceButtons();
-
-            // 3. Do NOT open cart, stay on page or reflect state
-            return;
-        } else {
-            // Physical
-            const existing = cart.find(item => item.id === id);
-            if (existing) {
+        if (existing) {
+            if (!isDigitalProduct) {
                 existing.quantity += quantityToAdd;
             } else {
-                cart.push({ id, name, price, quantity: quantityToAdd, type: 'PHYSICAL' });
+                showToast(`"${name}" is already in your cart!`, "info");
+                // toggleCart(true); // Line removed
+                return;
             }
-            localStorage.setItem(getUserKey('efv_cart'), JSON.stringify(cart));
-            updateCartUI();
-
-            // Show Standard Cart for physical (ensure profile is hidden)
-            toggleUserProfile(false);
-            toggleCart(true);
+        } else {
+            // Check if already in library (for digital)
+            if (isDigitalProduct) {
+                const libKey = getUserKey('efv_digital_library');
+                const library = JSON.parse(localStorage.getItem(libKey)) || [];
+                if (library.some(item => item.id === id || item.productId === id)) {
+                    if (confirm(`You already own "${name}".\n\nGo to Library?`)) {
+                        document.location.href = 'profile.html?tab=library';
+                    }
+                    return;
+                }
+            }
+            cart.push({ id, name, price, quantity: isDigitalProduct ? 1 : quantityToAdd, type: type });
         }
+
+        localStorage.setItem(getUserKey('efv_cart'), JSON.stringify(cart));
+        updateCartUI();
+
+        // Feed feedback
+        showToast(`"${name}" added to your cart!`, "success");
+
+        // Keep cart closed as requested, only show toast
+        toggleUserProfile(false);
+        // toggleCart(true); // Line removed to prevent auto-opening
     }
 
-    // Outer "Add to Cart" listener (Global Delegation)
+    // Outer Global Delegation Listener
     document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.add-to-cart');
-        if (!btn || btn.classList.contains('pm-btn')) return; // Ignore modal buttons here
-
-        const card = btn.closest('.product-card');
-        if (card) {
+        // 1. VIEW INFO
+        const viewBtn = e.target.closest('.view-info');
+        if (viewBtn) {
+            const card = viewBtn.closest('.product-card');
             const id = card.getAttribute('data-id');
-            const isDigital = id.includes('audio') || id.includes('ebook');
+            if (typeof window.openProductModal === 'function') {
+                window.openProductModal(id, card);
+            }
+            return;
+        }
 
-            if (isDigital) {
-                // Instant Access for Digital - Direct Checkout
-                processAddToCart(id, card, false, 1, true);
-            } else {
-                // Standard Flow for Physical
-                openProductModal(id, card);
+        // 2. BUY NOW (From marketplace card)
+        const buyBtn = e.target.closest('.buy-now');
+        if (buyBtn && !buyBtn.classList.contains('pm-btn')) {
+            const card = buyBtn.closest('.product-card');
+            const id = card.getAttribute('data-id');
+
+            if (typeof showTermsAndConditions === 'function') {
+                showTermsAndConditions(() => {
+                    const name = card.getAttribute('data-name');
+                    const price = parseFloat(card.getAttribute('data-price'));
+                    const item = {
+                        id,
+                        name,
+                        price,
+                        quantity: 1,
+                        language: card.getAttribute('data-language') || '',
+                        subtitle: card.getAttribute('data-subtitle') || '',
+                        type: (card.getAttribute('data-type') || 'PHYSICAL').toUpperCase()
+                    };
+
+                    if (typeof checkoutOrder === 'function') {
+                        checkoutOrder([item]);
+                    } else {
+                        console.error("checkoutOrder function not found");
+                        window.location.href = `checkout.html?directCheckout=${encodeURIComponent(JSON.stringify(item))}`;
+                    }
+                });
+            }
+            return;
+        }
+
+        // 3. LEGACY ADD TO CART (if any left)
+        const addBtn = e.target.closest('.add-to-cart');
+        if (addBtn && !addBtn.classList.contains('pm-btn')) {
+            const card = addBtn.closest('.product-card');
+            if (card) {
+                const id = card.getAttribute('data-id');
+                processAddToCart(id, card, false, 1);
             }
         }
     });

@@ -303,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.setAttribute('data-id', product._id || product.id);
         card.setAttribute('data-name', product.title);
         card.setAttribute('data-price', product.price);
+        card.setAttribute('data-type', product.type || '');
         card.setAttribute('data-language', product.language || '');
         card.setAttribute('data-subtitle', product.subtitle || '');
 
@@ -369,8 +370,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${product.description || 'Discover the secrets of Energy and Alignment.'}
             </p>
             <span class="price" style="font-size: 1.15rem; display: block; text-align: center; margin-bottom: 10px; font-weight: 800; color: #fff;">₹${product.price}</span>
-            <div style="display: flex; gap: 5px; flex-direction: column;">
-                <button class="btn btn-gold add-to-cart" ${isComingSoon ? 'disabled style="background: rgba(255, 211, 105, 0.1); color: rgba(255, 211, 105, 0.5); border: 1px solid rgba(255, 211, 105, 0.2); opacity: 0.7; cursor: not-allowed;"' : ''} style="width: auto; padding: 6px 20px; margin: 0 auto; font-size: 0.7rem; min-height: unset;">${buttonText}</button>
+            <div style="display: flex; gap: 8px; justify-content: center; margin-top: auto;">
+                <button class="btn btn-outline view-info" ${isComingSoon ? 'disabled style="opacity: 0.5; padding: 6px 12px; font-size: 0.65rem;"' : 'style="padding: 6px 12px; font-size: 0.65rem; min-width: 95px; border-width: 1px;"'}>
+                    <i class="fas fa-info-circle" style="margin-right: 5px;"></i> INFO
+                </button>
+                <button class="btn btn-gold buy-now" ${isComingSoon ? 'disabled style="background: rgba(255, 211, 105, 0.1); color: rgba(255, 211, 105, 0.5); opacity: 0.7; padding: 6px 12px; font-size: 0.65rem;"' : 'style="padding: 6px 12px; font-size: 0.65rem; min-width: 95px;"'}>
+                    <i class="fas ${isComingSoon ? 'fa-clock' : 'fa-bolt'}" style="margin-right: 5px;"></i> ${isComingSoon ? 'SOON' : 'BUY'}
+                </button>
             </div>
         `;
 

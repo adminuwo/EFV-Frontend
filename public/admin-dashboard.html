@@ -98,6 +98,9 @@
                 <button class="nav-item admin-nav hidden" data-tab="admin-shipments">
                     <i class="fas fa-shipping-fast"></i> <span>Shipments</span>
                 </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-returns">
+                    <i class="fas fa-undo"></i> <span>Return Requests</span>
+                </button>
                 <button class="nav-item admin-nav hidden" data-tab="admin-coupons">
                     <i class="fas fa-ticket-alt"></i> <span>Coupons</span>
                 </button>
@@ -1265,6 +1268,54 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- ADMIN RETURNS MANAGEMENT -->
+            <section id="admin-returns" class="content-section">
+                <header class="content-header">
+                    <div>
+                        <h1>Return <span class="gold-text">Requests</span></h1>
+                        <p>Manage product returns and reverse pickups</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="admin-return-status-filter" class="glass-input"
+                            style="width: 150px; height: 40px; font-size: 0.8rem; background: rgba(0,0,0,0.3);"
+                            onchange="loadAdminReturns()">
+                            <option value="all">All Requests</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Picked Up">Picked Up</option>
+                            <option value="Returned">Returned</option>
+                        </select>
+                        <button class="btn btn-outline small" onclick="loadAdminReturns()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </header>
+
+                <div class="glass-panel" style="padding: 20px; overflow-x: auto;">
+                    <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr
+                                style="text-align: left; border-bottom: 2px solid rgba(255,255,255,0.05); opacity: 0.6; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
+                                <th style="padding: 15px;">Order ID</th>
+                                <th style="padding: 15px;">Customer</th>
+                                <th style="padding: 15px;">Reason</th>
+                                <th style="padding: 15px;">Proof</th>
+                                <th style="padding: 15px;">Status</th>
+                                <th style="padding: 15px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-returns-list">
+                            <!-- Injected by JS -->
+                            <tr>
+                                <td colspan="6" style="padding: 50px; text-align: center; opacity: 0.5;">Loading return
+                                    requests...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </section>
         </main>

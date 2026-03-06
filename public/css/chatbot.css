@@ -460,7 +460,6 @@
         width: 90% !important;
         height: 80vh !important;
         max-height: 80vh !important;
-        /* Centered on mobile too as requested */
         top: 50% !important;
         left: 50% !important;
         right: auto !important;
@@ -473,13 +472,46 @@
         transform: translate(-50%, -50%) scale(1) !important;
     }
 
+    /* Smaller text in message bubbles */
+    .efv-message-content {
+        font-size: 13px !important;
+        padding: 12px 16px !important;
+        line-height: 1.5 !important;
+    }
+
+    /* Smaller input text */
+    #efv-chat-input {
+        font-size: 13px !important;
+        padding: 12px 14px !important;
+    }
+
+    /* Smaller header */
+    .efv-chat-title h3 {
+        font-size: 15px !important;
+    }
+
+    .efv-chat-title p {
+        font-size: 10px !important;
+    }
+
+    .efv-chat-header {
+        padding: 12px 16px !important;
+    }
+
+    .efv-chat-messages {
+        padding: 12px !important;
+        gap: 10px !important;
+    }
+
+    .efv-chat-input-container {
+        padding: 10px 12px !important;
+    }
+
     .efv-chat-button {
         bottom: 15px;
         right: 15px;
         width: 45px;
-        /* Reduced from 55px/60px */
         height: 45px;
-        /* Reduced from 55px/60px */
     }
 
     .efv-chat-button svg {

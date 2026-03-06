@@ -986,10 +986,17 @@ async function renderOrdersTab(filter = 'all') {
     container.innerHTML = `<div class="skeleton" style="height: 150px; border-radius: 12px; margin-bottom: 20px;"></div>`;
 
     try {
-        const res = await fetch(`${API_BASE}/api/orders/my-orders`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        let orders = res.ok ? await res.json() : [];
+        const [ordersRes, returnsRes] = await Promise.all([
+            fetch(`${API_BASE}/api/orders/my-orders`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch(`${API_BASE}/api/returns/my-requests`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+        ]);
+
+        let orders = ordersRes.ok ? await ordersRes.json() : [];
+        const returns = returnsRes.ok ? await returnsRes.json() : [];
 
         // Apply filters
         if (filter !== 'all') {
@@ -1007,9 +1014,46 @@ async function renderOrdersTab(filter = 'all') {
             const date = new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
             const statusClass = `status-${order.status.toLowerCase().replace(/\s/g, '-')}`;
 
+            // Check for Return Request status
+            const returnReq = returns.find(r => r.orderId === order.orderId);
+            let returnStatusHtml = '';
+            if (returnReq) {
+                const badgeClass = `status-${returnReq.status.toLowerCase()}`;
+                returnStatusHtml = `
+                    <div style="margin-top: 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px;">
+                        <span style="opacity: 0.6;">Return Status:</span>
+                        <span class="status-badge ${badgeClass}" style="padding: 2px 10px; border-radius: 4px; font-weight: 700;">${returnReq.status}</span>
+                    </div>
+                `;
+            }
+
+            // Calculate Return Window (7 Days)
+            let returnButtonHtml = '';
+            if (order.status === 'Delivered') {
+                const deliveryEntry = order.timeline.find(t => t.status === 'Delivered');
+                const deliveryDate = deliveryEntry ? new Date(deliveryEntry.timestamp) : new Date(order.updatedAt);
+                const diffTime = Math.abs(new Date() - deliveryDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays <= 7) {
+                    returnButtonHtml = `
+                        <button class="btn btn-outline small return-btn" style="border-radius: 8px; border-color: #ff9800; color: #ff9800;" 
+                            onclick="openReturnModal('${order.orderId}', '${encodeURIComponent(JSON.stringify(order.items))}')">
+                            <i class="fas fa-undo"></i> Return / Replace
+                        </button>
+                    `;
+                } else {
+                    returnButtonHtml = `
+                        <span style="font-size: 0.7rem; opacity: 0.5; color: #ff5252; font-weight: 600;">
+                            <i class="fas fa-times-circle"></i> Return window closed
+                        </span>
+                    `;
+                }
+            }
+
             // Format items as a professional list
             const itemsHtml = order.items.map(item => `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border_bottom: 1px solid rgba(255,255,255,0.03);">
                     <div style="display:flex; flex-direction:column;">
                         <span style="font-size: 0.9rem; font-weight: 600; color: #fff;">${item.title}</span>
                         <span style="font-size: 0.72rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.5px;">${item.type} • Qty: ${item.quantity}</span>
@@ -1017,6 +1061,34 @@ async function renderOrdersTab(filter = 'all') {
                     <span style="font-size: 0.85rem; font-weight: 700; color: var(--gold-text);">₹${item.price * item.quantity}</span>
                 </div>
             `).join('');
+
+            // --- Cancel Button Logic ---
+            // Cancellable statuses (before pickup)
+            const cancellableStatuses = ['Pending', 'Processing', 'Packed', 'Created', 'AWB Generated', 'Label Generated', 'Manifest Generated'];
+            const blockedFromCancel = ['Picked Up', 'Shipped', 'In Transit', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned'];
+
+            let cancelHtml = '';
+            if (!blockedFromCancel.includes(order.status)) {
+                cancelHtml = `
+                    <button class="btn btn-outline small" 
+                        style="border-radius: 8px; border-color: rgba(255,80,80,0.4); color: #ff6b6b;"
+                        onclick="confirmCancelOrder('${order.orderId}')">
+                        <i class="fas fa-times-circle"></i> Cancel Order
+                    </button>
+                `;
+            } else if (order.status === 'Cancelled') {
+                cancelHtml = `
+                    <span style="font-size: 0.75rem; color: #ff6b6b; opacity: 0.7; font-weight: 600;">
+                        <i class="fas fa-ban"></i> Cancelled
+                    </span>
+                `;
+            } else if (['Picked Up', 'Shipped', 'In Transit', 'Out for Delivery'].includes(order.status)) {
+                cancelHtml = `
+                    <span style="font-size: 0.7rem; color: rgba(255,150,80,0.7); font-weight: 600;" title="Order already picked up">
+                        <i class="fas fa-lock"></i> Cannot Cancel
+                    </span>
+                `;
+            }
 
             return `
                 <div class="glass-panel fade-in" style="padding: 24px; border-radius: 18px; margin-bottom: 25px; border: 1px solid rgba(255,211,105,0.08); position: relative; overflow: hidden; background: linear-gradient(145deg, rgba(30,30,30,0.4) 0%, rgba(20,20,20,0.6) 100%);">
@@ -1030,6 +1102,7 @@ async function renderOrdersTab(filter = 'all') {
                             <span style="font-size: 0.7rem; opacity: 0.4; letter-spacing: 1px; text-transform: uppercase; display:block; margin-bottom: 4px;">Order Tracking ID</span>
                             <h3 style="margin: 0; font-family: 'Cinzel'; color: var(--gold-text); font-size: 1.2rem; filter: drop-shadow(0 0 10px rgba(212,175,55,0.1));">#${order.orderId}</h3>
                             <p style="margin: 8px 0 0; font-size: 0.8rem; opacity: 0.5;"><i class="far fa-calendar-alt"></i> ${date}</p>
+                            ${returnStatusHtml}
                         </div>
                         <div style="text-align: right; padding-top: 15px;">
                             <span style="font-size: 0.7rem; opacity: 0.4; display:block; margin-bottom: 4px;">TOTAL AMOUNT</span>
@@ -1045,8 +1118,8 @@ async function renderOrdersTab(filter = 'all') {
                     </div>
 
                     <div style="display: flex; gap: 12px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
-                        
                         ${(order.status !== 'Cancelled' && order.status !== 'Failed') ? `
+                            ${returnButtonHtml}
                             <a href="tracking.html?id=${order.orderId}" target="_blank" class="btn btn-outline small" style="border-radius: 8px; border-color: rgba(255,211,105,0.3); color: var(--gold-text); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
                                 <i class="fas fa-satellite-dish"></i> Track Order
                             </a>
@@ -1057,15 +1130,198 @@ async function renderOrdersTab(filter = 'all') {
                                 <i class="fas fa-file-invoice" style="margin-right:6px;"></i> Invoice
                             </button>
                         ` : ''}
+                        ${cancelHtml}
                     </div>
                 </div>
             `;
         }).join('');
     } catch (e) {
         console.error('Error rendering orders:', e);
-        container.innerHTML = '<p>Failed to load orders.</p>';
+        if (container) container.innerHTML = '<p>Failed to load orders.</p>';
     }
 }
+
+// --- CANCEL ORDER SYSTEM ---
+
+window.confirmCancelOrder = function (orderId) {
+    // Create a sleek custom confirmation modal
+    const existing = document.getElementById('cancel-confirm-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'cancel-confirm-modal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 99999;
+    `;
+    modal.innerHTML = `
+        <div style="
+            background: linear-gradient(145deg, rgba(25,25,30,0.98), rgba(15,15,20,0.99));
+            border: 1px solid rgba(255,80,80,0.2);
+            border-radius: 20px; padding: 35px; max-width: 420px; width: 92%;
+            text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+        ">
+            <div style="width: 60px; height: 60px; background: rgba(255,80,80,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <i class="fas fa-exclamation-triangle" style="color: #ff6b6b; font-size: 1.5rem;"></i>
+            </div>
+            <h2 style="margin: 0 0 12px; font-family: 'Cinzel', serif; letter-spacing: 1px; color: #fff; font-size: 1.2rem;">Cancel this order?</h2>
+            <p style="opacity: 0.6; font-size: 0.85rem; margin-bottom: 25px; line-height: 1.6;">Are you sure you want to cancel order <strong style="color: var(--gold-text);">#${orderId}</strong>? This action cannot be undone.</p>
+            
+            <div style="background: rgba(255,80,80,0.05); border: 1px solid rgba(255,80,80,0.1); border-radius: 10px; padding: 12px; margin-bottom: 20px;">
+                <p style="font-size: 0.75rem; opacity: 0.7; margin: 0;">
+                    <i class="fas fa-info-circle" style="color: #ff9800;"></i>
+                    If you paid online, your refund will be processed within <strong>5–7 business days</strong>.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button id="btn-confirm-cancel" onclick="executeCancelOrder('${orderId}')" 
+                    style="flex: 1.5; padding: 13px; background: linear-gradient(135deg, #ff4d4d, #cc0000); border: none; border-radius: 10px; color: #fff; font-weight: 700; cursor: pointer; font-size: 0.9rem; letter-spacing: 0.5px;">
+                    <i class="fas fa-times-circle"></i> Yes, Cancel Order
+                </button>
+                <button onclick="document.getElementById('cancel-confirm-modal').remove()" 
+                    style="flex: 1; padding: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9rem;">
+                    No
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+};
+
+window.executeCancelOrder = async function (orderId) {
+    const confirmBtn = document.getElementById('btn-confirm-cancel');
+    if (confirmBtn) {
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+        confirmBtn.disabled = true;
+    }
+
+    const token = localStorage.getItem('authToken');
+    try {
+        const res = await fetch(`${API_BASE}/api/orders/cancel/${orderId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ reason: 'User requested cancellation' })
+        });
+
+        const data = await res.json();
+
+        // Close modal
+        const modal = document.getElementById('cancel-confirm-modal');
+        if (modal) modal.remove();
+
+        if (res.ok) {
+            showToast('✅ Order cancelled successfully. Refund (if applicable) will be processed in 5–7 business days.', 'success');
+            setTimeout(() => renderOrdersTab(), 1500);
+        } else {
+            showToast(data.message || 'Failed to cancel order', 'error');
+        }
+    } catch (error) {
+        console.error('Cancel Order Error:', error);
+        showToast('Connection error. Please try again.', 'error');
+        if (confirmBtn) {
+            confirmBtn.innerHTML = '<i class="fas fa-times-circle"></i> Yes, Cancel Order';
+            confirmBtn.disabled = false;
+        }
+    }
+};
+
+// --- RETURN SYSTEM HANDLERS ---
+
+window.openReturnModal = function (orderId, itemsEncoded) {
+    const items = JSON.parse(decodeURIComponent(itemsEncoded));
+    const modal = document.getElementById('return-modal');
+    const orderIdInput = document.getElementById('return-order-id');
+    const displayIdInput = document.getElementById('display-order-id');
+    const itemsList = document.getElementById('return-items-list');
+
+    if (!modal) return;
+
+    orderIdInput.value = orderId;
+    displayIdInput.value = `#${orderId}`;
+
+    itemsList.innerHTML = items.map(item => `
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <i class="fas fa-box" style="color: var(--gold-text); font-size: 0.8rem;"></i>
+            <span>${item.title}</span>
+            <span style="margin-left: auto; opacity: 0.5;">Qty: ${item.quantity}</span>
+        </div>
+    `).join('');
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeReturnModal = function () {
+    const modal = document.getElementById('return-modal');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    document.getElementById('return-request-form').reset();
+};
+
+// Handle Return Form Submission
+document.addEventListener('DOMContentLoaded', () => {
+    const returnForm = document.getElementById('return-request-form');
+    if (returnForm) {
+        returnForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const token = localStorage.getItem('authToken');
+            const submitBtn = returnForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.disabled = true;
+
+            const orderId = document.getElementById('return-order-id').value;
+            const reason = document.getElementById('return-reason').value;
+            const proofFile = document.getElementById('return-proof').files[0];
+
+            const formData = new FormData();
+            formData.append('orderId', orderId);
+            formData.append('reason', reason);
+            if (proofFile) formData.append('imageProof', proofFile);
+
+            const itemsRes = await fetch(`${API_BASE}/api/orders/my-orders`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const allOrders = await itemsRes.json();
+            const specificOrder = allOrders.find(o => o.orderId === orderId);
+            formData.append('items', JSON.stringify(specificOrder.items));
+
+            try {
+                const res = await fetch(`${API_BASE}/api/returns/request`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showToast(data.message, "success");
+                    closeReturnModal();
+                    renderOrdersTab();
+                } else {
+                    showToast(data.message || "Failed to submit request", "error");
+                }
+            } catch (error) {
+                console.error('Return Submit Error:', error);
+                showToast("Connection error", "error");
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+});
 
 // --- TAB RENDERING: LIBRARY ---
 // --- TAB RENDERING: LIBRARY ---
@@ -3696,11 +3952,19 @@ function renderActiveShipments() {
             if (active.length === 0) {
                 container.innerHTML = '<p class="fade-text">No active shipments to track.</p>';
             } else {
-                container.innerHTML = active.slice(0, 1).map(o => `
+                container.innerHTML = active.slice(0, 1).map(o => {
+                    const statusClass = `status-${o.status.toLowerCase().replace(/\s/g, '-')}`;
+                    let returnStatusHtml = '';
+                    if (o.returnStatus && o.returnStatus !== 'None') {
+                        const returnClass = `status-${o.returnStatus.toLowerCase().replace(/\s/g, '-')}`;
+                        returnStatusHtml = `<span class="status-badge ${returnClass}" style="margin-left: 8px;">Return: ${o.returnStatus}</span>`;
+                    }
+                    return `
                     <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 15px;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
                             <span style="font-weight:700; color:var(--gold-text);">${o.orderId}</span>
-                            <span class="status-badge status-${o.status.toLowerCase()}">${o.status}</span>
+                            <span class="status-badge ${statusClass}">${o.status}</span>
+                            ${returnStatusHtml}
                         </div>
                         <div class="shipment-mini-track" style="display:flex; gap:5px; margin-bottom:10px;">
                             <div style="flex:1; height:4px; border-radius:10px; background:var(--gold-text);"></div>
@@ -3709,7 +3973,8 @@ function renderActiveShipments() {
                         </div>
                         <p style="margin:0; font-size:0.8rem; opacity:0.6;">Current: ${o.status}</p>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
             }
         }).catch(e => console.error(e));
 }

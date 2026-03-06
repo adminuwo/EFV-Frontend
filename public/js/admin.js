@@ -481,6 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'admin-customers') loadAdminCustomers();
             if (targetId === 'admin-support') loadAdminSupport();
             if (targetId === 'admin-contacts') loadAdminContacts();
+            if (targetId === 'admin-returns') loadAdminReturns();
 
             // ROLE BASED SETTINGS REDIRECTION
             if (targetId === 'settings') {
@@ -2267,6 +2268,9 @@ window.filterAdminOrders = function () {
                 (o.shipmentId ? `<span style="color:#2ecc71; font-size:0.75rem;"><i class="fas fa-check"></i> Shipped</span>` : '')
             }
                     <button class="btn-icon" style="color: #ff4d4d;" onclick="window.deleteOrder('${o._id}')"><i class="fas fa-trash"></i></button>
+                    ${(!['Cancelled', 'Delivered', 'Returned'].includes(o.status)) ?
+                `<button class="btn btn-outline tiny" style="color:#ff6b6b; border-color:rgba(255,80,80,0.3); font-size: 0.65rem; padding: 4px 8px;" onclick="adminCancelOrder('${o.orderId}')"><i class="fas fa-ban"></i> Cancel</button>`
+                : ''}
                 </div>
             </td>
         `;
@@ -3499,4 +3503,150 @@ window.initModalParticles = function (canvasId = 'modal-particles-canvas', modal
     }
     animate();
 };
+
+// --- ADMIN RETURN MANAGEMENT ---
+window.loadAdminReturns = async function () {
+    const list = document.getElementById('admin-returns-list');
+    const filterSelect = document.getElementById('admin-return-status-filter');
+    const filter = filterSelect ? filterSelect.value : 'all';
+    const token = localStorage.getItem('authToken');
+
+    if (!list) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/returns/admin/all`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        let requests = await res.json();
+
+        if (filter !== 'all') {
+            requests = requests.filter(r => r.status === filter);
+        }
+
+        if (!Array.isArray(requests) || requests.length === 0) {
+            list.innerHTML = '<tr><td colspan="6" style="padding: 50px; text-align: center; opacity: 0.5;">No return requests found.</td></tr>';
+            return;
+        }
+
+        list.innerHTML = requests.map(req => `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                <td style="padding: 15px; font-weight: 600; color: var(--gold-text);">#${req.orderId}</td>
+                <td style="padding: 15px;">
+                    <div style="font-size: 0.85rem;">UserId: ${req.userId}</div>
+                    <div style="font-size: 0.72rem; opacity: 0.5;">${new Date(req.createdAt).toLocaleDateString()}</div>
+                </td>
+                <td style="padding: 15px; font-size: 0.85rem;">${req.reason}</td>
+                <td style="padding: 15px;">
+                    ${req.imageProof ? `
+                        <a href="${API_BASE}/${req.imageProof}" target="_blank" style="color: var(--gold-text); font-size: 0.8rem;">
+                            <i class="fas fa-image"></i> View Proof
+                        </a>
+                    ` : '<span style="opacity: 0.3;">None</span>'}
+                </td>
+                <td style="padding: 15px;">
+                    <span class="status-badge status-${req.status.toLowerCase().replace(/\s/g, '-')}" style="padding: 3px 12px; border-radius: 4px; font-size: 0.75rem;">
+                        ${req.status}
+                    </span>
+                </td>
+                <td style="padding: 15px;">
+                    <div style="display: flex; gap: 8px;">
+                        ${req.status === 'Pending' ? `
+                            <button class="btn btn-gold small" onclick="updateReturnStatus('${req._id}', 'Approved')" style="padding: 5px 10px;">Approve</button>
+                            <button class="btn btn-outline small" onclick="updateReturnStatus('${req._id}', 'Rejected')" style="padding: 5px 10px; border-color: #ff5252; color: #ff5252;">Reject</button>
+                        ` : `
+                            ${req.status === 'Approved' ? `
+                                <button class="btn btn-gold small" onclick="triggerReversePickup('${req._id}')" style="padding: 5px 10px;">
+                                    <i class="fas fa-truck-pickup"></i> Pickup
+                                </button>
+                            ` : '<span style="opacity: 0.4;">-</span>'}
+                        `}
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Load Returns Error:', error);
+        list.innerHTML = '<tr><td colspan="6" style="padding: 20px; color: #ff5252;">Error loading data</td></tr>';
+    }
+};
+
+window.updateReturnStatus = async function (requestId, status) {
+    const notes = prompt(`Enter optional notes for ${status}:`);
+    if (notes === null) return;
+
+    const token = localStorage.getItem('authToken');
+    try {
+        const res = await fetch(`${API_BASE}/api/returns/admin/update/${requestId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status, adminNotes: notes })
+        });
+
+        if (res.ok) {
+            showToast(`Return request ${status.toLowerCase()}!`, "success");
+            loadAdminReturns();
+        } else {
+            const data = await res.json();
+            showToast(data.message || "Update failed", "error");
+        }
+    } catch (error) {
+        console.error('Update Return Error:', error);
+        showToast("Connection error", "error");
+    }
+};
+
+window.triggerReversePickup = async function (requestId) {
+    if (!confirm("Trigger reverse pickup via NimbusPost?")) return;
+
+    const token = localStorage.getItem('authToken');
+    try {
+        const res = await fetch(`${API_BASE}/api/returns/admin/trigger-pickup/${requestId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            showToast("Pickup scheduled successfully!", "success");
+            loadAdminReturns();
+        } else {
+            showToast(data.message || "Pickup trigger failed", "error");
+        }
+    } catch (error) {
+        console.error('Pickup Trigger Error:', error);
+        showToast("Connection error", "error");
+    }
+};
+
+// --- ADMIN CANCEL ORDER ---
+window.adminCancelOrder = async function (orderId) {
+    if (!confirm(`Cancel order #${orderId}?\n\nThis will cancel the order in the system and attempt to cancel the NimbusPost shipment (if any).`)) return;
+
+    const token = localStorage.getItem('authToken');
+    try {
+        const res = await fetch(`${API_BASE}/api/orders/cancel/${orderId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ reason: 'Admin cancelled' })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            showToast(`Order #${orderId} cancelled successfully`, "success");
+            loadAdminOrdersFull();
+        } else {
+            showToast(data.message || "Cancel failed", "error");
+        }
+    } catch (error) {
+        console.error('Admin Cancel Error:', error);
+        showToast("Connection error", "error");
+    }
+};
+
 // --- CORE UI HELPERS ---
