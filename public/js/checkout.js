@@ -570,7 +570,10 @@ async function initCashfree(order, couponCode = null) {
             throw new Error('Server returned non-JSON response. Check console for details.');
         }
 
-        if (!response.ok) throw new Error(cfData.message || 'Cashfree init failed');
+        if (!response.ok) {
+            const errorMsg = cfData.error ? JSON.stringify(cfData.error) : (cfData.message || 'Cashfree init failed');
+            throw new Error(errorMsg);
+        }
 
         const cashfree = Cashfree({
             mode: cashfreeMode || "sandbox"
