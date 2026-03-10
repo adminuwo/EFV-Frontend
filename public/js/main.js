@@ -369,4 +369,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // but the user sees the golden flash/transition.
         });
     });
+
+    // Dynamically inject Global I18n System
+    const i18nScript = document.createElement('script');
+    i18nScript.src = 'js/i18n.js';
+    i18nScript.async = true;
+    document.body.appendChild(i18nScript);
 });

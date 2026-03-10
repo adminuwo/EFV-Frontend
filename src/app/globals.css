@@ -107,3 +107,30 @@ body.security-locked-blank>*:not(#security-overlay):not(#security-watermark-cont
     display: none !important;
   }
 }
+
+/* Aggressively Hide Google Translate top banner & popups */
+.goog-te-banner-frame.skiptranslate, 
+.goog-te-banner-frame,
+.goog-te-gadget-icon,
+#goog-gt-tt,
+.VIpgJd-Zvi9od-ORHb-OEVmcd,
+.VIpgJd-Zvi9od-aZ2wEe-wOHMyf,
+iframe[src*="translate"], 
+iframe.skiptranslate,
+.goog-te-spinner-pos,
+.goog-te-balloon-frame,
+#google_translate_element,
+.goog-te-gadget {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Force body to stay at top and not pushed down by the Translate banner */
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+html {
+  height: 100%;
+}

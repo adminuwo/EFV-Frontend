@@ -69,7 +69,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setupPaymentModeHandlers(checkoutItems);
+    toggleAddressFields(checkoutItems);
 });
+
+function toggleAddressFields(items) {
+    const hasPhysical = items.some(item => {
+        const type = (item.type || '').toUpperCase();
+        const cat = (item.category || '').toLowerCase();
+        const id = (item.productId || item.id || '').toLowerCase();
+        if (type === 'HARDCOVER' || type === 'PAPERBACK' || type === 'PHYSICAL' || cat === 'physical') return true;
+        const digs = ['ebook', 'audio', 'digital'];
+        if (!digs.some(d => id.includes(d)) && (id.includes('vol') || id.includes('book'))) return true;
+        return false;
+    });
+
+    const isDigitalOnly = !hasPhysical;
+    const addressFields = ['ship-address', 'ship-area', 'ship-city', 'ship-state', 'ship-pincode', 'ship-country'];
+
+    addressFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            const parent = el.closest('.form-group') || el.parentElement;
+            if (parent) parent.style.display = isDigitalOnly ? 'none' : 'block';
+            if (isDigitalOnly) el.removeAttribute('required');
+            else el.setAttribute('required', '');
+        }
+    });
+
+    const pinStatus = document.getElementById('serviceability-status');
+    if (pinStatus) pinStatus.style.display = isDigitalOnly ? 'none' : 'block';
+
+    // Header toggle
+    const h3s = Array.from(document.querySelectorAll('h3, h2'));
+    const addrHeader = h3s.find(h => h.textContent.includes("SHIPPING DETAILS") || h.textContent.includes("CUSTOMER DETAILS"));
+    if (addrHeader) addrHeader.textContent = isDigitalOnly ? "CUSTOMER DETAILS" : "SHIPPING DETAILS";
+}
 
 // --- NEW SHIPPING & COD LOGIC ---
 const EKART_RATES = {
@@ -260,6 +294,18 @@ function setupPincodeCheck(items) {
     pinInput.addEventListener('input', async (e) => {
         const pincode = e.target.value.trim();
 
+        // 🟢 DIGTAL SKIPPING:
+        const hasPhysical = items.some(item => {
+            const type = (item.type || '').toUpperCase();
+            const id = (item.productId || item.id || '').toLowerCase();
+            return ['HARDCOVER', 'PAPERBACK', 'PHYSICAL'].includes(type) || (!['ebook', 'audio', 'digital'].some(d => id.includes(d)) && (id.includes('vol') || id.includes('book')));
+        });
+
+        if (!hasPhysical) {
+            isServiceable = true;
+            return;
+        }
+
         // Only trigger check if pincode is 6 digits
         if (pincode.length === 6 && /^\d+$/.test(pincode)) {
             // Calculate total weight (default 0.5kg/500g if missing)
@@ -409,26 +455,35 @@ function setupPlaceOrder(items, user) {
             return;
         }
 
-        if (pincode.length !== 6 || !/^\d+$/.test(pincode)) {
-            alert('Please enter a valid 6-digit pincode.');
-            return;
-        }
+        // Check if shipping is needed
+        const hasPhysical = items.some(item => {
+            const type = (item.type || '').toUpperCase();
+            const id = (item.productId || item.id || '').toLowerCase();
+            return ['HARDCOVER', 'PAPERBACK', 'PHYSICAL'].includes(type) || (!['ebook', 'audio', 'digital'].some(d => id.includes(d)) && (id.includes('vol') || id.includes('book')));
+        });
 
-        if (!isServiceable) {
-            alert('Your location is currently not serviceable. Please choose another address.');
-            return;
+        if (hasPhysical) {
+            if (pincode.length !== 6 || !/^\d+$/.test(pincode)) {
+                alert('Please enter a valid 6-digit pincode.');
+                return;
+            }
+
+            if (!isServiceable) {
+                alert('Your location is currently not serviceable. Please choose another address.');
+                return;
+            }
         }
 
         const address = {
             name: document.getElementById('ship-name').value,
             phone: phone,
             email: document.getElementById('ship-email').value,
-            street: document.getElementById('ship-address').value,
-            area: document.getElementById('ship-area').value,
-            city: document.getElementById('ship-city').value,
-            state: document.getElementById('ship-state').value,
-            pincode: pincode,
-            country: document.getElementById('ship-country').value
+            street: hasPhysical ? document.getElementById('ship-address').value : 'Digital Delivery',
+            area: hasPhysical ? document.getElementById('ship-area').value : 'N/A',
+            city: hasPhysical ? document.getElementById('ship-city').value : 'Digital',
+            state: hasPhysical ? document.getElementById('ship-state').value : 'Digital',
+            pincode: hasPhysical ? pincode : '000000',
+            country: hasPhysical ? document.getElementById('ship-country').value : 'India'
         };
 
         localStorage.setItem('shippingAddress', JSON.stringify(address));

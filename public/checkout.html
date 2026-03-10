@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -123,13 +123,15 @@
         .address-form {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 25px;
+            margin-top: 10px;
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+            position: relative;
         }
 
         .form-group.full-width {
@@ -137,25 +139,54 @@
         }
 
         label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            opacity: 0.8;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gold-energy);
+            opacity: 0.9;
+            margin-left: 5px;
         }
 
         input,
         select {
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
             color: white;
-            padding: 12px 15px;
-            border-radius: 8px;
+            padding: 14px 18px;
+            border-radius: 12px;
             font-size: 1rem;
+            font-family: 'Outfit', sans-serif;
             outline: none;
-            transition: border-color 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
         }
 
-        input:focus {
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FFD369' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 18px;
+            padding-right: 45px;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.95rem;
+        }
+
+        input:hover, select:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 211, 105, 0.3);
+        }
+
+        input:focus,
+        select:focus {
+            background: rgba(255, 211, 105, 0.05);
             border-color: var(--gold-energy);
+            box-shadow: 0 0 20px rgba(255, 211, 105, 0.15);
         }
 
         .btn-checkout {
@@ -502,23 +533,23 @@
                         <label>Area / Landmark</label>
                         <input type="text" id="ship-area" placeholder="Near Meta Center, Opposite..." required>
                     </div>
-                    <div class="form-group full-width">
+                    <div class="form-group">
                         <label>City</label>
-                        <input type="text" id="ship-city" placeholder="e.g. Mumbai" required>
+                        <input type="text" id="ship-city" placeholder="Mumbai" required>
                     </div>
-                    <div class="form-group full-width">
+                    <div class="form-group">
                         <label>State</label>
-                        <input type="text" id="ship-state" placeholder="e.g. Maharashtra" required>
+                        <input type="text" id="ship-state" placeholder="Maharashtra" required>
                     </div>
-                    <div class="form-group full-width">
+                    <div class="form-group">
                         <label>Pincode</label>
-                        <input type="text" id="ship-pincode" placeholder="6-digit code" maxlength="6" required>
+                        <input type="text" id="ship-pincode" placeholder="400001" maxlength="6" required>
                     </div>
                     <div id="serviceability-status" class="serviceability-info">
                         <span class="status-dot"></span>
                         <span class="status-text">Checking delivery...</span>
                     </div>
-                    <div class="form-group full-width">
+                    <div class="form-group">
                         <label>Country</label>
                         <select id="ship-country" required>
                             <option value="India" selected>India</option>

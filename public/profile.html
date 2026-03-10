@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -204,14 +204,55 @@
             <!-- MY ORDERS TAB -->
             <section id="orders" class="content-section">
                 <header class="content-header"
-                    style="justify-content: space-between; align-items: center; display: flex;">
+                    style="justify-content: space-between; align-items: center; display: flex; margin-bottom: 20px;">
                     <div>
                         <h1>My <span class="gold-text">Orders</span></h1>
                         <p>Track your orders and download invoices</p>
                     </div>
-                    <button class="btn btn-outline small" onclick="renderOrdersTab()"><i class="fas fa-sync-alt"></i>
+                    <button class="btn btn-outline small" onclick="syncOrdersStatus()"><i class="fas fa-sync-alt"></i>
                         Sync</button>
                 </header>
+
+                <style>
+                    .order-filters {
+                        display: flex;
+                        gap: 12px;
+                        margin-bottom: 25px;
+                        overflow-x: auto;
+                        padding-bottom: 5px;
+                    }
+                    .filter-pill {
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        color: rgba(255, 255, 255, 0.6);
+                        padding: 8px 20px;
+                        border-radius: 50px;
+                        font-size: 0.85rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        white-space: nowrap;
+                        font-weight: 500;
+                    }
+                    .filter-pill:hover {
+                        background: rgba(255, 255, 255, 0.1);
+                        color: #fff;
+                    }
+                    .filter-pill.active {
+                        background: var(--gold-energy);
+                        border-color: var(--gold-energy);
+                        color: #000;
+                        font-weight: 700;
+                        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+                    }
+                </style>
+
+                <div class="order-filters">
+                    <div class="filter-pill active" onclick="updateOrderFilter('all', this)">All Orders</div>
+                    <div class="filter-pill" onclick="updateOrderFilter('active', this)">Active</div>
+                    <div class="filter-pill" onclick="updateOrderFilter('shipped', this)">Shipped</div>
+                    <div class="filter-pill" onclick="updateOrderFilter('delivered', this)">Delivered</div>
+                    <div class="filter-pill" onclick="updateOrderFilter('cancelled', this)">Cancelled</div>
+                </div>
                 <div id="dashboard-orders-list" class="orders-list"></div>
                 <div id="orders-empty-state" class="empty-state hidden">
                     <div style="text-align: center; padding: 60px 20px; opacity: 0.5;">

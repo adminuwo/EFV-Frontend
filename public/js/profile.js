@@ -999,7 +999,10 @@ async function renderOrdersTab(filter = 'all') {
         const returns = returnsRes.ok ? await returnsRes.json() : [];
 
         // Apply filters
-        if (filter !== 'all') {
+        if (filter === 'active') {
+            const inactiveStatuses = ['delivered', 'cancelled', 'returned', 'failed'];
+            orders = orders.filter(o => !inactiveStatuses.includes(o.status.toLowerCase()));
+        } else if (filter !== 'all') {
             orders = orders.filter(o => o.status.toLowerCase() === filter.toLowerCase());
         }
 
@@ -1062,31 +1065,62 @@ async function renderOrdersTab(filter = 'all') {
                 </div>
             `).join('');
 
+            // --- Detect Digital Order ---
+            const digitalTypes = ['ebook', 'e-book', 'audiobook', 'audio book', 'digital'];
+            const isDigitalOrder = order.items.every(item =>
+                digitalTypes.some(t => (item.type || '').toLowerCase().includes(t))
+            );
+
             // --- Cancel Button Logic ---
-            // Cancellable statuses (before pickup)
+            // Cancellable statuses (before pickup) - hidden for digital
             const cancellableStatuses = ['Pending', 'Processing', 'Packed', 'Created', 'AWB Generated', 'Label Generated', 'Manifest Generated'];
             const blockedFromCancel = ['Picked Up', 'Shipped', 'In Transit', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned'];
 
             let cancelHtml = '';
-            if (!blockedFromCancel.includes(order.status)) {
-                cancelHtml = `
+            if (!isDigitalOrder) {
+                if (!blockedFromCancel.includes(order.status)) {
+                    cancelHtml = `
+                        <button class="btn btn-outline small" 
+                            style="border-radius: 8px; border-color: rgba(255,80,80,0.4); color: #ff6b6b;"
+                            onclick="confirmCancelOrder('${order.orderId}')">
+                            <i class="fas fa-times-circle"></i> Cancel Order
+                        </button>
+                    `;
+                } else if (order.status === 'Cancelled') {
+                    cancelHtml = `
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+                            <span style="font-size: 0.75rem; color: #ff6b6b; opacity: 0.7; font-weight: 600;">
+                                <i class="fas fa-ban"></i> Cancelled
+                            </span>
+                            ${order.awbNumber ? `
+                                <button class="btn btn-outline" style="font-size: 0.65rem; padding: 4px 8px; border-color: rgba(255,150,80,0.3); color: #ff9800; border-radius: 6px;" 
+                                    onclick="confirmCancelOrder('${order.orderId}')" title="Ensure NimbusPost is also cancelled">
+                                    <i class="fas fa-sync"></i> Nimbus Sync
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                } else if (['Picked Up', 'Shipped', 'In Transit', 'Out for Delivery'].includes(order.status)) {
+                    cancelHtml = `
+                        <span style="font-size: 0.7rem; color: rgba(255,150,80,0.7); font-weight: 600;" title="Order already picked up">
+                            <i class="fas fa-lock"></i> Cannot Cancel
+                        </span>
+                    `;
+                }
+            }
+
+            // --- DELETE OPTION (for all users on Cancelled/Failed orders) ---
+            const userInfo = JSON.parse(localStorage.getItem('efv_user') || '{}');
+            const isAdmin = userInfo.role === 'admin' || userInfo.email?.toLowerCase() === 'admin@uwo24.com';
+            let deleteHtml = '';
+            if (['Cancelled', 'Failed', 'Payment Failed'].includes(order.status)) {
+                deleteHtml = `
                     <button class="btn btn-outline small" 
-                        style="border-radius: 8px; border-color: rgba(255,80,80,0.4); color: #ff6b6b;"
-                        onclick="confirmCancelOrder('${order.orderId}')">
-                        <i class="fas fa-times-circle"></i> Cancel Order
+                        style="border-radius: 8px; border-color: rgba(255,80,80,0.4); color: #ff5252; font-size: 0.78rem;" 
+                        onclick="window.deleteOrder('${order._id}')"
+                        title="Remove this record from your history">
+                        <i class="fas fa-trash-alt"></i> Delete Record
                     </button>
-                `;
-            } else if (order.status === 'Cancelled') {
-                cancelHtml = `
-                    <span style="font-size: 0.75rem; color: #ff6b6b; opacity: 0.7; font-weight: 600;">
-                        <i class="fas fa-ban"></i> Cancelled
-                    </span>
-                `;
-            } else if (['Picked Up', 'Shipped', 'In Transit', 'Out for Delivery'].includes(order.status)) {
-                cancelHtml = `
-                    <span style="font-size: 0.7rem; color: rgba(255,150,80,0.7); font-weight: 600;" title="Order already picked up">
-                        <i class="fas fa-lock"></i> Cannot Cancel
-                    </span>
                 `;
             }
 
@@ -1119,25 +1153,66 @@ async function renderOrdersTab(filter = 'all') {
 
                     <div style="display: flex; gap: 12px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
                         ${(order.status !== 'Cancelled' && order.status !== 'Failed') ? `
-                            ${returnButtonHtml}
-                            <a href="tracking.html?id=${order.orderId}" target="_blank" class="btn btn-outline small" style="border-radius: 8px; border-color: rgba(255,211,105,0.3); color: var(--gold-text); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-                                <i class="fas fa-satellite-dish"></i> Track Order
-                            </a>
+                            ${isDigitalOrder ? '' : returnButtonHtml}
+                            ${isDigitalOrder ? '' : `
+                                <a href="tracking.html?id=${order.orderId}" target="_blank" class="btn btn-outline small" style="border-radius: 8px; border-color: rgba(255,211,105,0.3); color: var(--gold-text); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-satellite-dish"></i> Track Order
+                                </a>
+                            `}
                             <button class="btn btn-outline small" style="border-radius: 8px;" onclick="viewOrderDetail('${order._id}', 'details')">
                                 <i class="fas fa-list-ul" style="margin-right:6px;"></i> Details
                             </button>
                             <button class="btn btn-gold small" style="border-radius: 8px; box-shadow: 0 4px 15px rgba(212,175,55,0.2);" onclick="downloadInvoice('${order._id}')">
                                 <i class="fas fa-file-invoice" style="margin-right:6px;"></i> Invoice
                             </button>
-                        ` : ''}
+                        ` : `
+                            <button class="btn btn-outline small" style="border-radius: 8px;" onclick="viewOrderDetail('${order._id}', 'details')">
+                                <i class="fas fa-list-ul" style="margin-right:6px;"></i> Details
+                            </button>
+                            <button class="btn btn-gold small" style="border-radius: 8px;" onclick="downloadInvoice('${order._id}')">
+                                <i class="fas fa-file-invoice" style="margin-right:6px;"></i> Invoice
+                            </button>
+                        `}
                         ${cancelHtml}
+                        ${deleteHtml}
                     </div>
                 </div>
             `;
         }).join('');
+
     } catch (e) {
         console.error('Error rendering orders:', e);
         if (container) container.innerHTML = '<p>Failed to load orders.</p>';
+    }
+}
+
+async function syncOrdersStatus() {
+    const token = localStorage.getItem('authToken');
+    const syncBtn = document.querySelector('button[onclick*="renderOrdersTab"]');
+    const originalText = syncBtn ? syncBtn.innerHTML : '<i class="fas fa-sync-alt"></i> Sync';
+    if (syncBtn) {
+        syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+        syncBtn.disabled = true;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/api/orders/sync-all`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.updatedCount > 0) {
+            showToast(`🔄 Synced ${data.updatedCount} status changes`, 'success');
+        } else if (data.success) {
+            showToast('✅ All statuses match NimbusPost', 'success');
+        }
+        await renderOrdersTab();
+    } catch (e) {
+        console.error(e);
+        showToast('Sync failed. Please try later.', 'error');
+    } finally {
+        if (syncBtn) {
+            syncBtn.innerHTML = originalText;
+            syncBtn.disabled = false;
+        }
     }
 }
 
@@ -1232,6 +1307,75 @@ window.executeCancelOrder = async function (orderId) {
         }
     }
 };
+
+// --- FILTER SYSTEM ---
+window.updateOrderFilter = function(filter, element) {
+    // UI update
+    document.querySelectorAll('.filter-pill').forEach(pill => pill.classList.remove('active'));
+    element.classList.add('active');
+    
+    // Logic
+    renderOrdersTab(filter);
+};
+
+window.deleteOrder = async function(id) {
+    // Styled confirmation modal
+    const existingModal = document.getElementById('delete-confirm-modal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'delete-confirm-modal';
+    modal.innerHTML = `
+        <div style="position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+            <div class="glass-panel" style="width: 360px; padding: 35px; border-radius: 20px; text-align: center; border:1px solid rgba(255,80,80,0.2);">
+                <div style="width:60px; height:60px; background:rgba(255,80,80,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; border:1px solid rgba(255,80,80,0.3);">
+                    <i class="fas fa-trash-alt" style="font-size:1.5rem; color:#ff5252;"></i>
+                </div>
+                <h3 style="font-family:'Cinzel',serif; color:#ff5252; margin-bottom:10px;">Delete Record?</h3>
+                <p style="opacity:0.6; font-size:0.9rem; margin-bottom:25px;">This will permanently remove this order from your history. This action cannot be undone.</p>
+                <div style="display:flex; gap:12px; justify-content:center;">
+                    <button id="btn-cancel-delete" class="btn btn-outline" style="border-radius:10px; flex:1;">
+                        <i class="fas fa-times"></i> Keep It
+                    </button>
+                    <button id="btn-confirm-delete" class="btn" style="background:rgba(255,80,80,0.15); border:1px solid rgba(255,80,80,0.4); color:#ff5252; border-radius:10px; flex:1;">
+                        <i class="fas fa-trash-alt"></i> Yes, Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('btn-cancel-delete').addEventListener('click', () => modal.remove());
+    document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+        document.getElementById('btn-confirm-delete').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        document.getElementById('btn-confirm-delete').disabled = true;
+
+        const token = localStorage.getItem('authToken');
+        try {
+            const res = await fetch(`${API_BASE}/api/orders/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            modal.remove();
+            if (res.ok) {
+                showToast('🗑️ Order record deleted', 'success');
+                // Auto re-render keeping current active filter
+                const activeFilter = document.querySelector('.filter-pill.active')?.textContent?.trim()?.toLowerCase();
+                const filterMap = { 'all orders': 'all', 'active': 'active', 'shipped': 'shipped', 'delivered': 'delivered', 'cancelled': 'cancelled' };
+                renderOrdersTab(filterMap[activeFilter] || 'all');
+            } else {
+                const data = await res.json();
+                showToast(data.message || 'Error deleting order', 'error');
+            }
+        } catch (e) {
+            modal.remove();
+            showToast('Connection error. Please try again.', 'error');
+        }
+    });
+};
+
+
 
 // --- RETURN SYSTEM HANDLERS ---
 
