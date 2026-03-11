@@ -44,6 +44,16 @@
             display: none !important;
             visibility: hidden !important;
         }
+
+        /* Prevent Google Translate from adding 'original text' tooltips on hover */
+        .goog-text-highlight {
+            background: none !important;
+            box-shadow: none !important;
+        }
+        
+        .notranslate {
+            /* This marks element as non-translatable for Google */
+        }
         
         /* Force body to stay at top and not pushed down by the Translate banner */
         body {
@@ -101,7 +111,7 @@
 
     // Modal HTML for Country Selection (Instantly Visible if no selection)
     const popupHtml = `
-        <div id="i18n-popup-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(5px);z-index:999999;display:none;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;pointer-events:none;">
+        <div id="i18n-popup-overlay" class="notranslate" style="position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(5px);z-index:999999;display:none;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s;pointer-events:none;">
             <div id="i18n-popup-content" style="background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:16px;width:90%;max-width:450px;box-shadow:0 20px 50px rgba(0,0,0,0.5);transform:scale(0.95);transition:all 0.3s;max-height:80vh;display:flex;flex-direction:column;">
                 <div style="padding:20px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;">
                     <div style="display:flex;align-items:center;gap:10px;color:white;">
@@ -111,7 +121,7 @@
                 </div>
                 <div style="padding:15px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                     ${countries.map(c => `
-                        <button class="i18n-country-btn" data-code="${c.code}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;color:white;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;">
+                        <button class="i18n-country-btn notranslate" data-code="${c.code}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;color:white;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;">
                             <span style="font-size:1.5rem;">${c.flag}</span>
                             <span style="font-size:0.9rem;">${c.name}</span>
                         </button>
@@ -130,16 +140,16 @@
     const navActions = document.querySelector('.nav-actions');
     if (navActions) {
         const switcherHtml = `
-            <div style="position:relative;margin-right:15px;display:inline-flex;align-items:center;" id="i18n-switcher-container">
+            <div style="position:relative;margin-right:15px;display:inline-flex;align-items:center;" id="i18n-switcher-container" class="notranslate">
                 <button id="i18n-switcher-btn" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:50px;padding:8px 15px;color:white;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:0.85rem;transition:all 0.2s;">
                     <i class="fas fa-globe" style="color:#d4af37;"></i>
-                    <span id="i18n-current-lang">English</span>
+                    <span id="i18n-current-lang" class="notranslate">English</span>
                     <i class="fas fa-chevron-down" style="font-size:0.7rem;opacity:0.7;margin-left:4px;"></i>
                 </button>
                 <div id="i18n-switcher-dropdown" style="position:absolute;top:calc(100% + 10px);right:0;width:160px;background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);display:none;flex-direction:column;overflow:hidden;z-index:999999;">
                     <div style="max-height:250px;overflow-y:auto;padding:5px 0;">
                         ${languages.map(l => `
-                            <button class="i18n-lang-btn" data-code="${l.code}" style="background:transparent;border:none;width:100%;text-align:left;padding:10px 15px;color:white;font-size:0.85rem;cursor:pointer;transition:background 0.2s;">
+                            <button class="i18n-lang-btn notranslate" data-code="${l.code}" style="background:transparent;border:none;width:100%;text-align:left;padding:10px 15px;color:white;font-size:0.85rem;cursor:pointer;transition:background 0.2s;">
                                 ${l.name}
                             </button>
                         `).join('')}

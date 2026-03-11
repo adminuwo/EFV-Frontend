@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const link = document.createElement('link');
         link.id = 'auth-premium-style';
         link.rel = 'stylesheet';
-        link.href = 'css/auth-premium.css';
+        link.href = CONFIG.BASE_PATH + 'css/auth-premium.css';
         document.head.appendChild(link);
     }
 
@@ -553,6 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Populate Image
         const img = card.querySelector('img').src;
         document.getElementById('pm-img').src = img;
+        document.getElementById('pm-img').src = img;
 
         // Populate Text
         document.getElementById('pm-title').textContent = data.title;
@@ -877,7 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const library = JSON.parse(localStorage.getItem(libKey)) || [];
                 if (library.some(item => item.id === id || item.productId === id)) {
                     if (confirm(`You already own "${name}".\n\nGo to Library?`)) {
-                        document.location.href = 'profile.html?tab=library';
+                        document.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html?tab=library';
                     }
                     return;
                 }
@@ -972,7 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = JSON.parse(localStorage.getItem('efv_user'));
             if (user) {
                 // Redirect to Dashboard
-                window.location.href = 'profile.html';
+                window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
                 return;
             }
 
@@ -1080,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 }
 
-                const imgUrl = item.thumbnail ? (item.thumbnail.startsWith('http') ? item.thumbnail : (window.API_BASE || `${API_BASE}`) + (item.thumbnail.startsWith('/') ? '' : '/') + item.thumbnail) : 'img/placeholder.png';
+                const imgUrl = item.thumbnail ? (item.thumbnail.startsWith('http') ? item.thumbnail : (window.API_BASE || `${API_BASE}`) + (item.thumbnail.startsWith('/') ? '' : '/') + item.thumbnail) : CONFIG.BASE_PATH + 'assets/images/placeholder.png';
 
                 return `
                 <div style="background: rgba(255, 211, 105, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 211, 105, 0.1); display: flex; gap: 15px; align-items: center; transition: all 0.3s; margin-bottom: 10px;">
@@ -2159,9 +2160,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     const role = data.role || 'user';
                     if (role === 'admin' || data.email.toLowerCase() === 'admin@uwo24.com') {
-                        window.location.href = 'admin-dashboard.html';
+                        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/admin-dashboard.html';
                     } else {
-                        window.location.href = 'profile.html';
+                        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
                     }
                 }, 1000);
 
@@ -2540,10 +2541,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="user-dropdown" id="user-dropdown">
                         ${isAdmin ? `
                         <div style="padding: 10px 15px; font-size: 0.75rem; color: var(--gold-energy); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Admin Panel</div>
-                        <a href="admin-dashboard.html?tab=dashboard" class="dropdown-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                        <a href="${(typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '')}pages/admin-dashboard.html?tab=dashboard" class="dropdown-item"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                         ` : `
                         <div style="padding: 10px 15px; font-size: 0.75rem; color: var(--gold-energy); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Account</div>
-                        <a href="profile.html?tab=dashboard" class="dropdown-item"><i class="fas fa-th-large"></i> Dashboard</a>
+                        <a href="${(typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '')}pages/profile.html?tab=dashboard" class="dropdown-item"><i class="fas fa-th-large"></i> Dashboard</a>
                         <!-- <a href="profile.html?tab=orders" class="dropdown-item"><i class="fas fa-shopping-bag"></i> My Orders</a>
                         <a href="profile.html?tab=library" class="dropdown-item"><i class="fas fa-book-open"></i> My Library</a> -->
                         `}
@@ -2633,7 +2634,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Redirect to home if on profile
         if (window.location.pathname.includes('profile.html')) {
-            window.location.href = 'index.html';
+            window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'index.html';
         }
     }
 

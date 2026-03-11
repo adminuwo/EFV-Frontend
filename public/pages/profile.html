@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | EFV�</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/dashboard-v2.css">
+    <link rel="stylesheet" href="../css/admin-modal.css">
+    <link rel="stylesheet" href="../css/reader.css">
+    <link rel="stylesheet" href="../css/audiobook.css">
+    <link rel="stylesheet" href="../css/security.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- PDF.js for Library Access -->
+    <script src="../js/pdfjs/pdf.min.js"></script>
+    <script src="../js/efv-pdf-data.js"></script>
+</head>
+
+<body class="dashboard-body">
+
+    <div class="dashboard-container">
+        <!-- LEFT SIDEBAR -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-header">
+                <a href="../index.html" class="logo">
+                    <img src="../assets/images/AISA.svg" alt="EFV Logo">
+                    <span>EFV<sup>TM</sup></span>
+                </a>
+                <button class="dashboard-hamburger" id="dashboard-hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+
+            <!-- User Profile Summary -->
+            <div class="user-profile-sm">
+                <div class="avatar-container">
+                    <img src="https://ui-avatars.com/api/?name=User&background=D4AF37&color=fff" alt="User Avatar"
+                        id="sidebar-avatar"
+                        onerror="this.src='https://ui-avatars.com/api/?name=User&background=D4AF37&color=fff'">
+                    <div class="status-indicator online"></div>
+                </div>
+                <div class="user-info">
+                    <h4 id="sidebar-user-name">Guest User</h4>
+                    <span class="membership-badge" id="sidebar-membership">Standard</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="marketplace.html" class="nav-item" id="nav-back-to-shop">
+                    <i class="fas fa-shopping-bag"></i> <span>Browse Store</span>
+                </a>
+                <button class="nav-item active" data-tab="dashboard">
+                    <i class="fas fa-th-large"></i> <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-tab="cart">
+                    <i class="fas fa-shopping-cart"></i> <span>Cart Items</span>
+                    <span id="sidebar-cart-count" class="badge hidden">0</span>
+                </button>
+                <button class="nav-item" data-tab="orders">
+                    <i class="fas fa-box-open"></i> <span>My Orders</span>
+                </button>
+                <button class="nav-item" data-tab="library">
+                    <i class="fas fa-book-reader"></i> <span>My Library</span>
+                </button>
+                <button class="nav-item" data-tab="notifications">
+                    <i class="fas fa-bell"></i> <span>Notifications</span>
+                    <span id="unread-notifications-count" class="badge red hidden">0</span>
+                </button>
+                <button class="nav-item" data-tab="settings">
+                    <i class="fas fa-cog"></i> <span>Account Settings</span>
+                </button>
+                <button class="nav-item" data-tab="support">
+                    <i class="fas fa-headset"></i> <span>Help & Support</span>
+                </button>
+
+                <!-- Admin Items -->
+                <button class="nav-item hidden" data-tab="admin" id="sidebar-admin-btn">
+                    <i class="fas fa-user-shield"></i> <span>Admin Portal</span>
+                </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-orders">
+                    <i class="fas fa-shopping-basket"></i> <span>Orders Management</span>
+                </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-products">
+                    <i class="fas fa-book-medical"></i> <span>Product Management</span>
+                </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-customers">
+                    <i class="fas fa-users-cog"></i> <span>Customers</span>
+                </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-payments">
+                    <i class="fas fa-file-invoice-dollar"></i> <span>Payments</span>
+                </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-shipments">
+                    <i class="fas fa-shipping-fast"></i> <span>Shipments</span>
+                </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-coupons">
+                    <i class="fas fa-ticket-alt"></i> <span>Coupons</span>
+                </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-support">
+                    <i class="fas fa-headset"></i> <span>User Support</span>
+                </button>
+                <a href="partners.html" class="nav-item admin-nav hidden" id="sidebar-partners-btn">
+                    <i class="fas fa-handshake"></i> <span>Partner Marketing</span>
+                </a>
+
+
+                <div style="margin-top: auto; padding-top: 20px;">
+                    <button class="nav-item" id="sidebar-logout-btn-v2"
+                        style="color: #ff4d4d; width: 100%; text-align: left;" onclick="logoutAction()">
+                        <i class="fas fa-sign-out-alt"></i> <span>Sign Out</span>
+                    </button>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- RIGHT CONTENT AREA -->
+        <main class="main-content">
+
+            <!-- DASHBOARD OVERVIEW TAB -->
+            <section id="dashboard" class="content-section active">
+                <header class="content-header">
+                    <div class="welcome-text">
+                        <h1 class="gradient-text">Welcome back, <span class="gold-text"
+                                id="user-name-display">User</span></h1>
+                        <p>Your alignment journey continues here</p>
+                    </div>
+                    <div class="date-display" id="current-date"></div>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="stat-card glass-panel shine-hover">
+                        <div class="icon-box gold"><i class="fas fa-book"></i></div>
+                        <div class="stat-info">
+                            <h3>My Collection</h3>
+                            <span id="stat-total-digital" class="stat-value">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel shine-hover">
+                        <div class="icon-box blue"><i class="fas fa-shopping-bag"></i></div>
+                        <div class="stat-info">
+                            <h3>Total Orders</h3>
+                            <span id="stat-total-orders" class="stat-value">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel shine-hover">
+                        <div class="icon-box green"><i class="fas fa-coins"></i></div>
+                        <div class="stat-info">
+                            <h3>Total Spent</h3>
+                            <span id="stat-total-spent" class="stat-value">?0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid-1" style="max-width: 900px; margin: 0 auto;">
+                    <div class="glass-panel" style="padding: 30px;">
+                        <h3 style="margin: 0 0 20px;"><i class="fas fa-book-reader gold-text"></i> Continue Reading</h3>
+                        <div id="continue-reading-content-v2">
+                            <p class="fade-text">Start your reading journey by browsing the store.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CART ITEMS TAB -->
+            <section id="cart" class="content-section">
+                <!-- Cart structure from admin-dashboard for consistency -->
+                <header class="content-header">
+                    <div>
+                        <h1>Shopping <span class="gold-text">Cart</span></h1>
+                        <p id="cart-item-count-text">0 items in your cart</p>
+                    </div>
+                </header>
+                <div class="cart-layout-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+                    <div class="cart-items-panel">
+                        <div id="dashboard-cart-list" class="items-list"></div>
+                        <div id="cart-empty-state" class="empty-state hidden">
+                            <i class="fas fa-shopping-cart"></i>
+                            <h3>Your cart is empty</h3>
+                            <a href="marketplace.html" class="btn btn-gold">Browse Marketplace</a>
+                        </div>
+                    </div>
+                    <div class="cart-summary-panel">
+                        <div class="glass-panel checkout-summary-panel">
+                            <h3>Order Summary</h3>
+                            <div class="summary-details">
+                                <div class="summary-row"><span>Subtotal</span><span id="cart-subtotal">?0.00</span>
+                                </div>
+                                <div class="summary-row"><span>Tax (GST)</span><span id="cart-tax">?0.00</span></div>
+                                <div class="summary-row total"><span>Grand Total</span><span
+                                        id="cart-grand-total">?0.00</span></div>
+                            </div>
+                            <button class="btn btn-gold full-width" id="proceed-to-checkout-btn">Proceed to
+                                Checkout</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MY ORDERS TAB -->
+            <section id="orders" class="content-section">
+                <header class="content-header"
+                    style="justify-content: space-between; align-items: center; display: flex; margin-bottom: 20px;">
+                    <div>
+                        <h1>My <span class="gold-text">Orders</span></h1>
+                        <p>Track your orders and download invoices</p>
+                    </div>
+                    <button class="btn btn-outline small" onclick="syncOrdersStatus()"><i class="fas fa-sync-alt"></i>
+                        Sync</button>
+                </header>
+
+                <style>
+                    .order-filters {
+                        display: flex;
+                        gap: 12px;
+                        margin-bottom: 25px;
+                        overflow-x: auto;
+                        padding-bottom: 5px;
+                    }
+                    .filter-pill {
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        color: rgba(255, 255, 255, 0.6);
+                        padding: 8px 20px;
+                        border-radius: 50px;
+                        font-size: 0.85rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        white-space: nowrap;
+                        font-weight: 500;
+                    }
+                    .filter-pill:hover {
+                        background: rgba(255, 255, 255, 0.1);
+                        color: #fff;
+                    }
+                    .filter-pill.active {
+                        background: var(--gold-energy);
+                        border-color: var(--gold-energy);
+                        color: #000;
+                        font-weight: 700;
+                        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+                    }
+                </style>
+
+                <div class="order-filters">
+                    <div class="filter-pill active" onclick="updateOrderFilter('all', this)">All Orders</div>
+                    <div class="filter-pill" onclick="updateOrderFilter('active', this)">Active</div>
+                    <div class="filter-pill" onclick="updateOrderFilter('shipped', this)">Shipped</div>
+                    <div class="filter-pill" onclick="updateOrderFilter('delivered', this)">Delivered</div>
+                    <div class="filter-pill" onclick="updateOrderFilter('cancelled', this)">Cancelled</div>
+                </div>
+                <div id="dashboard-orders-list" class="orders-list"></div>
+                <div id="orders-empty-state" class="empty-state hidden">
+                    <div style="text-align: center; padding: 60px 20px; opacity: 0.5;">
+                        <div
+                            style="width: 80px; height: 80px; background: rgba(255,211,105,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 1px solid rgba(255,211,105,0.1);">
+                            <i class="fas fa-box-open gold-text" style="font-size: 2rem;"></i>
+                        </div>
+                        <h3 style="font-family: 'Cinzel', serif; letter-spacing: 2px;">No orders found</h3>
+                        <p style="font-size: 0.85rem; max-width: 300px; margin: 10px auto;">Your journey awaits.
+                            Discover our collection in the marketplace.</p>
+                        <a href="marketplace.html" class="btn btn-gold small"
+                            style="margin-top: 20px; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-shopping-bag"></i> Browse Store
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MY LIBRARY TAB -->
+            <section id="library" class="content-section">
+                <header class="content-header"
+                    style="justify-content: space-between; align-items: center; display: flex;">
+                    <div>
+                        <h1>My <span class="gold-text">Library</span></h1>
+                        <p>Your digital collection</p>
+                    </div>
+                    <button class="btn btn-outline small" onclick="syncLibraryWithBackend()"><i
+                            class="fas fa-sync-alt"></i> Sync</button>
+                </header>
+
+                <!-- Library Sub-Tabs -->
+                <div class="library-sub-tabs">
+                    <button class="library-sub-tab active" data-library-tab="all" onclick="filterLibraryView('all')">
+                        <i class="fas fa-layer-group"></i> All
+                    </button>
+                    <button class="library-sub-tab" data-library-tab="ebooks" onclick="filterLibraryView('ebooks')">
+                        <i class="fas fa-book"></i> E-Books
+                    </button>
+                    <button class="library-sub-tab" data-library-tab="audiobooks"
+                        onclick="filterLibraryView('audiobooks')">
+                        <i class="fas fa-headphones"></i> Audiobooks
+                    </button>
+                </div>
+
+                <!-- E-Books / All grid -->
+                <div id="dashboard-library-list" class="items-grid"></div>
+
+                <!-- Audiobooks grid -->
+                <div id="dashboard-audiobooks-list" class="items-grid" style="display:none;"></div>
+
+                <div id="library-empty-state" class="empty-state hidden">
+                    <i class="fas fa-book-open"></i>
+                    <h3>Library is empty</h3>
+                </div>
+            </section>
+
+            <!-- NOTIFICATIONS TAB -->
+            <section id="notifications" class="content-section">
+                <header class="content-header">
+                    <h1>Account <span class="gold-text">Notifications</span></h1>
+                </header>
+                <div id="notifications-list" class="notifications-list"></div>
+                <div id="notifications-empty-state" class="empty-state hidden">
+                    <i class="fas fa-bell-slash"></i>
+                    <h3>No new notifications</h3>
+                </div>
+            </section>
+
+            <!-- SETTINGS TAB -->
+            <section id="settings" class="content-section">
+                <header class="content-header">
+                    <h1>Account <span class="gold-text">Center</span></h1>
+                    <p>Manage your profile and security</p>
+                </header>
+                <div class="settings-tabs" style="margin-bottom: 30px;">
+                    <button class="settings-tab-btn active" data-settings-tab="profile-tab">Profile</button>
+                    <button class="settings-tab-btn" data-settings-tab="security-tab">Security</button>
+                    <button class="settings-tab-btn" data-settings-tab="addresses-tab">Addresses</button>
+                </div>
+                <div class="settings-content-area">
+                    <div id="profile-tab" class="settings-pane active">
+                        <div class="settings-card glass-panel">
+                            <form id="profile-form-v2"
+                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="form-group"><label>Full Name</label><input type="text" id="settings-name-v2"
+                                        class="glass-input"></div>
+                                <div class="form-group"><label>Email Address</label><input type="email"
+                                        id="settings-email-v2" readonly class="glass-input" style="opacity: 0.7;"></div>
+                                <div class="form-group"><label>Phone Number</label><input type="tel"
+                                        id="settings-phone-v2" class="glass-input"></div>
+                                <button type="submit" class="btn btn-gold"
+                                    style="grid-column: span 2; width: 200px;">Save Changes</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div id="security-tab" class="settings-pane" style="display: none;">
+                        <div class="settings-card glass-panel" style="max-width: 500px;">
+                            <h3 style="margin-bottom: 25px; color: var(--gold-text);"><i class="fas fa-shield-alt"></i>
+                                Security Settings</h3>
+
+                            <form id="change-password-form" style="display: flex; flex-direction: column; gap: 18px;">
+                                <div class="form-group">
+                                    <label
+                                        style="display: block; margin-bottom: 8px; font-size: 0.9rem; opacity: 0.8;">Current
+                                        Password</label>
+                                    <input type="password" id="current-password" class="glass-input" required
+                                        placeholder="��������">
+                                </div>
+                                <div class="form-group">
+                                    <label
+                                        style="display: block; margin-bottom: 8px; font-size: 0.9rem; opacity: 0.8;">New
+                                        Password</label>
+                                    <input type="password" id="new-password" class="glass-input" required
+                                        placeholder="Minimum 6 characters">
+                                </div>
+                                <div class="form-group">
+                                    <label
+                                        style="display: block; margin-bottom: 8px; font-size: 0.9rem; opacity: 0.8;">Confirm
+                                        New Password</label>
+                                    <input type="password" id="confirm-password" class="glass-input" required
+                                        placeholder="��������">
+                                </div>
+
+                                <div style="margin-top: 10px; display: flex; gap: 15px; align-items: center;">
+                                    <button type="submit" class="btn btn-gold" id="change-pass-btn">Update
+                                        Password</button>
+                                </div>
+                            </form>
+
+                            <div
+                                style="margin-top: 40px; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.05);">
+                                <h4 style="margin-bottom: 15px; color: #ff4d4d; font-size: 0.9rem;">Account Session</h4>
+                                <button class="btn btn-outline" onclick="logoutAction()"
+                                    style="border-color: rgba(255, 77, 77, 0.3); color: #ff4d4d;">
+                                    <i class="fas fa-sign-out-alt"></i> Sign Out from this Device
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="addresses-tab" class="settings-pane" style="display: none;">
+                        <div class="settings-card glass-panel">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                                <h3>Addresses</h3>
+                                <button class="btn btn-gold small" onclick="openAddressModal()">+ Add New</button>
+                            </div>
+                            <div id="saved-addresses-grid-v2"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HELP & SUPPORT TAB -->
+            <section id="support" class="content-section">
+                <header class="content-header">
+                    <h1>Help & <span class="gold-text">Support</span></h1>
+                </header>
+                <div class="settings-grid">
+                    <div class="settings-card glass-panel">
+                        <h3>Send a Message</h3>
+                        <form id="user-support-form" style="display: flex; flex-direction: column; gap: 15px;">
+                            <input type="text" id="support-subject" placeholder="Subject" required class="glass-input">
+                            <textarea id="support-message" placeholder="Message" required class="glass-input"
+                                rows="5"></textarea>
+                            <button type="submit" class="btn btn-gold full-width" id="send-support-btn">Send
+                                Message</button>
+                        </form>
+                    </div>
+                    <div class="settings-card glass-panel">
+                        <h3>Direct Support</h3>
+                        <button class="btn btn-outline full-width"
+                            onclick="location.href='mailto:support@efv.com'">Email Us</button>
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="margin-top: 30px; padding: 25px;">
+                    <h3 style="margin-bottom: 20px;"><i class="fas fa-history gold-text"></i> My Inquiries</h3>
+                    <div id="user-support-history">
+                        <p class="fade-text">No previous inquiries found.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Order Detail Modal (Premium Redesign) -->
+    <div id="order-detail-modal" class="reader-overlay" style="display: none; z-index: 10000;">
+
+        <!-- Top Bar -->
+        <div
+            style="position: fixed; top: 0; left: 0; right: 0; z-index: 10001; background: rgba(8,10,16,0.97); border-bottom: 1px solid rgba(255,211,105,0.15); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(20px);">
+            <div class="reader-title" style="font-size: 0.85rem; letter-spacing: 2px;">
+                <i class="fas fa-box-open gold-text"></i>
+                ORDER DETAILS
+                <span id="modal-order-id"
+                    style="color: rgba(255,211,105,0.8); margin-left: 10px; font-size: 0.75rem;"></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span id="modal-order-date" style="font-size: 0.72rem; opacity: 0.4;"></span>
+                <button class="btn-icon" onclick="closeOrderDetailModal()"
+                    style="width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-times" style="font-size:0.8rem;"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scrollable Body -->
+        <div class="reader-canvas-container"
+            style="padding: 80px 20px 30px; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh;">
+            <div
+                style="width: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;">
+
+                <!-- Tracking Timeline Section (hidden in details mode) -->
+                <div class="glass-panel" id="modal-tracking-panel"
+                    style="padding: 20px; border-radius: 16px; border-color: rgba(255,211,105,0.12);">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+                        <div
+                            style="width:30px; height:30px; background:rgba(255,211,105,0.1); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i class="fas fa-route gold-text" style="font-size:0.8rem;"></i>
+                        </div>
+                        <span
+                            style="font-size:0.72rem; font-weight:700; letter-spacing:2px; opacity:0.6; text-transform:uppercase;">Tracking
+                            Status</span>
+                    </div>
+                    <div id="modal-order-timeline" class="tracking-timeline-v2"></div>
+                </div>
+
+                <!-- Order Items -->
+                <div class="glass-panel"
+                    style="padding: 20px; border-radius: 16px; border-color: rgba(255,211,105,0.12);">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+                        <div
+                            style="width:30px; height:30px; background:rgba(255,211,105,0.1); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i class="fas fa-shopping-bag gold-text" style="font-size:0.8rem;"></i>
+                        </div>
+                        <span
+                            style="font-size:0.72rem; font-weight:700; letter-spacing:2px; opacity:0.6; text-transform:uppercase;">Order
+                            Items</span>
+                    </div>
+                    <div id="modal-order-items" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+
+                <!-- Payment + Address Row -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+
+                    <!-- Payment Summary -->
+                    <div class="glass-panel"
+                        style="padding: 18px; border-radius: 16px; border-color: rgba(255,211,105,0.12);">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                            <div
+                                style="width:28px; height:28px; background:rgba(255,211,105,0.1); border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class="fas fa-receipt gold-text" style="font-size:0.75rem;"></i>
+                            </div>
+                            <span
+                                style="font-size:0.65rem; font-weight:700; letter-spacing:1.5px; opacity:0.5; text-transform:uppercase;">Payment</span>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px; font-size:0.8rem;">
+                            <div style="display:flex; justify-content:space-between; opacity:0.6;">
+                                <span>Subtotal</span>
+                                <span id="modal-subtotal">?0</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; opacity:0.6;">
+                                <span>Shipping</span>
+                                <span style="color:#4CAF50; font-weight:600;">FREE</span>
+                            </div>
+                            <div style="height:1px; background:rgba(255,255,255,0.07); margin:4px 0;"></div>
+                            <div
+                                style="display:flex; justify-content:space-between; font-weight:800; color:var(--gold-text);">
+                                <span>Total</span>
+                                <span id="modal-total">?0</span>
+                            </div>
+                            <div style="height:1px; background:rgba(255,255,255,0.05); margin:4px 0;"></div>
+                            <div style="font-size:0.72rem; opacity:0.5;">
+                                <div>Via: <span id="modal-payment-method" style="color:white; font-weight:600;"></span>
+                                </div>
+                                <div style="margin-top:3px;">Status: <span id="modal-payment-status"
+                                        style="font-weight:600;"></span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shipping Address -->
+                    <div class="glass-panel"
+                        style="padding: 18px; border-radius: 16px; border-color: rgba(255,211,105,0.12);">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                            <div
+                                style="width:28px; height:28px; background:rgba(255,211,105,0.1); border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class="fas fa-map-marker-alt gold-text" style="font-size:0.75rem;"></i>
+                            </div>
+                            <span
+                                style="font-size:0.65rem; font-weight:700; letter-spacing:1.5px; opacity:0.5; text-transform:uppercase;">Ship
+                                To</span>
+                        </div>
+                        <div id="modal-shipping-address" style="font-size:0.78rem; line-height:1.7; opacity:0.8;"></div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="address-modal" class="resume-modal-overlay" style="display: none;">
+        <div class="resume-modal glass-panel" style="max-width: 550px; width: 95%;">
+            <h2 id="address-modal-title" style="margin-bottom: 20px; color: var(--gold-text);">Add Address</h2>
+            <form id="address-form" style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="hidden" id="address-id">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="text" id="addr-name" placeholder="Full Name" required class="glass-input">
+                    <input type="tel" id="addr-phone" placeholder="Mobile Number (10 digits)" required
+                        class="glass-input" pattern="[0-9]{10}">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <input type="text" id="addr-pincode" placeholder="Pincode (6 digits)" required class="glass-input"
+                        pattern="[0-9]{6}">
+                    <input type="text" id="addr-city" placeholder="City" required class="glass-input">
+                    <input type="text" id="addr-state" placeholder="State" required class="glass-input">
+                </div>
+                <input type="text" id="addr-house" placeholder="House No / Building Name" required class="glass-input">
+                <input type="text" id="addr-area" placeholder="Area / Street / Locality" required class="glass-input">
+                <input type="text" id="addr-landmark" placeholder="Landmark (Optional)" class="glass-input">
+
+                <div class="address-type-group" style="display: flex; gap: 20px; color: white; margin-top: 5px;">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <input type="radio" name="addr-type" value="Home" checked> Home
+                    </label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <input type="radio" name="addr-type" value="Work"> Work
+                    </label>
+                </div>
+
+                <div class="checkbox-group"
+                    style="display: flex; align-items: center; gap: 10px; color: white; font-size: 0.9rem;">
+                    <input type="checkbox" id="addr-default" style="cursor: pointer;">
+                    <label for="addr-default" style="cursor: pointer;">Set as default address</label>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="submit" class="btn btn-gold" style="flex: 2;">Save Address</button>
+                    <button type="button" onclick="closeAddressModal()" class="btn btn-outline"
+                        style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CHECKOUT OVERLAY (Multi-step) -->
+    <div id="checkout-overlay" class="reader-overlay" style="display: none; z-index: 10000;">
+        <div class="reader-toolbar glass-panel">
+            <div class="reader-title"><i class="fas fa-shield-check gold-text"></i> Secure Checkout</div>
+            <button class="btn-icon" onclick="closeCheckout()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="reader-canvas-container"
+            style="display: flex; justify-content: center; align-items: flex-start; padding-top: 95px; padding-bottom: 40px; overflow-y: auto;">
+            <div class="checkout-container step-1" id="checkout-container-v2"
+                style="width: 95%; display: grid; gap: 20px; transition: all 0.5s ease;">
+
+                <!-- Left Side: Steps -->
+                <div class="checkout-steps-col">
+
+                    <!-- STEP 1: ADDRESS -->
+                    <div id="checkout-step-address" class="checkout-step-card glass-panel active"
+                        style="padding: 20px; margin-bottom: 20px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                            <h3 style="margin: 0;"><span class="step-num">1</span> Select Delivery Address</h3>
+                            <button class="btn btn-gold small" onclick="openAddressModal()"><i class="fas fa-plus"></i>
+                                Add New</button>
+                        </div>
+                        <div id="checkout-address-list" class="checkout-address-grid"
+                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <!-- Addresses injected here -->
+                        </div>
+                        <div style="margin-top: 30px; text-align: right;">
+                            <button id="btn-confirm-address" class="btn btn-gold" onclick="continueToSummary()"
+                                disabled>Deliver to Selected Address</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: SUMMARY -->
+                    <div id="checkout-step-summary" class="checkout-step-card glass-panel"
+                        style="padding: 20px; opacity: 0.5; pointer-events: none;">
+                        <h3 style="margin-bottom: 15px;"><span class="step-num">2</span> Order Summary</h3>
+                        <div id="checkout-items-summary" class="summary-items-list">
+                            <!-- Items injected here -->
+                        </div>
+                        <div class="delivery-address-preview"
+                            style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                            <h5 style="color: var(--gold-text); margin-bottom: 10px;">Shipping To:</h5>
+                            <p id="selected-address-preview" style="font-size: 0.9rem; opacity: 0.8; margin: 0;"></p>
+                        </div>
+                        <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+                            <button class="btn btn-outline" onclick="backToAddress()">Back</button>
+                            <button class="btn btn-gold" onclick="proceedToPayment()">Confirm & Pay Now</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Pricing Sticky -->
+                <div class="checkout-pricing-col">
+                    <div class="glass-panel pricing-card" style="padding: 15px; position: sticky; top: 0;">
+                        <h4
+                            style="margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
+                            Payment Details</h4>
+                        <div class="price-rows" style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; justify-content: space-between; opacity: 0.7;">
+                                <span>Cart Subtotal</span>
+                                <span id="chk-subtotal">?0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; opacity: 0.7;">
+                                <span>Delivery Charges</span>
+                                <span style="color: #4CAF50;">FREE</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; opacity: 0.7;">
+                                <span>Tax (GST 18%)</span>
+                                <span id="chk-tax">?0.00</span>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-weight: 800; font-size: 1.2rem; color: var(--gold-text);">
+                                <span>Total Payable</span>
+                                <span id="chk-total">?0.00</span>
+                            </div>
+                        </div>
+                        <p style="margin-top: 25px; font-size: 0.75rem; opacity: 0.4; text-align: center;">
+                            <i class="fas fa-lock"></i> 256-bit SSL Secure Payment
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RETURN REQUEST MODAL -->
+    <div id="return-modal" class="modal-overlay" style="display: none; z-index: 10001;">
+        <div class="modal-content glass-panel" style="max-width: 500px; padding: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: var(--gold-text);"><i class="fas fa-undo"></i> Request Return / Replace
+                </h3>
+                <button class="btn-icon" onclick="closeReturnModal()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <form id="return-request-form">
+                <input type="hidden" id="return-order-id">
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Order ID</label>
+                    <input type="text" id="display-order-id" class="form-control" readonly
+                        style="background: rgba(0,0,0,0.2); opacity: 0.7;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Items to Return</label>
+                    <div id="return-items-list" class="glass-panel"
+                        style="padding: 10px; font-size: 0.9rem; max-height: 150px; overflow-y: auto;">
+                        <!-- Items will be injected here -->
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Reason for Return</label>
+                    <select id="return-reason" class="form-control" required>
+                        <option value="" disabled selected>Select a reason</option>
+                        <option value="Damaged product">Damaged product</option>
+                        <option value="Wrong product received">Wrong product received</option>
+                        <option value="Quality issue">Quality issue</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>Upload Proof (Optional)</label>
+                    <input type="file" id="return-proof" class="form-control" accept="image/*"
+                        style="padding-top: 10px;">
+                    <small style="opacity: 0.5; font-size: 0.75rem;">Upload an image showing the issue
+                        (Optional)</small>
+                </div>
+
+                <div
+                    style="font-size: 0.8rem; opacity: 0.6; margin-bottom: 20px; background: rgba(212, 175, 55, 0.1); padding: 10px; border-radius: 8px; border-left: 3px solid var(--gold-text);">
+                    <i class="fas fa-info-circle"></i> Returns are accepted within <strong>7 days of delivery</strong>.
+                    The product must be unused and in original condition.
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-gold" style="flex: 2;">Submit Request</button>
+                    <button type="button" onclick="closeReturnModal()" class="btn btn-outline"
+                        style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links footer-explore">
+                    <h4>Explore</h4>
+                    <ul>
+                        <li><a href="about.html">About EFV<sup>TM</sup></a></li>
+                        <li><a href="https://uwo-743928421487.asia-south1.run.app" target="_blank"
+                                rel="noopener noreferrer">About UWO<sup>TM</sup></a></li>
+                        <li><a href="gallery.html">Gallery</a></li>
+                        <li><a href="terms.html">Terms &amp; Conditions</a></li>
+                        <li><a href="marketplace.html">Marketplace</a></li>
+                        <li><a href="partner-verification.html"
+                                style="color: var(--gold-energy); font-weight: 700;">Partner Portal</a></li>
+                        <li><a href="Feedback.html">Feedback</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div class="footer-info">
+                    <div class="logo footer-logo">
+                        <img src="../assets/images/AISA.svg" alt="EFV Logo">
+                        <span>EFV<sup>TM</sup></span>
+                    </div>
+                    <p>World's first EFV<sup>TM</sup> system. Designed for better living.</p>
+                </div>
+                <div class="footer-links footer-connect">
+                    <h4>Connect</h4>
+                    <div class="social-icons">
+                        <a href="https://www.facebook.com/profile.php?id=61585343488735" class="social-icon-link"
+                            aria-label="Facebook" target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/images/FB.svg" alt="Facebook"
+                                style="width: 32px; height: 32px; transition: transform 0.3s ease, opacity 0.3s ease;">
+                        </a>
+                        <a href="https://www.instagram.com/efv_framework/" class="social-icon-link"
+                            aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/images/Insta (1).svg" alt="Instagram"
+                                style="width: 32px; height: 32px; transition: transform 0.3s ease, opacity 0.3s ease;">
+                        </a>
+                        <a href="https://www.linkedin.com/in/efv-framework/" class="social-icon-link"
+                            aria-label="LinkedIn" target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/images/Linkedin.svg" alt="LinkedIn"
+                                style="width: 32px; height: 32px; transition: transform 0.3s ease, opacity 0.3s ease;">
+                        </a>
+                        <a href="https://www.threads.com/@efv_framework" class="social-icon-link" aria-label="Threads"
+                            target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/images/Threads.svg" alt="Threads"
+                                style="width: 32px; height: 32px; transition: transform 0.3s ease, opacity 0.3s ease;">
+                        </a>
+                        <a href="https://x.com/EfvFrame_work" class="social-icon-link" aria-label="X (Twitter)"
+                            target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/images/x.png" alt="X (Twitter)"
+                                style="width: 32px; height: 32px; transition: transform 0.3s ease, opacity 0.3s ease;">
+                        </a>
+                        <a href="https://www.youtube.com/@efv_framework" class="social-icon-link" aria-label="YouTube"
+                            target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/images/YT (1).svg" alt="YouTube"
+                                style="width: 32px; height: 32px; transition: transform 0.3s ease, opacity 0.3s ease;">
+                        </a>
+                        <a href="https://in.pinterest.com/EFV_Framework/" class="social-icon-link"
+                            aria-label="Pinterest" target="_blank" rel="noopener noreferrer">
+                            <img src="../assets/images/pinterset.png" alt="Pinterest" style="width: 26px; height: 26px;">
+                        </a>
+                        <a href="mailto:admin@uwo24.com" class="social-icon-link" aria-label="Gmail">
+                            <img src="../assets/images/gmail.png" alt="Gmail" style="width: 26px; height: 26px;">
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                &copy; UWO<sup>TM</sup> &mdash; EFV<sup>TM</sup> is a UWO<sup>TM</sup> Innovation.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="../js/api-config.js"></script>
+    <script src="../js/profile.js"></script>
+    <script src="../js/security.js"></script>
+</body>
+
+</html>

@@ -203,6 +203,15 @@
     .footer-info {
         order: -1 !important;
         /* Keep logo at top on mobile */
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+    }
+
+    .footer-logo {
+        align-items: center !important;
+        text-align: center !important;
+        margin-bottom: 20px !important;
     }
 }
 
@@ -286,7 +295,7 @@
     }
 
     /* Reset Flex Layouts - Safer selector */
-    section [style*="display: flex"]:not(.nav-actions):not(.footer-logo):not(.logo):not(.social-icons) {
+    section [style*="display: flex"]:not(.nav-actions):not(.footer-logo):not(.logo):not(.social-icons):not(.product-actions) {
         flex-direction: column !important;
         align-items: center !important;
         text-align: center !important;
@@ -401,6 +410,12 @@
         gap: 2px !important;
     }
 
+    .footer-logo {
+        align-items: center !important;
+        text-align: center !important;
+        margin: 0 auto !important;
+    }
+
     .hamburger {
         display: block !important;
     }
@@ -457,8 +472,8 @@
     /* Blog Cards Shortening */
     .blog-card,
     .glass-panel.blog-card {
-        height: auto !important;
-        min-height: 420px !important;
+        height: 320px !important;
+        min-height: 320px !important;
     }
 
     .blog-content {
@@ -550,15 +565,34 @@
     .product-card,
     .book-card,
     .testimonial-card {
-        max-width: 100%;
-        padding: 15px !important;
+        max-width: 280px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding: 12px !important;
+        min-height: auto !important;
+    }
+
+    .product-card .book-cover {
+        max-width: 130px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .product-card p {
+        font-size: 0.75rem !important;
+        margin-bottom: 8px !important;
+        min-height: unset !important;
+        line-height: 1.2 !important;
+    }
+
+    .product-card .price {
+        font-size: 1.1rem !important;
+        margin-bottom: 8px !important;
     }
 
     .book-cover {
-        max-width: 180px !important;
+        max-width: 140px !important;
         height: auto !important;
-        /* Overriding inline 240px height */
-        margin-bottom: 15px !important;
+        margin-bottom: 10px !important;
         margin-left: auto;
         margin-right: auto;
     }
@@ -665,6 +699,12 @@
 
     .admin-actions-grid {
         grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Stack cart items on mobile */
+    .cart-layout-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
     }
 }
 

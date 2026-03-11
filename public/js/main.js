@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Admin Navbar Visibility Logic - REMOVED as admin is now integrated in profile
     window.updateAdminNavbar = () => {
-        document.querySelectorAll('a[href="admin.html"]').forEach(link => {
+        document.querySelectorAll('a[href*="admin-dashboard.html"]').forEach(link => {
             link.parentElement.style.display = 'none';
         });
     };
@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dynamically inject Global I18n System
     const i18nScript = document.createElement('script');
-    i18nScript.src = 'js/i18n.js';
+    i18nScript.src = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'js/i18n.js';
     i18nScript.async = true;
     document.body.appendChild(i18nScript);
 });

@@ -373,11 +373,10 @@ function renderSummary(items, isRefresh = false) {
 
     list.innerHTML = currentCheckoutItems.map(item => {
         subtotal += item.price * item.quantity;
-        const imgPath = item.thumbnail || 'img/vol1-cover.png';
-
+        const imgPath = item.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
         return `
             <div class="checkout-item">
-                <img src="${imgPath}" alt="${item.name}" class="checkout-item-img" onerror="this.src='img/vol1-cover.png'">
+                <img src="${imgPath}" alt="${item.name}" class="checkout-item-img" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
                 <div class="checkout-item-info">
                     <div class="checkout-item-title">${item.name}</div>
                     <div class="checkout-item-meta">${item.subtitle || ''} | Qty: ${item.quantity}</div>
@@ -540,8 +539,8 @@ function setupPlaceOrder(items, user) {
             // CALL DIRECT COD ORDER API
             await placeCODOrder(orderData, appliedCoupon ? appliedCoupon.code : null);
         } else {
-            showToast('Initializing Online Payment...');
-            await initCashfree(orderData, appliedCoupon ? appliedCoupon.code : null);
+            showToast('Initializing Payment...');
+            await initRazorpay(orderData, appliedCoupon ? appliedCoupon.code : null);
         }
     });
 }
@@ -580,7 +579,7 @@ async function placeCODOrder(orderData, couponCode) {
 
         showToast('✅ Order Placed Successfully!');
         setTimeout(() => {
-            window.location.href = 'profile.html?tab=orders';
+                        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html?tab=orders';
         }, 1500);
 
     } catch (e) {
@@ -590,77 +589,142 @@ async function placeCODOrder(orderData, couponCode) {
     }
 }
 
-async function initCashfree(order, couponCode = null) {
+async function initRazorpay(order, couponCode = null) {
     const btn = document.getElementById('place-order-btn');
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING CASHFREE...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING RAZORPAY...';
 
     try {
-        // Fetch config to get mode
+        // 1. Fetch Razorpay Key ID from backend config
         const configRes = await fetch(`${API_BASE}/api/orders/config`);
-        const { cashfreeMode } = await configRes.json();
+        const config    = await configRes.json();
+        const keyId     = config.razorpayKeyId;
+        if (!keyId) throw new Error('Razorpay key not found in server config.');
 
-        const response = await fetch(`${API_BASE}/api/orders/cashfree`, {
-            method: 'POST',
+        // 2. Create Razorpay Order on backend
+        const response = await fetch(`${API_BASE}/api/orders/razorpay`, {
+            method : 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type' : 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             },
             body: JSON.stringify({
-                amount: order.totalAmount,
-                customerName: order.shippingAddress.name,
+                amount       : order.totalAmount,
+                customerName : order.shippingAddress.name,
                 customerEmail: order.shippingAddress.email,
-                customerPhone: order.shippingAddress.phone,
-                couponCode: couponCode // Pass coupon to backend
+                customerPhone: order.shippingAddress.phone
             })
         });
 
-        const text = await response.text();
-        let cfData;
-        try {
-            cfData = JSON.parse(text);
-        } catch (err) {
-            console.error('SERVER RESPONSE WAS NOT JSON:', text);
-            throw new Error('Server returned non-JSON response. Check console for details.');
-        }
+        const rzpData = await response.json();
+        if (!response.ok) throw new Error(rzpData.message || 'Razorpay order creation failed');
 
-        if (!response.ok) {
-            const errorMsg = cfData.error ? JSON.stringify(cfData.error) : (cfData.message || 'Cashfree init failed');
-            throw new Error(errorMsg);
-        }
+        // 3. Dynamically load Razorpay SDK (if not already loaded)
+        await loadRazorpayScript();
 
-        const cashfree = Cashfree({
-            mode: cashfreeMode || "sandbox"
-        });
+        // 4. Open Razorpay Checkout Modal
+        const options = {
+            key         : keyId,
+            amount      : rzpData.amount,        // paise from backend
+            currency    : rzpData.currency || 'INR',
+            name        : 'Extraordinary Founder Vault',
+            description : 'Order Payment',
+            image       : CONFIG.BASE_PATH + 'assets/images/logo.png',
+            order_id    : rzpData.rzpOrderId,
+            prefill     : {
+                name   : order.shippingAddress.name,
+                email  : order.shippingAddress.email,
+                contact: order.shippingAddress.phone
+            },
+            notes       : {
+                couponCode: couponCode || ''
+            },
+            theme       : { color: '#c9a84c' },
 
-        let checkoutOptions = {
-            paymentSessionId: cfData.payment_session_id,
-            redirectTarget: "_self", // Optional: "_self" for same window
+            handler: async function(rzpResponse) {
+                // 5. Verify on backend & fulfill order
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> VERIFYING PAYMENT...';
+
+                try {
+                    const verifyRes = await fetch(`${API_BASE}/api/orders/verify-razorpay`, {
+                        method : 'POST',
+                        headers: {
+                            'Content-Type' : 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        },
+                        body: JSON.stringify({
+                            razorpay_order_id  : rzpResponse.razorpay_order_id,
+                            razorpay_payment_id: rzpResponse.razorpay_payment_id,
+                            razorpay_signature : rzpResponse.razorpay_signature,
+                            customer           : order.shippingAddress,
+                            items              : order.products,
+                            couponCode         : couponCode
+                        })
+                    });
+
+                    const result = await verifyRes.json();
+                    if (!verifyRes.ok) throw new Error(result.message || 'Verification failed');
+
+                    // Clear cart
+                    if (!localStorage.getItem('directCheckout')) {
+                        const user = JSON.parse(localStorage.getItem('efv_user'));
+                        if (user && user.email) {
+                            const cleanEmail = user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                            localStorage.removeItem(`efv_cart_${cleanEmail}`);
+                        }
+                        localStorage.removeItem('efv_cart');
+                    }
+                    localStorage.removeItem('directCheckout');
+                    localStorage.removeItem('efv_applied_coupon');
+
+                    showToast('✅ Payment Successful! Redirecting...');
+                    setTimeout(() => {
+                                    window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html?tab=orders';
+                    }, 1500);
+
+                } catch (verifyErr) {
+                    alert('Payment was deducted but verification failed: ' + verifyErr.message +
+                          '\nPlease contact support with Payment ID: ' + rzpResponse.razorpay_payment_id);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            },
+
+            modal: {
+                ondismiss: function() {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            }
         };
 
-        // Note: verifyPayment will be called after redirect or via a callback if supported by SDK setup
-        // For simplicity with v3 Web SDK, we can use the following approach:
-        cashfree.checkout(checkoutOptions).then((result) => {
-            if (result.error) {
-                alert(result.error.message);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-            if (result.redirect) {
-                console.log("Redirecting to payment page...");
-            }
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', function(response) {
+            alert('Payment failed: ' + (response.error.description || 'Unknown error') +
+                  '\nReason: ' + (response.error.reason || ''));
+            btn.disabled = false;
+            btn.innerHTML = originalText;
         });
-
-        // However, if we want to handle verification on the same page for a smoother UX:
-        // We'd need to use the headless/elements approach or check the status after redirect.
-        // For now, let's assume direct verification if possible or guide the user.
+        rzp.open();
 
     } catch (e) {
         alert('Payment Error: ' + e.message);
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
+}
+
+// Dynamically load Razorpay checkout JS
+function loadRazorpayScript() {
+    return new Promise((resolve, reject) => {
+        if (window.Razorpay) { resolve(); return; }
+        const script  = document.createElement('script');
+        script.src    = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load Razorpay SDK'));
+        document.head.appendChild(script);
+    });
 }
 
 async function verifyCashfreePayment(cfOrderId, localOrder) {
@@ -699,7 +763,7 @@ async function verifyCashfreePayment(cfOrderId, localOrder) {
             }
             localStorage.removeItem('directCheckout');
             alert('✅ Payment Successful! Your order is being processed.');
-            window.location.href = 'profile.html?tab=orders';
+            window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html?tab=orders';
         } else {
             throw new Error(verification.message || 'Verification Failed');
         }

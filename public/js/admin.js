@@ -346,13 +346,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const isAdmin = user && (user.role === 'admin' || (user.email && user.email.toLowerCase() === 'admin@uwo24.com'));
     if (isAdminPage && !isAdmin) {
         console.warn("Security: Unauthorized admin access attempt.");
-        window.location.href = 'profile.html';
+            window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
         return;
     }
 
     // 2. If Admin tries to access Customer Profile -> Bounce to Admin Dashboard
     if (isProfilePage && isAdmin) {
-        window.location.href = 'admin-dashboard.html';
+        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/admin-dashboard.html';
         return;
     }
 
@@ -424,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Security: Bounce Non-Admins from Admin Sections
         if ((effectiveTabId === 'admin-settings' || effectiveTabId.startsWith('admin-')) && !isAdmin) {
             console.warn("Unauthorized access attempt blocked.");
-            window.location.href = 'profile.html';
+                window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
             return;
         }
 
@@ -501,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'admin-settings') {
                 const isAdmin = user && (user.role === 'admin' || user.email.toLowerCase() === 'admin@uwo24.com');
                 if (!isAdmin) {
-                    window.location.href = 'profile.html'; // Bounce back
+                    window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html'; // Bounce back
                 } else {
                     initializeAdminSettings();
                 }
@@ -635,7 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('efv_digital_library');
             localStorage.removeItem('efv_purchase_history');
             localStorage.removeItem('efv_cart');
-            window.location.href = 'index.html';
+            window.location.href = CONFIG.BASE_PATH + 'index.html';
         }
     };
 
@@ -2161,9 +2161,9 @@ window.accessDigitalContent = function (name, id, type) {
 
 // Helper for images
 function getImageForProduct(name) {
-    if (name.includes('VOL 1')) return 'img/vol1-cover.png';
-    if (name.includes('VOL 2')) return 'img/vol 2.png';
-    return 'img/vol1-cover.png';
+    if (name.includes('VOL 1')) return CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+    if (name.includes('VOL 2')) return CONFIG.BASE_PATH + 'assets/images/vol 2.png';
+    return CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
 }
 
 
@@ -2361,13 +2361,13 @@ window.renderAdminProducts = function (products) {
         tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
 
         // Dynamic Thumbnail Resolver
-        let thumbUrl = 'img/placeholder.png';
+        let thumbUrl = CONFIG.BASE_PATH + 'assets/images/placeholder.png';
         if (p.thumbnail) {
             if (p.thumbnail.startsWith('http')) {
                 thumbUrl = p.thumbnail;
             } else if (p.thumbnail.startsWith('img/')) {
-                // Shared frontend images
-                thumbUrl = p.thumbnail;
+                // Shared frontend images - transform to new assets path
+                thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + p.thumbnail.replace('img/', '');
             } else {
                 // Backend uploads
                 thumbUrl = `${API_BASE}/${p.thumbnail}`;

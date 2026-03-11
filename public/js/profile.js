@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = JSON.parse(localStorage.getItem('efv_user'));
 
     if (!user) {
-        window.location.href = 'index.html';
+        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'index.html';
         return;
     }
 
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isProfilePage && isAdmin) {
         // Admins strictly forbidden from customer profile
-        window.location.href = 'admin-dashboard.html';
+        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/admin-dashboard.html';
         return;
     }
 
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('efv_digital_library');
             localStorage.removeItem('efv_purchase_history');
             localStorage.removeItem('efv_cart');
-            window.location.href = 'index.html';
+            window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'index.html';
         }
     };
 
@@ -453,7 +453,7 @@ window.switchTab = function (tabId, subTab = null) {
     // 2. Security: Bounce Non-Admins from Admin Sections
     if ((effectiveTabId === 'admin-settings' || effectiveTabId.startsWith('admin-')) && !isAdmin) {
         console.warn("Unauthorized access attempt blocked.");
-        window.location.href = 'profile.html';
+        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
         return;
     }
 
@@ -1001,9 +1001,9 @@ async function renderOrdersTab(filter = 'all') {
         // Apply filters
         if (filter === 'active') {
             const inactiveStatuses = ['delivered', 'cancelled', 'returned', 'failed'];
-            orders = orders.filter(o => !inactiveStatuses.includes(o.status.toLowerCase()));
+            orders = orders.filter(o => o.status && !inactiveStatuses.includes(o.status.toLowerCase()));
         } else if (filter !== 'all') {
-            orders = orders.filter(o => o.status.toLowerCase() === filter.toLowerCase());
+            orders = orders.filter(o => o.status && o.status.toLowerCase() === filter.toLowerCase());
         }
 
         if (orders.length === 0) {
@@ -1015,7 +1015,7 @@ async function renderOrdersTab(filter = 'all') {
 
         container.innerHTML = orders.map(order => {
             const date = new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-            const statusClass = `status-${order.status.toLowerCase().replace(/\s/g, '-')}`;
+            const statusClass = order.status ? `status-${order.status.toLowerCase().replace(/\s/g, '-')}` : 'status-unknown';
 
             // Check for Return Request status
             const returnReq = returns.find(r => r.orderId === order.orderId);
@@ -1055,7 +1055,7 @@ async function renderOrdersTab(filter = 'all') {
             }
 
             // Format items as a professional list
-            const itemsHtml = order.items.map(item => `
+            const itemsHtml = (order.items || []).map(item => `
                 <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border_bottom: 1px solid rgba(255,255,255,0.03);">
                     <div style="display:flex; flex-direction:column;">
                         <span style="font-size: 0.9rem; font-weight: 600; color: #fff;">${item.title}</span>
@@ -1549,7 +1549,7 @@ function renderLibraryTab(directData = null, typeFilter = null) {
             <div class="dashboard-card fade-in">
                 <div class="card-image-container">
                     <span class="card-type-badge">${item.type}</span>
-                    <img src="${item.thumbnail || 'img/vol1-cover.png'}" alt="${item.name}" class="card-image" onerror="this.src='img/vol1-cover.png'">
+                    <img src="${item.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png')}" alt="${item.name}" class="card-image" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
                 </div>
                 <div class="card-details">
                     ${item.language ? `<span style="display:inline-block; background: rgba(212,175,55,0.15); border: 1px solid var(--gold-energy); color: var(--gold-energy); padding: 1px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase;">${item.language} Edition</span>` : ''}
@@ -1817,7 +1817,7 @@ function renderCheckoutSummaryItems() {
             return `
                 <div class="premium-summary-card" style="margin-bottom: 15px;">
                     <div class="premium-summary-image-col">
-                        <img src="${item.thumbnail || 'img/vol1-cover.png'}" onerror="this.src='img/vol1-cover.png'">
+                        <img src="${item.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png')}" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
                     </div>
                     <div class="premium-summary-details">
                         <div class="edition-text" style="margin-bottom: 4px;">${edition}</div>
@@ -2415,8 +2415,8 @@ async function renderAudiobooksGrid() {
         const progressPercent = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
 
         // Thumbnail resolution
-        let thumbUrl = item.thumbnail || 'img/vol1-cover.png';
-        if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith('img/')) {
+        let thumbUrl = item.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
+        if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
             thumbUrl = `${API_BASE}/${thumbUrl}`;
         }
 
@@ -2426,7 +2426,7 @@ async function renderAudiobooksGrid() {
         return `
             <div class="audiobook-card fade-in">
                 <div class="audiobook-card-inner">
-                    <img src="${thumbUrl}" alt="${item.name || item.title}" class="audiobook-card-cover" onerror="this.src='img/vol1-cover.png'">
+                    <img src="${thumbUrl}" alt="${item.name || item.title}" class="audiobook-card-cover" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
                     <div class="audiobook-card-info">
                         <h3 class="audiobook-card-title">${item.name || item.title}</h3>
                         ${item.language ? `<span style="display:inline-block; background:rgba(212,175,55,0.12); border:1px solid rgba(255,211,105,0.2); color:var(--gold-text); padding:2px 8px; border-radius:4px; font-size:0.65rem; font-weight:700; text-transform:uppercase; margin-bottom:6px; width:fit-content;">${item.language} Edition</span>` : ''}
@@ -2495,8 +2495,8 @@ window.openAudiobookDetail = async function (productId, scrollToChapters = false
     const progressPercent = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
 
     // Thumbnail
-    let thumbUrl = product.thumbnail || 'img/vol1-cover.png';
-    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith('img/')) {
+    let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
+    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
         thumbUrl = `${API_BASE}/${thumbUrl}`;
     }
 
@@ -2533,7 +2533,7 @@ window.openAudiobookDetail = async function (productId, scrollToChapters = false
 
             <div class="ab-detail-body">
                 <div class="ab-detail-hero">
-                    <img src="${thumbUrl}" alt="${product.title}" class="ab-detail-cover" onerror="this.src='img/vol1-cover.png'">
+                    <img src="${thumbUrl}" alt="${product.title}" class="ab-detail-cover" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
                     <h2 class="ab-detail-title">${product.title}</h2>
                     <div class="ab-detail-meta">
                         <div class="ab-detail-meta-item"><i class="fas fa-list-ol"></i> <strong>${totalChapters}</strong> Chapters</div>
@@ -2633,8 +2633,8 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
     }
 
     // Thumbnail
-    let thumbUrl = product.thumbnail || 'img/vol1-cover.png';
-    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith('img/')) {
+    let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
+    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
         thumbUrl = `${API_BASE}/${thumbUrl}`;
     }
 
@@ -2654,7 +2654,7 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
             </div>
 
             <div class="efv-player-body">
-                <img src="${thumbUrl}" alt="${product.title}" class="efv-player-cover" id="efv-player-cover" onerror="this.src='img/vol1-cover.png'">
+                <img src="${thumbUrl}" alt="${product.title}" class="efv-player-cover" id="efv-player-cover" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
 
                 <h2 class="efv-player-chapter-title" id="efv-player-ch-title">${chTitle}</h2>
                 <p class="efv-player-book-title">${product.title}</p>
@@ -2977,7 +2977,7 @@ window.playAudiobook = async function (product) {
 
     // Thumbnail
     let thumbUrl = product.thumbnail || getImageForProduct(product.name);
-    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith('img/')) {
+    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
         thumbUrl = `${API_BASE}/${thumbUrl}`;
     }
 
@@ -2988,7 +2988,7 @@ window.playAudiobook = async function (product) {
                 <button class="ab-detail-close" onclick="closeLegacyPlayer()"><i class="fas fa-times"></i></button>
             </div>
             <div class="efv-player-body">
-                <img src="${thumbUrl}" class="efv-player-cover" onerror="this.src='img/vol1-cover.png'">
+                <img src="${thumbUrl}" class="efv-player-cover" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
                 <h2 class="efv-player-chapter-title">${product.name}</h2>
                 <div class="efv-player-seek-container">
                     <div class="efv-player-time-row">
@@ -3153,9 +3153,9 @@ window.accessDigitalContent = function (name, id, type) {
 
 // Helper for images
 function getImageForProduct(name) {
-    if (name.includes('VOL 1')) return 'img/vol1-cover.png';
-    if (name.includes('VOL 2')) return 'img/vol 2.png';
-    return 'img/vol1-cover.png';
+    if (name.includes('VOL 1')) return CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+    if (name.includes('VOL 2')) return CONFIG.BASE_PATH + 'assets/images/vol 2.png';
+    return CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
 }
 
 
@@ -3283,13 +3283,13 @@ window.renderAdminProducts = function (products) {
         tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
 
         // Dynamic Thumbnail Resolver
-        let thumbUrl = 'img/placeholder.png';
+        let thumbUrl = CONFIG.BASE_PATH + 'assets/images/placeholder.png';
         if (p.thumbnail) {
-            if (p.thumbnail.startsWith('http')) {
+            if (p.thumbnail && p.thumbnail.startsWith('http')) {
                 thumbUrl = p.thumbnail;
-            } else if (p.thumbnail.startsWith('img/')) {
-                // Shared frontend images
-                thumbUrl = p.thumbnail;
+            } else if (p.thumbnail && p.thumbnail.startsWith('img/')) {
+                // Shared frontend images - transform to new assets path
+                thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + p.thumbnail.replace('img/', '');
             } else {
                 // Backend uploads
                 thumbUrl = `${API_BASE}/${p.thumbnail}`;
@@ -3876,11 +3876,40 @@ window.downloadInvoice = async function (orderId) {
 
         currentY = totalBoxY + 8;
         doc.setFontSize(10);
-        doc.text("Subtotal:", 130, currentY);
+        
+        const itemsTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        doc.text("Items Total:", 130, currentY);
+        doc.text(`INR ${itemsTotal.toFixed(2)}`, 175, currentY);
+
+        if (order.shippingCharges > 0) {
+            currentY += 8;
+            doc.text("Shipping Charges:", 130, currentY);
+            doc.text(`INR ${order.shippingCharges.toFixed(2)}`, 175, currentY);
+        }
+
+        if (order.codCharges > 0) {
+            currentY += 8;
+            doc.text("COD Charges:", 130, currentY);
+            doc.text(`INR ${order.codCharges.toFixed(2)}`, 175, currentY);
+        }
+
+        if (order.discountAmount > 0) {
+            currentY += 8;
+            doc.setTextColor(200, 0, 0); // Red for discount
+            doc.text(`Discount (${order.couponCode || 'COUPON'}):`, 130, currentY);
+            doc.text(`- INR ${order.discountAmount.toFixed(2)}`, 175, currentY);
+            doc.setTextColor(0, 0, 0); // Reset
+        }
+
+        currentY += 10;
+        doc.setDrawColor(245, 245, 245);
+        doc.line(130, currentY - 5, 190, currentY - 5);
+
+        doc.text("Taxable Value:", 130, currentY);
         doc.text(`INR ${(order.totalAmount / 1.18).toFixed(2)}`, 175, currentY);
 
         currentY += 8;
-        doc.text("Tax (GST 18%):", 130, currentY);
+        doc.text("GST (18%):", 130, currentY);
         doc.text(`INR ${(order.totalAmount - (order.totalAmount / 1.18)).toFixed(2)}`, 175, currentY);
 
         currentY += 12;
@@ -4201,7 +4230,7 @@ window.loadRecentlyViewed = function () {
 function renderMiniProductCard(p) {
     return `
         <div class="mini-product-card glass-panel" onclick="location.href='marketplace.html?id=${p._id || p.id}'">
-            <img src="${p.thumbnail || 'img/vol1-cover.png'}" alt="${p.title}">
+            <img src="${p.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png')}" alt="${p.title}">
             <div class="mini-card-info">
                 <h4>${p.title}</h4>
                 <p class="gold-text">₹${p.price}</p>
@@ -4282,14 +4311,14 @@ window.renderCartTab = function () {
                 <div style="position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(255,211,105,0.3), transparent);"></div>
 
                 <div style="position: relative; flex-shrink: 0;">
-                    <img src="${item.thumbnail || 'img/vol1-cover.png'}" class="cart-cover-img"
+                    <img src="${item.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png')}" class="cart-cover-img"
                         style="width: 75px; height: 105px; object-fit: cover; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); border: 1px solid rgba(255,211,105,0.2);"
-                        onerror="this.src='img/vol1-cover.png'">
+                        onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
                 </div>
 
                 <!-- Info -->
-                <div style="flex: 1; min-width: 0;">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <div class="cart-item-info-col" style="flex: 1; min-width: 0;">
+                    <div class="cart-item-title-row" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                         <h4 class="cart-item-title" style="margin: 0; font-size: 1rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             ${item.name || item.title}
                         </h4>
@@ -4300,7 +4329,7 @@ window.renderCartTab = function () {
                     </p>
 
                     <!-- Qty + Price Row -->
-                    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <div class="cart-price-col" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                         <!-- Qty Selector -->
                         <div class="cart-qty-ctrl" style="
                             display: flex !important; align-items: center !important; gap: 0 !important;
@@ -4345,7 +4374,7 @@ window.renderCartTab = function () {
                 </div>
 
                 <!-- Remove Button -->
-                <button onclick="removeFromCart('${item.id}')" style="
+                <button class="cart-remove-btn" onclick="removeFromCart('${item.id}')" style="
                     flex-shrink: 0;
                     background: rgba(255, 77, 77, 0.1);
                     border: 1px solid rgba(255, 77, 77, 0.2);

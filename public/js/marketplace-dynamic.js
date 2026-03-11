@@ -16,7 +16,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Hardcover Edition',
         type: 'HARDCOVER',
         price: 599,
-        thumbnail: 'img/vol1-cover.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol1-cover.png',
         category: 'Physical',
         description: 'Learn the secrets of Energy and Alignment. Premium hardcover book.',
         language: 'Hindi',
@@ -28,7 +28,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Paperback Edition',
         type: 'PAPERBACK',
         price: 299,
-        thumbnail: 'img/vol1-cover.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol1-cover.png',
         category: 'Physical',
         description: 'Learn the secrets of Energy and Alignment. Easy-to-carry paperback book.',
         language: 'Hindi',
@@ -40,7 +40,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'E-Book Edition',
         type: 'EBOOK',
         price: 149,
-        thumbnail: 'img/vol1-cover.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol1-cover.png',
         category: 'Digital',
         description: 'The complete digital version of Volume 1. Accessible on all devices.',
         language: 'Hindi',
@@ -52,7 +52,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Audiobook Edition',
         type: 'AUDIOBOOK',
         price: 199,
-        thumbnail: 'img/vol1-cover.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol1-cover.png',
         category: 'Digital',
         description: 'The immersive audio experience of Volume 1. Listen and align on the go.',
         language: 'Hindi',
@@ -68,7 +68,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Hardcover Edition',
         type: 'HARDCOVER',
         price: 499,
-        thumbnail: 'img/english_v1.jpeg',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/english_v1.jpeg',
         category: 'Physical',
         description: 'The English hardcover edition of the foundational Volume 1.',
         language: 'English',
@@ -80,7 +80,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Paperback Edition',
         type: 'PAPERBACK',
         price: 298,
-        thumbnail: 'img/english_v1.jpeg',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/english_v1.jpeg',
         category: 'Physical',
         description: 'Explore the secrets of Energy and Alignment in English. Easy-to-carry paperback.',
         language: 'English',
@@ -92,7 +92,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'E-Book Edition',
         type: 'EBOOK',
         price: 149,
-        thumbnail: 'img/english_v1.jpeg',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/english_v1.jpeg',
         category: 'Digital',
         description: 'The complete English digital version of Volume 1.',
         language: 'English',
@@ -104,7 +104,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Audiobook Edition',
         type: 'AUDIOBOOK',
         price: 199,
-        thumbnail: 'img/english_v1.jpeg',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/english_v1.jpeg',
         category: 'Digital',
         description: 'The immersive English audio experience of Volume 1.',
         language: 'English',
@@ -120,7 +120,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Hardcover Edition',
         type: 'HARDCOVER',
         price: 649,
-        thumbnail: 'img/vol 2.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol 2.png',
         category: 'Physical',
         description: 'An exploration of how thoughts and emotions shape our inner world.',
         language: 'Hindi',
@@ -132,7 +132,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Paperback Edition',
         type: 'PAPERBACK',
         price: 449,
-        thumbnail: 'img/vol 2.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol 2.png',
         category: 'Physical',
         description: 'Decoding Thought, Emotion & The Architecture Of The Human Mind.',
         language: 'Hindi',
@@ -144,7 +144,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'E-Book Edition',
         type: 'EBOOK',
         price: 199,
-        thumbnail: 'img/vol 2.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol 2.png',
         category: 'Digital',
         description: 'The complete digital version of Volume 2. Accessible on all devices.',
         language: 'Hindi',
@@ -156,7 +156,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Audiobook Edition',
         type: 'AUDIOBOOK',
         price: 249,
-        thumbnail: 'img/vol 2.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol 2.png',
         category: 'Digital',
         description: 'The immersive audio experience of Volume 2. Listen and align on the go.',
         language: 'Hindi',
@@ -172,7 +172,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Hardcover Edition',
         type: 'HARDCOVER',
         price: 699,
-        thumbnail: 'img/vol 2.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol 2.png',
         category: 'Physical',
         description: 'The English hardcover edition of Volume 2. Explore the architecture of the human mind.',
         language: 'English',
@@ -184,7 +184,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Paperback Edition',
         type: 'PAPERBACK',
         price: 499,
-        thumbnail: 'img/vol 2.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol 2.png',
         category: 'Physical',
         description: 'The English paperback edition. Decoding Thought, Emotion & The Architecture Of The Human Mind.',
         language: 'English',
@@ -196,7 +196,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'E-Book Edition',
         type: 'EBOOK',
         price: 249,
-        thumbnail: 'img/vol 2.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol 2.png',
         category: 'Digital',
         description: 'The complete English digital version of Volume 2.',
         language: 'English',
@@ -208,7 +208,7 @@ const STATIC_PRODUCTS = [
         subtitle: 'Audiobook Edition',
         type: 'AUDIOBOOK',
         price: 299,
-        thumbnail: 'img/vol 2.png',
+        thumbnail: CONFIG.BASE_PATH + 'assets/images/vol 2.png',
         category: 'Digital',
         description: 'The English audio experience of Volume 2.',
         language: 'English',
@@ -322,11 +322,16 @@ document.addEventListener('DOMContentLoaded', () => {
             'ebook': '#7B68EE'
         }[rawType] || 'var(--gold-energy)';
 
-        const imageUrl = product.thumbnail
-            ? (product.thumbnail.startsWith('http') || product.thumbnail.startsWith('img/')
-                ? product.thumbnail
-                : `${API_BASE}/${product.thumbnail}`)
-            : 'img/vol1-cover.png';
+        let imageUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+        if (product.thumbnail) {
+            if (product.thumbnail.startsWith('http') || product.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+                imageUrl = product.thumbnail;
+            } else if (product.thumbnail.startsWith('img/')) {
+                imageUrl = CONFIG.BASE_PATH + 'assets/images/' + product.thumbnail.replace('img/', '');
+            } else {
+                imageUrl = `${API_BASE}/${product.thumbnail}`;
+            }
+        }
 
         const isDigital = rawType === 'audiobook' || rawType === 'ebook';
         const isVol2 = product.volume === '2' || product.volume === 2 || (product._id || product.id || '').toLowerCase().includes('v2');
@@ -354,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span style="position: absolute; top: 5px; right: 5px; background: ${typeBadgeColor}; color: black; padding: 2px 8px; border-radius: 3px; font-size: 0.6rem; font-weight: 800; z-index: 5; text-transform: uppercase;">${typeLabel}</span>
                 <img src="${imageUrl}" alt="${product.title}" loading="lazy"
                     style="width: 100%; height: 100%; object-fit: cover;"
-                    onerror="this.src='img/vol1-cover.png'">
+                    onerror="this.src=CONFIG.BASE_PATH + 'assets/images/vol1-cover.png'">
             </div>
             <div class="product-info" style="text-align: center;">
                 ${langBadge}
@@ -370,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${product.description || 'Discover the secrets of Energy and Alignment.'}
             </p>
             <span class="price" style="font-size: 1.15rem; display: block; text-align: center; margin-bottom: 10px; font-weight: 800; color: #fff;">₹${product.price}</span>
-            <div style="display: flex; gap: 8px; justify-content: center; margin-top: auto;">
+            <div class="product-actions" style="display: flex; gap: 8px; justify-content: center; margin-top: auto;">
                 <button class="btn btn-outline view-info" ${isComingSoon ? 'disabled style="opacity: 0.5; padding: 6px 12px; font-size: 0.65rem;"' : 'style="padding: 6px 12px; font-size: 0.65rem; min-width: 95px; border-width: 1px;"'}>
                     <i class="fas fa-info-circle" style="margin-right: 5px;"></i> INFO
                 </button>
