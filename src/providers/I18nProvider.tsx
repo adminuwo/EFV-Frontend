@@ -45,7 +45,13 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [currentLanguage, setCurrentLanguage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('efv_lang') || 'en';
+    }
+    return 'en';
+  });
+
   // Initialize from localStorage directly if in browser to show popup instantly
   const [showCountryPopup, setShowCountryPopup] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -57,17 +63,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
-    // Check local storage for existing preference
-    const savedLang = localStorage.getItem('efv_lang');
     
-    if (savedLang) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCurrentLanguage(savedLang);
-      // Optional: Set google translate cookie to force language if it's not English
-      if (savedLang !== 'en') {
-        document.cookie = `googtrans=/en/${savedLang}; path=/`;
-      }
+    // Check for cookie sync on English
+    if (currentLanguage !== 'en') {
+      document.cookie = `googtrans=/en/${currentLanguage}; path=/`;
     }
 
     // Add Google Translate Script
@@ -80,8 +81,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       // Attempt to set default combo immediately after initialization
       setTimeout(() => {
         const selectElement = document.querySelector('.goog-te-combo') as HTMLSelectElement;
-        if (selectElement && savedLang && savedLang !== 'en') {
-          selectElement.value = savedLang;
+        if (selectElement && currentLanguage && currentLanguage !== 'en') {
+          selectElement.value = currentLanguage;
           selectElement.dispatchEvent(new Event('change'));
         }
       }, 1000);
