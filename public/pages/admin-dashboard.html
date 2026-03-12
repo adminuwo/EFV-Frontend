@@ -112,6 +112,10 @@
                 <button class="nav-item admin-nav hidden" data-tab="admin-partners" id="sidebar-partners-btn" onclick="switchTab('admin-partners')">
                     <i class="fas fa-handshake"></i> <span>Partner Marketing</span>
                 </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-partner-messages" onclick="switchTab('admin-partner-messages')">
+                    <i class="fas fa-comments"></i> <span>Partner Messages</span>
+                    <span id="admin-msg-badge" class="badge red hidden">0</span>
+                </button>
                 <button class="nav-item admin-nav hidden" data-tab="admin-contacts">
                     <i class="fas fa-envelope-open-text"></i> <span>Contact Messages</span>
                 </button>
@@ -1245,6 +1249,59 @@
                 </div>
             </section>
 
+            <!-- PARTNER MESSAGES SECTION -->
+            <section id="admin-partner-messages" class="content-section">
+                <header class="content-header">
+                    <h1>Partner <span class="gold-text">Messages</span></h1>
+                    <p>Communication with marketing partners</p>
+                </header>
+
+                <div class="partner-support-layout" style="display: grid; grid-template-columns: 350px 1fr; gap: 25px; min-height: 600px;">
+                    <!-- Partner List Side -->
+                    <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column;">
+                        <h3 style="font-family: 'Cinzel', serif; font-size: 1rem; margin-bottom: 20px; color: var(--gold-text);">Conversations</h3>
+                        <div id="admin-partner-msg-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Populated via JS -->
+                            <div style="text-align: center; opacity: 0.5; padding: 20px;">Loading conversations...</div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Box Side -->
+                    <div class="glass-panel" id="admin-chat-box" style="padding: 0; display: flex; flex-direction: column; position: relative;">
+                        <!-- Initial State -->
+                        <div id="admin-chat-empty" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.3;">
+                            <i class="fas fa-comments fa-4x" style="margin-bottom: 20px;"></i>
+                            <p>Select a partner to view conversation</p>
+                        </div>
+
+                        <!-- Active Chat Container (Hidden by default) -->
+                        <div id="admin-chat-active" style="display: none; height: 100%; flex-direction: column;">
+                            <div class="chat-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 id="admin-chat-partner-name" style="margin: 0; color: var(--gold-text);">Partner Name</h4>
+                                    <p id="admin-chat-partner-email" style="margin: 0; font-size: 0.8rem; opacity: 0.6;">email@example.com</p>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn btn-outline small" onclick="markPartnerResolved()">Mark Resolved</button>
+                                    <button class="btn btn-outline small" onclick="loadPartnerChat(selectedPartnerId)"><i class="fas fa-sync"></i></button>
+                                </div>
+                            </div>
+
+                            <div id="admin-chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                                <!-- Messages injected here -->
+                            </div>
+
+                            <div class="chat-footer" style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <form id="admin-reply-form" style="display: flex; gap: 10px;">
+                                    <input type="text" id="admin-reply-input" class="p-input" placeholder="Type your reply..." style="flex: 1; background: rgba(0,0,0,0.5); border-radius: 8px;" required>
+                                    <button type="submit" class="btn btn-gold small" style="height: 45px;">Send</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- WISHLIST TAB -->
             <section id="wishlist" class="content-section">
                 <header class="content-header">
@@ -2212,6 +2269,184 @@
             } catch (err) { showToast('Delete failed', 'error'); }
         };
 
+        // --- PARTNER MESSAGES LOGIC ---
+        let selectedPartnerId = null;
+        
+        window.fetchPartnerMessages = async function() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`${PARTNER_API_BASE}/api/partner-messages/admin/summary`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed to load messages');
+                const summary = await res.json();
+                renderPartnerMessageSummary(summary);
+                updateAdminMessageBadge(summary);
+            } catch (error) {
+                console.error(error);
+                document.getElementById('admin-partner-msg-list').innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px;">Error loading messages</div>`;
+            }
+        };
+
+        function updateAdminMessageBadge(summary) {
+            const badge = document.getElementById('admin-msg-badge');
+            if(!badge) return;
+            const totalUnread = summary.reduce((acc, curr) => acc + curr.unreadCount, 0);
+            if(totalUnread > 0) {
+                badge.textContent = totalUnread;
+                badge.style.display = 'inline-block';
+                badge.classList.remove('hidden');
+            } else {
+                badge.style.display = 'none';
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderPartnerMessageSummary(summary) {
+            const list = document.getElementById('admin-partner-msg-list');
+            list.innerHTML = '';
+            
+            if (summary.length === 0) {
+                list.innerHTML = `<div style="text-align: center; opacity: 0.5; padding: 20px;">No messages found</div>`;
+                return;
+            }
+
+            summary.forEach(item => {
+                const div = document.createElement('div');
+                const isSelected = item.partnerId === selectedPartnerId;
+                div.className = `glass-panel msg-summary-card ${isSelected ? 'selected' : ''}`;
+                div.style.padding = '15px';
+                div.style.cursor = 'pointer';
+                div.style.transition = '0.3s';
+                div.style.border = isSelected ? '1px solid var(--gold-text)' : '1px solid rgba(255,255,255,0.05)';
+                div.onclick = () => loadPartnerChat(item.partnerId);
+
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="font-weight: 600; color: var(--gold-text);">${item.partnerName}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.5;">${new Date(item.lastDate).toLocaleDateString()}</div>
+                    </div>
+                    <div style="font-size: 0.8rem; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 5px;">
+                        ${item.lastMessage}
+                    </div>
+                    ${item.unreadCount > 0 ? `<div style="margin-top: 10px; display: inline-block; background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">${item.unreadCount} New</div>` : ''}
+                    ${item.status === 'Resolved' ? `<div style="margin-top: 10px; display: inline-block; background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">Resolved</div>` : ''}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        window.loadPartnerChat = async function(partnerId) {
+            selectedPartnerId = partnerId;
+            document.getElementById('admin-chat-empty').style.display = 'none';
+            document.getElementById('admin-chat-active').style.display = 'flex';
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`${PARTNER_API_BASE}/api/partner-messages/admin/${partnerId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const messages = await res.json();
+                
+                if (messages.length > 0) {
+                    const latest = messages[messages.length - 1];
+                    document.getElementById('admin-chat-partner-name').textContent = latest.partnerName;
+                    document.getElementById('admin-chat-partner-email').textContent = latest.partnerEmail;
+                }
+
+                const container = document.getElementById('admin-chat-messages');
+                container.innerHTML = '';
+                
+                messages.forEach(msg => {
+                    const isAdmin = msg.sender_type === 'admin';
+                    const div = document.createElement('div');
+                    div.style.maxWidth = '80%';
+                    div.style.padding = '15px';
+                    div.style.borderRadius = '20px';
+                    div.style.marginBottom = '10px';
+                    
+                    if (isAdmin) {
+                        div.style.alignSelf = 'flex-end';
+                        div.style.background = 'linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.1) 100%)';
+                        div.style.border = '1px solid var(--gold-text)';
+                        div.style.borderBottomRightRadius = '5px';
+                    } else {
+                        div.style.alignSelf = 'flex-start';
+                        div.style.background = 'rgba(255, 255, 255, 0.05)';
+                        div.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                        div.style.borderBottomLeftRadius = '5px';
+                    }
+
+                    div.innerHTML = `
+                        <div style="font-size: 0.95rem; line-height: 1.5;">${msg.message_text}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.5; margin-top: 8px; display: flex; justify-content: space-between;">
+                            <span style="font-weight: 700; color: var(--gold-text);">${isAdmin ? 'You' : msg.partnerName}</span>
+                            <span>${new Date(msg.createdAt).toLocaleString()}</span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+                
+                container.scrollTop = container.scrollHeight;
+                fetchPartnerMessages(); // Refresh summary to clear unread counts
+
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to load chat history', 'error');
+            }
+        };
+
+        document.getElementById('admin-reply-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!selectedPartnerId) return;
+            
+            const input = document.getElementById('admin-reply-input');
+            const message_text = input.value;
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`${PARTNER_API_BASE}/api/partner-messages/admin/reply`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ partnerId: selectedPartnerId, message_text })
+                });
+
+                if (res.ok) {
+                    input.value = '';
+                    loadPartnerChat(selectedPartnerId);
+                } else {
+                    showToast('Failed to send reply', 'error');
+                }
+            } catch (error) {
+                showToast('Network error', 'error');
+            }
+        };
+
+        window.markPartnerResolved = async function() {
+            if (!selectedPartnerId) return;
+            if(!confirm('Mark this conversation as resolved?')) return;
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const res = await fetch(`${PARTNER_API_BASE}/api/partner-messages/admin/resolve/${selectedPartnerId}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    showToast('Conversation marked as resolved', 'success');
+                    fetchPartnerMessages();
+                } else {
+                    showToast('Failed to mark resolved', 'error');
+                }
+            } catch (error) {
+                showToast('Network error', 'error');
+            }
+        };
+
             // --- TAB SWITCHER OVERRIDE ---
             // Move inside DOMContentLoaded with timeout to ensure admin.js has finished setting window.switchTab
             setTimeout(() => {
@@ -2224,6 +2459,8 @@
                     }
                     if (tabId === 'admin-partners') {
                         fetchPartners();
+                    } else if (tabId === 'admin-partner-messages') {
+                        fetchPartnerMessages();
                     }
                 };
                 
@@ -2232,6 +2469,10 @@
                 if (partnerSection && partnerSection.classList.contains('active')) {
                     window.fetchPartners();
                 }
+
+                // Initial notifications check
+                fetchPartnerMessages();
+                setInterval(fetchPartnerMessages, 60000);
             }, 600);
         });
     </script>

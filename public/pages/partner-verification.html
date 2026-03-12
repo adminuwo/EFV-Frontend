@@ -217,7 +217,7 @@
                 </div>
                 <button type="submit" class="btn">Verify Code</button>
             </form>
-            <p style="margin-top: 20px; font-size: 0.8rem;">Didn't receive code? <a onclick="requestOTP()"
+            <p style="margin-top: 20px; font-size: 0.8rem;">Didn't receive code? <a onclick="requestOTP(true)"
                     style="color: var(--gold); cursor: pointer;">Resend Code</a></p>
             <a onclick="showStep('email')" class="back-link">Change Email</a>
         </div>
@@ -255,7 +255,7 @@
                 </div>
                 <button type="submit" class="btn">Enter Dashboard</button>
             </form>
-            <p style="margin-top: 20px; font-size: 0.8rem;">Forgot password? <a onclick="requestOTP()"
+            <p style="margin-top: 20px; font-size: 0.8rem;">Forgot password? <a onclick="requestOTP(true)"
                     style="color: var(--gold); cursor: pointer;">Reset access via OTP</a></p>
         </div>
 
@@ -283,22 +283,30 @@
         document.getElementById('form-email').onsubmit = async (e) => {
             e.preventDefault();
             currentEmail = document.getElementById('email-input').value;
-            requestOTP();
+            requestOTP(false);
         };
 
-        async function requestOTP() {
+        async function requestOTP(force = false) {
             try {
                 const res = await fetch(`${API_BASE}/api/partner-portal/otp`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: currentEmail })
+                    body: JSON.stringify({ email: currentEmail, force })
                 });
                 const data = await res.json();
 
                 if (res.ok) {
-                    document.getElementById('display-email').textContent = currentEmail;
-                    showStep('otp');
-                    showToast('Verification code sent to your email!', 'success');
+                    if (data.status === 'activated') {
+                        // User is already active, go directly to login
+                        document.getElementById('login-email').value = currentEmail;
+                        showStep('login');
+                        showToast('Welcome back! Please enter your password.', 'success');
+                    } else {
+                        // New user or reset requested, go to OTP
+                        document.getElementById('display-email').textContent = currentEmail;
+                        showStep('otp');
+                        showToast('Verification code sent to your email!', 'success');
+                    }
                 } else {
                     showError(data.message);
                 }

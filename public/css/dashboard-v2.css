@@ -611,6 +611,7 @@
 @media (max-width: 600px) {
     .premium-summary-card {
         grid-template-columns: 1fr;
+        max-width: 100% !important;
     }
 }
 
@@ -698,7 +699,7 @@
 }
 
 .checkout-container.step-1 {
-    max-width: 500px;
+    max-width: 100% !important;
     grid-template-columns: 1fr;
     margin: 0 auto;
 }
@@ -729,7 +730,7 @@
 @media (max-width: 900px) {
     .checkout-container.step-2 {
         grid-template-columns: 1fr !important;
-        max-width: 600px !important;
+        max-width: 100% !important;
     }
 
     .checkout-pricing-col {

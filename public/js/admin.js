@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isAdmin = user && (user.role === 'admin' || (user.email && user.email.toLowerCase() === 'admin@uwo24.com'));
     if (isAdminPage && !isAdmin) {
         console.warn("Security: Unauthorized admin access attempt.");
-            window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
+        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
         return;
     }
 
@@ -424,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Security: Bounce Non-Admins from Admin Sections
         if ((effectiveTabId === 'admin-settings' || effectiveTabId.startsWith('admin-')) && !isAdmin) {
             console.warn("Unauthorized access attempt blocked.");
-                window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
+            window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
             return;
         }
 
@@ -1712,7 +1712,8 @@ window.accessContent = function (type, name, id) {
 
 // Configuration
 const CONTENT_CONFIG = {
-    pdfWorkerSrc: 'js/pdfjs/pdf.worker.min.js',
+    // Correctly resolve worker path relative to page location
+    pdfWorkerSrc: (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'js/pdfjs/pdf.worker.min.js',
     contentApi: `${API_BASE}/api/content`,
     progressApi: `${API_BASE}/api/progress`
 };
@@ -1870,7 +1871,13 @@ window.openEbookReader = async function (product) {
 
     } catch (error) {
         console.error("Reader Error:", error);
-        alert("Failed to load PDF. Please ensure you are logged in.");
+        let errorMsg = "Failed to load PDF. Please ensure you are logged in.";
+        if (error.name === 'MissingPDFException' || (error.message && error.message.includes('404'))) {
+            errorMsg = "PDF file not found on server. Please contact support.";
+        } else if (error.message && error.message.includes('401')) {
+            errorMsg = "Your session has expired. Please log in again.";
+        }
+        alert(errorMsg);
         document.getElementById(readerId).remove();
         return;
     }

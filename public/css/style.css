@@ -2200,8 +2200,10 @@ body.modal-open {
     cursor: default;
 }
 
-.static-feature-card:hover {
-    transform: scale(1.03);
+@media (hover: hover) {
+    .static-feature-card:hover {
+        transform: scale(1.03);
+    }
 }
 
 .flip-card-inner {
@@ -2213,8 +2215,13 @@ body.modal-open {
     transform-style: preserve-3d;
 }
 
-.static-feature-card:hover .flip-card-inner {
-    transform: rotateY(180deg);
+@media (hover: hover) {
+    .static-feature-card:hover .flip-card-inner {
+        transform: rotateY(180deg);
+    }
+}
+.static-feature-card.flipped .flip-card-inner {
+    transform: rotateY(180deg) !important;
 }
 
 .flip-card-front,
@@ -2247,16 +2254,26 @@ body.modal-open {
     transform: rotateY(180deg);
 }
 
-.static-feature-card:hover .flip-card-front,
-.static-feature-card:hover .flip-card-back {
-    border-color: rgba(255, 211, 105, 0.9);
+@media (hover: hover) {
+    .static-feature-card:hover .flip-card-front,
+    .static-feature-card:hover .flip-card-back {
+        border-color: rgba(255, 211, 105, 0.9);
+        box-shadow:
+            0 0 30px rgba(255, 211, 105, 0.25),
+            0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+}
+
+.static-feature-card.flipped .flip-card-front,
+.static-feature-card.flipped .flip-card-back {
+    border-color: rgba(255, 211, 105, 0.9) !important;
     box-shadow:
         0 0 30px rgba(255, 211, 105, 0.25),
-        0 8px 32px rgba(0, 0, 0, 0.4);
+        0 8px 32px rgba(0, 0, 0, 0.4) !important;
 }
 
 .static-feature-card p.flip-text-main {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     font-weight: 700;
     color: var(--gold-energy);
     margin-bottom: 10px !important;
@@ -2265,7 +2282,7 @@ body.modal-open {
 }
 
 .static-feature-card p.flip-text-sub {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--gold-light);
     text-align: center;
@@ -2285,8 +2302,14 @@ body.modal-open {
     transition: box-shadow 0.3s ease;
 }
 
-.static-feature-card:hover .glow-circle {
-    box-shadow: 0 0 30px rgba(255, 211, 105, 0.5);
+@media (hover: hover) {
+    .static-feature-card:hover .glow-circle {
+        box-shadow: 0 0 30px rgba(255, 211, 105, 0.5);
+    }
+}
+
+.static-feature-card.flipped .glow-circle {
+    box-shadow: 0 0 30px rgba(255, 211, 105, 0.5) !important;
 }
 
 .static-feature-card h3 {

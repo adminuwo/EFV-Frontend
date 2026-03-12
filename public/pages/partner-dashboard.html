@@ -349,6 +349,10 @@
             </div>
 
             <div class="nav-actions">
+                <a href="partner-support.html" class="btn btn-outline" style="display: inline-flex; align-items: center;">
+                    <i class="fas fa-headset" style="margin-right: 8px;"></i> Support
+                    <span id="msg-badge" class="badge" style="display: none; background: #ff4d4d; color: white; border-radius: 50px; min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; align-items: center; justify-content: center; font-weight: 700; margin-left: 4px; position: relative; top: -8px;">0</span>
+                </a>
                 <a href="#" onclick="exportCSV()" class="btn btn-outline" id="export-btn">
                     <i class="fas fa-download"></i> Export Reports
                 </a>
@@ -570,7 +574,27 @@
             }
         }
 
+        async function checkNotifications() {
+            try {
+                const res = await fetch(`${API_BASE}/api/partner-messages/notifications/partner`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const badge = document.getElementById('msg-badge');
+                if (data.unreadCount > 0) {
+                    badge.textContent = data.unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('Notification check failed');
+            }
+        }
+
         fetchDashboard();
+        checkNotifications();
+        setInterval(checkNotifications, 60000);
     </script>
 </body>
 

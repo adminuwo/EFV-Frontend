@@ -1309,16 +1309,16 @@ window.executeCancelOrder = async function (orderId) {
 };
 
 // --- FILTER SYSTEM ---
-window.updateOrderFilter = function(filter, element) {
+window.updateOrderFilter = function (filter, element) {
     // UI update
     document.querySelectorAll('.filter-pill').forEach(pill => pill.classList.remove('active'));
     element.classList.add('active');
-    
+
     // Logic
     renderOrdersTab(filter);
 };
 
-window.deleteOrder = async function(id) {
+window.deleteOrder = async function (id) {
     // Styled confirmation modal
     const existingModal = document.getElementById('delete-confirm-modal');
     if (existingModal) existingModal.remove();
@@ -1703,51 +1703,57 @@ function renderCheckoutPricing() {
 }
 
 window.renderCheckoutAddresses = function () {
-    const profile = window.currentUserProfile;
+    const key = getAddressKey();
+    const addresses = JSON.parse(localStorage.getItem(key)) || [];
     const list = document.getElementById('checkout-address-list');
     if (!list) return;
 
-    if (!profile || !profile.savedAddresses || profile.savedAddresses.length === 0) {
+    if (addresses.length === 0) {
         list.innerHTML = `
             <div style="grid-column: 1 / -1; padding: 40px; text-align: center; border: 2px dashed rgba(212, 175, 55, 0.2); border-radius: 20px; background: rgba(212, 175, 55, 0.02);">
                 <i class="fas fa-map-marker-alt" style="font-size: 3rem; color: var(--gold-text); margin-bottom: 20px; opacity: 0.5;"></i>
-                <h3 style="margin-bottom: 10px;">No saved addresses</h3>
-                <p style="opacity:0.6; margin-bottom: 25px;">Please add a delivery address to proceed with your order.</p>
+                <h3 style="margin-bottom: 10px; color: white;">No saved addresses</h3>
+                <p style="opacity:0.6; margin-bottom: 25px; color: #eee;">Please add a delivery address to proceed with your order.</p>
                 <button class="btn btn-gold" onclick="openAddressModal()">Add New Address</button>
             </div>`;
 
         // Auto-popup for a smoother flow if no addresses exist
         setTimeout(() => {
-            if (document.getElementById('checkout-overlay').style.display === 'flex') {
+            const overlay = document.getElementById('checkout-overlay');
+            if (overlay && overlay.style.display === 'flex') {
                 openAddressModal();
             }
         }, 500);
         return;
     }
 
-    list.innerHTML = profile.savedAddresses.map(addr => {
-        const id = addr._id || addr.id;
+    list.innerHTML = addresses.map(addr => {
+        const id = addr.id;
         const isSelected = window.checkoutState.selectedAddressId === id || (addr.isDefault && !window.checkoutState.selectedAddressId);
         if (isSelected && !window.checkoutState.selectedAddressId) window.checkoutState.selectedAddressId = id;
 
         return `
             <div class="checkout-address-card ${isSelected ? 'selected' : ''}" 
                  onclick="selectCheckoutAddress('${id}')" 
-                 style="padding: 20px; margin-bottom: 20px; cursor: pointer; background: rgba(10, 10, 10, 0.4); border: 1px solid ${isSelected ? 'var(--gold-text)' : 'rgba(255,255,255,0.05)'}; transition: all 0.2s; position: relative; border-radius: 12px; box-shadow: none;">
+                 style="padding: 20px; margin-bottom: 20px; cursor: pointer; background: rgba(255, 255, 255, 0.03); border: 1px solid ${isSelected ? 'var(--gold-text)' : 'rgba(255,255,255,0.08)'}; transition: all 0.2s; position: relative; border-radius: 12px; box-shadow: ${isSelected ? '0 5px 15px rgba(212, 175, 55, 0.1)' : 'none'};">
                 <div style="position: absolute; top: 15px; right: 15px;">
-                    <i class="fas ${isSelected ? 'fa-check-circle' : 'fa-circle'}" style="color: ${isSelected ? 'var(--gold-text)' : 'rgba(255,255,255,0.1)'};"></i>
+                    <i class="fas ${isSelected ? 'fa-check-circle' : 'fa-circle'}" style="color: ${isSelected ? 'var(--gold-text)' : 'rgba(255,255,255,0.2)'}; font-size: 1.2rem;"></i>
                 </div>
-                <h5 style="margin: 0 0 10px; color: ${isSelected ? 'var(--gold-text)' : '#fff'}; font-size: 0.95rem;">${addr.type || 'Home'}</h5>
-                <p style="font-size: 0.85rem; opacity: 0.8; margin: 0; line-height: 1.5;">
+                <h5 style="margin: 0 0 10px; color: ${isSelected ? 'var(--gold-text)' : '#fff'}; font-size: 1rem; font-weight: 700;">
+                    <i class="fas ${addr.type === 'Work' ? 'fa-briefcase' : 'fa-home'}" style="margin-right: 8px; font-size: 0.8rem; opacity: 0.7;"></i> ${addr.type || 'Home'}
+                </h5>
+                <p style="font-size: 0.9rem; opacity: 0.9; margin: 0; line-height: 1.5; color: #eee;">
                     <strong>${addr.fullName}</strong><br>
                     ${addr.house}, ${addr.area}<br>
-                    ${addr.city}, ${addr.state} - ${addr.pincode}
+                    ${addr.city}, ${addr.state} - ${addr.pincode}<br>
+                    <span style="color: var(--gold-text); font-weight: 600; font-size: 0.85rem;"><i class="fas fa-phone-alt"></i> ${addr.phone}</span>
                 </p>
             </div>
         `;
     }).join('');
 
-    document.getElementById('btn-confirm-address').disabled = !window.checkoutState.selectedAddressId;
+    const confirmBtn = document.getElementById('btn-confirm-address');
+    if (confirmBtn) confirmBtn.disabled = !window.checkoutState.selectedAddressId;
 };
 
 window.selectCheckoutAddress = (id) => {
@@ -1928,7 +1934,8 @@ window.accessContent = function (type, name, id) {
 
 // Configuration
 const CONTENT_CONFIG = {
-    pdfWorkerSrc: 'js/pdfjs/pdf.worker.min.js',
+    // Correctly resolve worker path relative to page location
+    pdfWorkerSrc: (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'js/pdfjs/pdf.worker.min.js',
     contentApi: `${API_BASE}/api/content`,
     progressApi: `${API_BASE}/api/progress`
 };
@@ -2086,7 +2093,13 @@ window.openEbookReader = async function (product) {
 
     } catch (error) {
         console.error("Reader Error:", error);
-        alert("Failed to load PDF. Please ensure you are logged in.");
+        let errorMsg = "Failed to load PDF. Please ensure you are logged in.";
+        if (error.name === 'MissingPDFException' || (error.message && error.message.includes('404'))) {
+            errorMsg = "PDF file not found on server. Please contact support.";
+        } else if (error.message && error.message.includes('401')) {
+            errorMsg = "Your session has expired. Please log in again.";
+        }
+        alert(errorMsg);
         document.getElementById(readerId).remove();
         return;
     }
@@ -2720,6 +2733,11 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
     let currentChIdx = initialChapter;
     let audioEl = new Audio();
     audioEl.crossOrigin = 'anonymous';
+
+    audioEl.onerror = () => {
+        alert("Wait: Unable to stream this chapter. The audio file might be missing on the server or storage is restricted.");
+        console.error("Audio Player Chapter Error:", audioEl.error);
+    };
     let isSeeking = false;
     let saveTimer = null;
 
@@ -3028,6 +3046,11 @@ window.playAudiobook = async function (product) {
     document.body.classList.add('modal-open');
 
     const audio = new Audio(`${CONTENT_CONFIG.contentApi}/audio/${bookId}?token=${token || ''}&t=${Date.now()}`);
+    audio.onerror = () => {
+        console.error("Audio Load Error:", audio.error);
+        alert("Unable to play audio. The file might be missing on the server or your permission has expired.");
+        if (document.getElementById(playerModalId)) document.getElementById(playerModalId).remove();
+    };
     const playIcon = document.getElementById('legacy-play-icon');
     const seek = document.getElementById('legacy-seek');
     let legacySaveInt = null;
@@ -3876,7 +3899,7 @@ window.downloadInvoice = async function (orderId) {
 
         currentY = totalBoxY + 8;
         doc.setFontSize(10);
-        
+
         const itemsTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         doc.text("Items Total:", 130, currentY);
         doc.text(`INR ${itemsTotal.toFixed(2)}`, 175, currentY);
@@ -4007,6 +4030,13 @@ window.refreshTrackingData = async function (awb) {
 };
 
 // Address Management
+// --- ADDRESS MANAGEMENT V2 (PROPER LOCAL STORAGE) ---
+
+// Helper to get user-specific address key
+function getAddressKey() {
+    return getUserKey('efv_user_addresses');
+}
+
 window.openAddressModal = function (id = null) {
     const modal = document.getElementById('address-modal');
     const form = document.getElementById('address-form');
@@ -4018,9 +4048,12 @@ window.openAddressModal = function (id = null) {
     const addrIdEl = document.getElementById('address-id');
     if (addrIdEl) addrIdEl.value = id || '';
 
-    if (id && window.currentUserProfile && window.currentUserProfile.savedAddresses) {
+    // Load existing address if editing
+    if (id) {
         title.textContent = 'EDIT ADDRESS';
-        const addr = window.currentUserProfile.savedAddresses.find(a => (a._id || a.id) === id);
+        const addresses = JSON.parse(localStorage.getItem(getAddressKey())) || [];
+        const addr = addresses.find(a => a.id === id);
+
         if (addr) {
             document.getElementById('addr-name').value = addr.fullName || '';
             document.getElementById('addr-phone').value = addr.phone || '';
@@ -4037,81 +4070,205 @@ window.openAddressModal = function (id = null) {
         }
     } else {
         title.textContent = 'ADD NEW ADDRESS';
+        // Check if this is the first address, make it default
+        const addresses = JSON.parse(localStorage.getItem(getAddressKey())) || [];
+        if (addresses.length === 0) {
+            document.getElementById('addr-default').checked = true;
+        }
     }
 
-    modal.style.display = 'flex';
+    // Lock background scroll to prevent page from scrolling behind modal
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+
+    // Force the modal as a fixed centered overlay overriding all CSS conflicts
+    modal.setAttribute('style', [
+        'display: flex !important',
+        'position: fixed !important',
+        'top: 0 !important',
+        'left: 0 !important',
+        'width: 100vw !important',
+        'height: 100vh !important',
+        'z-index: 999999 !important',
+        'justify-content: center !important',
+        'align-items: center !important',
+        'background: rgba(0,0,0,0.88) !important',
+        'backdrop-filter: blur(14px) !important',
+        '-webkit-backdrop-filter: blur(14px) !important',
+        'padding: 20px !important',
+        'box-sizing: border-box !important',
+        'opacity: 1 !important',
+        'pointer-events: auto !important'
+    ].join('; '));
     modal.classList.add('active');
 };
 
 window.closeAddressModal = () => {
     const modal = document.getElementById('address-modal');
     if (modal) {
-        modal.style.display = 'none';
+        modal.setAttribute('style', 'display: none !important');
         modal.classList.remove('active');
     }
+    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
 };
 
-if (document.getElementById('address-form')) {
-    document.getElementById('address-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem('authToken');
-        const id = document.getElementById('address-id').value;
-        const data = {
-            fullName: document.getElementById('addr-name').value,
-            phone: document.getElementById('addr-phone').value,
-            pincode: document.getElementById('addr-pincode').value,
-            state: document.getElementById('addr-state').value,
-            city: document.getElementById('addr-city').value,
-            house: document.getElementById('addr-house').value,
-            area: document.getElementById('addr-area').value,
-            landmark: document.getElementById('addr-landmark').value,
-            type: document.querySelector('input[name="addr-type"]:checked').value,
-            isDefault: document.getElementById('addr-default').checked,
-            fullAddress: `${document.getElementById('addr-house').value}, ${document.getElementById('addr-area').value}`
-        };
+window.deleteAddress = function (id) {
+    if (!confirm("Are you sure you want to delete this address?")) return;
 
-        const url = id ? `${API_BASE}/api/users/address/${id}` : `${API_BASE}/api/users/address`;
-        const method = id ? 'PUT' : 'POST';
+    const key = getAddressKey();
+    let addresses = JSON.parse(localStorage.getItem(key)) || [];
+    addresses = addresses.filter(a => a.id !== id);
 
-        const savedRes = await fetch(url, {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(data)
-        });
+    localStorage.setItem(key, JSON.stringify(addresses));
 
-        const savedAddresses = await savedRes.json();
-        closeAddressModal();
-        await fetchProfileData();
-
-        // CHECKOUT FLOW INTEGRATION
-        const checkoutOverlay = document.getElementById('checkout-overlay');
-        if (checkoutOverlay && checkoutOverlay.style.display === 'flex') {
-            // If new address added, select it
-            if (!id && savedAddresses.length > 0) {
-                const newAddr = savedAddresses.find(a => a.fullName === data.fullName && a.phone === data.phone);
-                if (newAddr) window.checkoutState.selectedAddressId = newAddr._id || newAddr.id;
-            }
-            renderCheckoutAddresses();
-            // Automatically continue to summary if an address is now selected
-            if (window.checkoutState.selectedAddressId) {
-                continueToSummary();
-            }
-        }
-    });
-}
-
-window.deleteAddress = async function (id) {
-    if (!confirm("Are you sure?")) return;
+    // Sync with server in background if possible
     const token = localStorage.getItem('authToken');
-    await fetch(`${API_BASE}/api/users/address/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    fetchProfileData();
-}
+    if (token) {
+        fetch(`${API_BASE}/api/users/address/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(e => console.log("Sync deletion error:", e));
+    }
+
+    renderSavedAddresses();
+    showToast("Address deleted", "info");
+};
+
+// Listen for address form submission
+document.addEventListener('DOMContentLoaded', () => {
+    const addrForm = document.getElementById('address-form');
+    if (addrForm) {
+        addrForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('address-id').value;
+            const key = getAddressKey();
+            let addresses = JSON.parse(localStorage.getItem(key)) || [];
+
+            const data = {
+                id: id || Date.now().toString(),
+                fullName: document.getElementById('addr-name').value,
+                phone: document.getElementById('addr-phone').value,
+                pincode: document.getElementById('addr-pincode').value,
+                state: document.getElementById('addr-state').value,
+                city: document.getElementById('addr-city').value,
+                house: document.getElementById('addr-house').value,
+                area: document.getElementById('addr-area').value,
+                landmark: document.getElementById('addr-landmark').value,
+                type: document.querySelector('input[name="addr-type"]:checked').value,
+                isDefault: document.getElementById('addr-default').checked,
+                createdAt: new Date().toISOString()
+            };
+
+            // Handle default logic: only one default address
+            if (data.isDefault) {
+                addresses.forEach(a => a.isDefault = false);
+            } else if (addresses.length === 0) {
+                data.isDefault = true;
+            }
+
+            if (id) {
+                // Update existing
+                const index = addresses.findIndex(a => a.id === id);
+                if (index !== -1) addresses[index] = data;
+                else addresses.push(data);
+            } else {
+                // Add new
+                addresses.push(data);
+            }
+
+            // Save to localStorage
+            localStorage.setItem(key, JSON.stringify(addresses));
+
+            // Sync with Server (Non-blocking fallback)
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                const url = id ? `${API_BASE}/api/users/address/${id}` : `${API_BASE}/api/users/address`;
+                const method = id ? 'PUT' : 'POST';
+                fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(data)
+                }).catch(e => console.log("Sync error:", e));
+            }
+
+            closeAddressModal();
+            renderSavedAddresses();
+            showToast(id ? "Address updated" : "Address saved", "success");
+
+            // Handle Checkout Integration if open
+            const checkoutOverlay = document.getElementById('checkout-overlay');
+            if (checkoutOverlay && checkoutOverlay.style.display === 'flex') {
+                if (typeof window.renderCheckoutAddresses === 'function') {
+                    window.renderCheckoutAddresses();
+                }
+            }
+        });
+    }
+});
+
+window.renderSavedAddresses = function () {
+    const key = getAddressKey();
+    const addresses = JSON.parse(localStorage.getItem(key)) || [];
+    const container = document.getElementById('saved-addresses-grid-v2');
+
+    if (!container) return;
+
+    if (addresses.length === 0) {
+        container.innerHTML = `
+            <div class="address-card empty glass-panel" style="grid-column: 1/-1; padding: 50px 20px; text-align: center; border: 1px dashed rgba(255,255,255,0.1);">
+                <i class="fas fa-map-marker-alt" style="font-size: 3rem; opacity: 0.1; margin-bottom: 20px;"></i>
+                <p style="opacity: 0.5; font-size: 1.1rem;">No saved addresses found.</p>
+                <p style="opacity: 0.3; font-size: 0.9rem; margin-top: 10px;">Add an address to speed up your checkout process.</p>
+            </div>`;
+        return;
+    }
+
+    // Sort to show default first
+    addresses.sort((a, b) => (b.isDefault - a.isDefault));
+
+    container.innerHTML = addresses.map(addr => `
+        <div class="address-card glass-panel ${addr.isDefault ? 'default' : ''}" 
+             style="border: 1px solid ${addr.isDefault ? 'rgba(212, 175, 55, 0.5)' : 'rgba(255,255,255,0.08)'}; 
+                    background: ${addr.isDefault ? 'rgba(212, 175, 55, 0.03)' : 'rgba(0,0,0,0.2)'};">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span class="status-badge" style="background: rgba(255,255,255,0.05); color: #fff; font-size: 0.7rem;">
+                    <i class="fas ${addr.type === 'Work' ? 'fa-briefcase' : 'fa-home'}" style="margin-right: 5px;"></i> ${addr.type || 'Home'}
+                </span>
+                ${addr.isDefault ? '<span class="default-badge" style="background: var(--gold-text); color: #000; font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 800; text-transform: uppercase;">Default</span>' : ''}
+            </div>
+            <div class="address-content">
+                <h4 style="margin: 0 0 10px; color: #fff; font-size: 1.1rem;">${addr.fullName}</h4>
+                <p style="margin: 5px 0; font-size: 0.95rem; opacity: 0.8; line-height: 1.5; color: #eee;">
+                    ${addr.house}, ${addr.area}<br>
+                    ${addr.landmark ? `<span style="font-size: 0.85rem; opacity: 0.6;">Landmark: ${addr.landmark}</span><br>` : ''}
+                    ${addr.city}, ${addr.state} - ${addr.pincode}
+                </p>
+                <p style="margin: 10px 0 0; font-size: 0.9rem; font-weight: 600; color: var(--gold-text);">
+                    <i class="fas fa-phone-alt"></i> ${addr.phone}
+                </p>
+            </div>
+            <div class="address-actions" style="margin-top: 20px; display: flex; gap: 12px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
+                <button class="btn-outline small" style="flex: 1; padding: 8px !important; font-size: 0.8rem;" onclick="openAddressModal('${addr.id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn-danger small" style="flex: 0 0 40px; border-radius: 8px; background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.2); color: #ff5252;" onclick="deleteAddress('${addr.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+};
+
+window.setAsDefaultAddress = function (id) {
+    const key = getAddressKey();
+    let addresses = JSON.parse(localStorage.getItem(key)) || [];
+    addresses.forEach(a => a.isDefault = (a.id === id));
+    localStorage.setItem(key, JSON.stringify(addresses));
+    renderSavedAddresses();
+    showToast("Default address updated", "success");
+};
 
 function renderActiveShipments() {
     const token = localStorage.getItem('authToken');
