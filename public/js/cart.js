@@ -2673,11 +2673,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof initializeDashboard === 'function') {
                     initializeDashboard(userData);
                 }
-            } else {
-                // Token invalid - clear and show login button
+            } else if (res.status === 401 || res.status === 403) {
+                // Token definitely invalid - clear and show login button
+                console.warn('Session expired, logging out.');
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('efv_user');
                 updateAuthNavbar();
+            } else {
+                // Server error (500) or other - DO NOT logout. 
+                // Keep showing cached user in navbar so the UI doesn't flicker/break.
+                console.error(`Profile fetch failed with status ${res.status}. Keeping cached session.`);
             }
         } catch (e) {
             // Network error - keep showing cached user in navbar
