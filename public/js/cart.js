@@ -2701,7 +2701,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const clientId = "743928421487-tgh59ajhsmuk5ltomsooj46lials3hpt.apps.googleusercontent.com";
+        const clientId = (typeof CONFIG !== 'undefined' && CONFIG.GOOGLE_CLIENT_ID) 
+            ? CONFIG.GOOGLE_CLIENT_ID 
+            : "743928421487-tgh59ajhsmuk5ltomsooj46lials3hpt.apps.googleusercontent.com";
 
         google.accounts.id.initialize({
             client_id: clientId,

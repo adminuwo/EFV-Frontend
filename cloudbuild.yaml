@@ -6,7 +6,9 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/aisa-frontend:$COMMIT_SHA'
       - '--build-arg'
-      - 'VITE_GOOGLE_CLIENT_ID=743928421487-4k3rngu52s9ts2mpr032ladvu72v6ll7.apps.googleusercontent.com'
+      - 'VITE_GOOGLE_CLIENT_ID=743928421487-tgh59ajhsmuk5ltomsooj46lials3hpt.apps.googleusercontent.com'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://efvbackend-743928421487.asia-south1.run.app'
       - '.'
 
   # Push the container image to Container Registry
@@ -27,6 +29,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NEXT_PUBLIC_API_URL=https://efvbackend-743928421487.asia-south1.run.app'
 
 images:
   - 'gcr.io/$PROJECT_ID/aisa-frontend:$COMMIT_SHA'
