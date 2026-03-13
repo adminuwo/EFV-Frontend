@@ -43,6 +43,24 @@
     }
 }
 
+/* Intro Highlight Animation */
+.efv-chat-button.efv-highlight {
+    animation: efv-intro-pulse 1.5s infinite alternate ease-in-out;
+    filter: drop-shadow(0 0 25px #F4D03F) !important;
+    z-index: 100000001 !important;
+}
+
+@keyframes efv-intro-pulse {
+    from {
+        transform: scale(1);
+        filter: drop-shadow(0 0 10px #F4D03F);
+    }
+    to {
+        transform: scale(1.3);
+        filter: drop-shadow(0 0 35px #F4D03F);
+    }
+}
+
 .efv-chat-button:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 30px rgba(212, 175, 55, 0.6);
@@ -524,3 +542,166 @@
         right: 45px;
     }
 }
+
+/* Bot Introduction Popup Styles */
+#efv-intro-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    z-index: 100000000;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+#efv-intro-overlay.active {
+    display: flex;
+    opacity: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+.efv-intro-popup {
+    max-width: 500px;
+    width: 90%;
+    background: linear-gradient(135deg, rgba(10, 15, 30, 0.98) 0%, rgba(3, 5, 9, 0.98) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 28px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.2);
+    transform: scale(0.85);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+#efv-intro-overlay.active .efv-intro-popup {
+    transform: scale(1);
+}
+
+.efv-intro-header {
+    margin-bottom: 25px;
+}
+
+.efv-intro-icon {
+    font-size: 50px;
+    text-shadow: 0 0 25px rgba(212, 175, 55, 0.8);
+    margin-bottom: 15px;
+    display: inline-block;
+    animation: efv-float 3s infinite ease-in-out;
+}
+
+@keyframes efv-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.efv-intro-popup h2 {
+    color: #d4af37;
+    font-size: 28px;
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.efv-intro-popup p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 16px;
+    line-height: 1.7;
+    margin-bottom: 35px;
+}
+
+.efv-intro-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.efv-btn-intro {
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-size: 14px;
+    border: none;
+}
+
+.efv-btn-intro-primary {
+    background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
+    color: #000;
+    box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+}
+
+.efv-btn-intro-primary:hover {
+    transform: scale(1.08);
+    box-shadow: 0 15px 30px rgba(212, 175, 55, 0.5);
+}
+
+.efv-btn-intro-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.efv-btn-intro-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(1.05);
+}
+
+/* Highlight Arrow Pointer */
+.efv-intro-arrow {
+    position: fixed;
+    bottom: 120px;
+    right: 120px;
+    width: 100px;
+    height: 100px;
+    pointer-events: none;
+    z-index: 100000001;
+    display: none;
+    fill: none;
+    stroke: #f4d03f;
+    stroke-width: 3;
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+    filter: drop-shadow(0 0 15px #f4d03f);
+}
+
+#efv-intro-overlay.active ~ .efv-intro-arrow {
+    display: block;
+    animation: efv-draw-arrow 1s forwards ease-in-out, efv-arrow-bounce 2s infinite 1.5s;
+}
+
+@keyframes efv-draw-arrow {
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes efv-arrow-bounce {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(15px, 15px); }
+}
+
+@media (max-width: 600px) {
+    .efv-intro-popup {
+        padding: 30px 20px;
+    }
+    .efv-intro-popup h2 {
+        font-size: 24px;
+    }
+    .efv-intro-popup p {
+        font-size: 14px;
+    }
+    .efv-intro-actions {
+        flex-direction: column;
+    }
+    .efv-intro-arrow {
+        bottom: 80px;
+        right: 80px;
+        width: 80px;
+        height: 80px;
+    }
+}

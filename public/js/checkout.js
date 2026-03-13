@@ -3,6 +3,7 @@ const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG
 let appliedCoupon = null;
 let checkoutSubtotal = 0;
 let isDigitalOrder = false;
+let selectedPaymentMode = 'Online'; // Global state
 
 document.addEventListener('DOMContentLoaded', () => {
     const user = JSON.parse(localStorage.getItem('efv_user'));
@@ -56,16 +57,17 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPincodeCheck(checkoutItems);
     setupCouponHandlers();
 
-    // AUTO-APPLY COUPON FROM URL OR LOCALSTORAGE
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlCoupon = urlParams.get('coupon');
-    const savedCoupon = localStorage.getItem('efv_applied_coupon');
-    const finalCoupon = urlCoupon || savedCoupon;
-
-    if (finalCoupon) {
-        document.getElementById('coupon-input').value = finalCoupon;
-        applyCoupon(finalCoupon, checkoutSubtotal);
-        if (!urlCoupon) localStorage.removeItem('efv_applied_coupon');
+    // AUTO-APPLY COUPON ONLY IF IN URL (Marketing Links)
+    if (urlCoupon) {
+        document.getElementById('coupon-input').value = urlCoupon;
+        applyCoupon(urlCoupon, checkoutSubtotal);
+    } else {
+        // If not in URL, check if a coupon was ALREADY applied in this session
+        const savedCoupon = localStorage.getItem('efv_applied_coupon');
+        if (savedCoupon) {
+            document.getElementById('coupon-input').value = savedCoupon;
+            applyCoupon(savedCoupon, checkoutSubtotal);
+        }
     }
 
     setupPaymentModeHandlers(checkoutItems);
@@ -172,64 +174,68 @@ function calculateShipping(items = []) {
 }
 
 function calculateCOD(subtotal) {
-    const isCOD = document.querySelector('input[name="payment-mode"]:checked').value === 'COD';
-    if (!isCOD) return 0;
-    return COD_CHARGES.BASE + (subtotal * COD_CHARGES.PERCENTAGE);
+    const activeRadio = document.querySelector('input[name="payment-mode"]:checked');
+    const mode = activeRadio ? activeRadio.value : selectedPaymentMode;
+    
+    if (mode !== 'COD') return 0;
+    
+    const charge = COD_CHARGES.BASE + (subtotal * COD_CHARGES.PERCENTAGE);
+    return Math.round(charge * 100) / 100;
 }
 
 function setupPaymentModeHandlers(items = []) {
     const radios = document.querySelectorAll('input[name="payment-mode"]');
-    const placeBtn = document.getElementById('place-order-btn');
     const optionCod = document.getElementById('option-cod');
-    const onlineOpt = document.getElementById('option-online');
 
-    // 1. Check for Digital Products (EBOOK / AUDIOBOOK)
     const hasDigital = isDigitalOrder || items.some(item => {
         const type = (item.type || '').toUpperCase();
-        const id = (item.productId || item.id || '').toLowerCase();
-        return type === 'EBOOK' || type === 'AUDIOBOOK' || type.includes('DIGITAL') || id.includes('ebook') || id.includes('audio');
+        return type === 'EBOOK' || type === 'AUDIOBOOK';
     });
 
     if (hasDigital) {
-        if (optionCod) {
-            // HIDE COD OPTION as requested
-            optionCod.style.display = 'none';
-
-            // Ensure Online is selected
-            const onlineRadio = document.querySelector('input[name="payment-mode"][value="Online"]');
-            if (onlineRadio) {
-                onlineRadio.checked = true;
-                if (onlineOpt) onlineOpt.classList.add('active');
-            }
-        }
+        if (optionCod) optionCod.style.display = 'none';
+        selectedPaymentMode = 'Online';
+        const onlineRadio = document.getElementById('radio-online');
+        if (onlineRadio) onlineRadio.checked = true;
     } else {
-        // Show COD if no digital product
-        if (optionCod) {
-            optionCod.style.display = 'flex';
-            const codRadio = optionCod.querySelector('input');
-            if (codRadio) codRadio.disabled = false;
-        }
+        if (optionCod) optionCod.style.display = 'flex';
     }
 
-    radios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            // Update UI classes for styles
-            document.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('active'));
-            radio.closest('.payment-option').classList.add('active');
-
-            // Toggle COD row visibility
-            const codRow = document.getElementById('cod-charge-row');
-            if (radio.value === 'COD') {
-                if (codRow) codRow.style.display = 'flex';
-                placeBtn.innerHTML = 'PLACE ORDER <i class="fas fa-arrow-right"></i>';
+    const updateUIState = (mode) => {
+        selectedPaymentMode = mode;
+        document.querySelectorAll('.payment-option').forEach(opt => {
+            const radio = opt.querySelector('input');
+            if (radio && radio.value === mode) {
+                opt.classList.add('active');
+                radio.checked = true;
             } else {
-                if (codRow) codRow.style.display = 'none';
-                placeBtn.innerHTML = 'PAY NOW <i class="fas fa-arrow-right"></i>';
+                opt.classList.remove('active');
             }
+        });
+        renderSummary(null, true);
+    };
 
-            renderSummary(null, true);
+    // Attach to radios
+    radios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.checked) updateUIState(e.target.value);
         });
     });
+
+    // Attach to parent cards
+    document.querySelectorAll('.payment-option').forEach(card => {
+        card.addEventListener('click', (e) => {
+            const radio = card.querySelector('input');
+            if (radio && !radio.checked) {
+                radio.checked = true;
+                updateUIState(radio.value);
+            }
+        });
+    });
+
+    // Initialize
+    const checked = document.querySelector('input[name="payment-mode"]:checked');
+    if (checked) updateUIState(checked.value);
 }
 
 function setupCouponHandlers() {
@@ -263,11 +269,15 @@ async function applyCoupon(code, amount) {
 
         if (res.ok) {
             appliedCoupon = data;
-            // Save coupon code so payment-status.html can pass it to backend after Cashfree redirect
             localStorage.setItem('efv_applied_coupon', data.code);
-            status.innerHTML = `<i class="fas fa-check-circle"></i> Coupon <strong>${data.code}</strong> applied!`;
+            status.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fas fa-check-circle"></i> Coupon <strong>${data.code}</strong> applied!</span>
+                    <button onclick="removeCoupon()" style="background: transparent; border: none; color: #ff4757; cursor: pointer; font-size: 0.75rem; text-decoration: underline; font-weight: 700;">REMOVE</button>
+                </div>
+            `;
             status.style.color = '#2ed573';
-            renderSummary(null, true); // Refresh summary with discount
+            renderSummary(null, true);
         } else {
             appliedCoupon = null;
             localStorage.removeItem('efv_applied_coupon');
@@ -282,6 +292,20 @@ async function applyCoupon(code, amount) {
         applyBtn.disabled = false;
     }
 }
+
+window.removeCoupon = function() {
+    appliedCoupon = null;
+    localStorage.removeItem('efv_applied_coupon');
+    const input = document.getElementById('coupon-input');
+    const status = document.getElementById('coupon-status');
+    if (input) input.value = '';
+    if (status) {
+        status.innerHTML = 'Coupon removed';
+        status.style.color = 'rgba(255,255,255,0.5)';
+        setTimeout(() => { if (!appliedCoupon) status.style.display = 'none'; }, 2000);
+    }
+    renderSummary(null, true);
+};
 
 let isServiceable = true; // Default to true for now, will be updated by check
 
@@ -388,11 +412,35 @@ function renderSummary(items, isRefresh = false) {
     }).join('');
 
     const shippingCharge = calculateShipping(currentCheckoutItems);
-    const codCharge = calculateCOD(subtotal);
+    
+    // Final check for mode
+    const activeRadio = document.querySelector('input[name="payment-mode"]:checked');
+    const isActuallyCOD = (activeRadio ? activeRadio.value : selectedPaymentMode) === 'COD';
+    
+    const codCharge = isActuallyCOD ? (COD_CHARGES.BASE + (subtotal * COD_CHARGES.PERCENTAGE)) : 0;
 
+    // UI elements
+    const codRow = document.getElementById('cod-charge-row');
+    const codDisplay = document.getElementById('summary-cod');
+    const placeBtn = document.getElementById('place-order-btn');
+
+    // Update displays
     document.getElementById('summary-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
     document.getElementById('summary-shipping').textContent = `₹${shippingCharge.toFixed(2)}`;
-    document.getElementById('summary-cod').textContent = `₹${codCharge.toFixed(2)}`;
+    
+    if (codRow) {
+        codRow.style.display = 'flex'; // Keep always visible
+        if (codDisplay) {
+            codDisplay.textContent = `₹${codCharge.toFixed(2)}`;
+            codDisplay.style.color = isActuallyCOD ? '#FFD369' : 'rgba(255,255,255,0.3)';
+        }
+        
+        if (isActuallyCOD) {
+            if (placeBtn) placeBtn.innerHTML = 'PLACE ORDER <i class="fas fa-arrow-right"></i>';
+        } else {
+            if (placeBtn) placeBtn.innerHTML = 'PAY NOW <i class="fas fa-arrow-right"></i>';
+        }
+    }
 
     // Handle Discount
     let discount = 0;
@@ -417,7 +465,7 @@ function renderSummary(items, isRefresh = false) {
             row.id = 'summary-discount-row';
             row.style.color = '#2ed573';
             row.innerHTML = `<span>Discount (${appliedCoupon.code})</span> <span id="summary-discount">-₹${discount.toFixed(2)}</span>`;
-            summaryBox.insertBefore(row, document.getElementById('cod-charge-row'));
+            summaryBox.insertBefore(row, document.querySelector('.grand-total'));
         } else {
             existingDiscountRow.innerHTML = `<span>Discount (${appliedCoupon.code})</span> <span id="summary-discount">-₹${discount.toFixed(2)}</span>`;
         }
@@ -565,6 +613,8 @@ async function placeCODOrder(orderData, couponCode) {
                 customer: orderData.shippingAddress,
                 items: orderData.products.map(i => ({ productId: i.id || i.productId, quantity: i.quantity })),
                 totalAmount: orderData.totalAmount,
+                shippingCharge: orderData.shippingCharge,
+                codCharge: orderData.codCharge,
                 couponCode: couponCode
             })
         });

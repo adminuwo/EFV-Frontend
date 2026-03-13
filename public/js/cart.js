@@ -1,7 +1,7 @@
 /**
  * EFV Cart JS - Shopping Logic
  */
-console.log("EFV Cart JS Loaded - Version: 22.0 - Forced Cache Refresh");
+console.log("EFV Cart JS Loaded - Version: 22.5 - Profile Fix");
 
 document.addEventListener('DOMContentLoaded', () => {
     // Inject Premium Auth CSS
@@ -1862,7 +1862,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle User Profile View (Redirect to Dashboard)
     function toggleUserProfile(show) {
         if (show) {
-            window.location.href = 'profile.html';
+            window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
         }
     }
 
@@ -2102,7 +2102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         // Redirect to dashboard instead of opening cart
                         setTimeout(() => {
-                            window.location.href = 'admin-dashboard.html';
+                            window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/admin-dashboard.html';
                         }, 1000);
                         return;
                     } else {
@@ -2256,7 +2256,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Auto-login flow: Redirect to profile for dashboard access
                 setTimeout(() => {
-                    window.location.href = 'profile.html';
+                    window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
                 }, 1500);
 
             } catch (error) {
@@ -2516,10 +2516,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- AUTO LOGIN & NAVBAR SYNC ---
     // --- PREMIUM AUTO LOGIN & NAVBAR SYNC ---
+    // --- PREMIUM AUTO LOGIN & NAVBAR SYNC ---
     window.updateAuthNavbar = function () {
         const user = JSON.parse(localStorage.getItem('efv_user'));
         const navActions = document.querySelector('.nav-actions');
         if (!navActions) return;
+
+        // Try to find a dedicated placeholder, otherwise use navActions
+        const container = document.getElementById('nav-auth-container') || navActions;
+        const hamburger = navActions.querySelector('.hamburger');
 
         let userMenu = document.getElementById('nav-user-menu');
         let loginBtn = document.getElementById('nav-login-btn');
@@ -2533,9 +2538,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 userMenu.style.marginLeft = '10px';
                 const isAdmin = user.role === 'admin' || user.isAdmin === true;
                 userMenu.innerHTML = `
-                    <button class="btn btn-outline small" id="user-menu-trigger" style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn btn-outline small" id="user-menu-trigger" style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; font-size: 0.8rem; border-radius: 50px;">
                         <i class="fas fa-${isAdmin ? 'user-shield' : 'user-circle'}" style="font-size: 1.2rem;"></i> 
-                        <span>${user.name.split(' ')[0]}</span> 
+                        <span class="user-name-short">${user.name || 'Account'}</span> 
                         <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.7;"></i>
                     </button>
                     <div class="user-dropdown" id="user-dropdown">
@@ -2545,46 +2550,50 @@ document.addEventListener('DOMContentLoaded', () => {
                         ` : `
                         <div style="padding: 10px 15px; font-size: 0.75rem; color: var(--gold-energy); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8;">Account</div>
                         <a href="${(typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '')}pages/profile.html?tab=dashboard" class="dropdown-item"><i class="fas fa-th-large"></i> Dashboard</a>
-                        <!-- <a href="profile.html?tab=orders" class="dropdown-item"><i class="fas fa-shopping-bag"></i> My Orders</a>
-                        <a href="profile.html?tab=library" class="dropdown-item"><i class="fas fa-book-open"></i> My Library</a> -->
                         `}
                         <div class="dropdown-divider"></div>
                         <a href="#" class="dropdown-item" id="nav-logout-btn" style="color: #ff4d4d;"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 `;
-                navActions.appendChild(userMenu);
+                
+                // Smart Insertion
+                if (container.id === 'nav-auth-container') {
+                    container.appendChild(userMenu);
+                } else if (hamburger) {
+                    navActions.insertBefore(userMenu, hamburger);
+                } else {
+                    navActions.appendChild(userMenu);
+                }
 
                 // Dropdown Trigger
                 const trigger = document.getElementById('user-menu-trigger');
                 const dropdown = document.getElementById('user-dropdown');
+                if (trigger && dropdown) {
+                    trigger.onclick = (e) => {
+                        e.stopPropagation();
+                        dropdown.classList.toggle('active');
+                    };
+                }
 
-                trigger.onclick = (e) => {
-                    e.stopPropagation();
-                    dropdown.classList.toggle('active');
-                };
-
-                // Auto-close on outside click
+                // Auto-close handle
                 document.addEventListener('click', (e) => {
-                    if (!userMenu.contains(e.target)) {
-                        dropdown.classList.remove('active');
+                    if (userMenu && !userMenu.contains(e.target)) {
+                        const d = document.getElementById('user-dropdown');
+                        if (d) d.classList.remove('active');
                     }
                 });
 
-                // Also close when a dropdown item is clicked
-                dropdown.querySelectorAll('.dropdown-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        dropdown.classList.remove('active');
-                    });
-                });
-
-                // Logout logic injection
+                // Logout logic
                 const logout = document.getElementById('nav-logout-btn');
-                logout.onclick = (e) => {
-                    e.preventDefault();
-                    logoutUser();
-                };
+                if (logout) {
+                    logout.onclick = (e) => {
+                        e.preventDefault();
+                        logoutUser();
+                    };
+                }
             } else {
-                userMenu.querySelector('span').textContent = user.name.split(' ')[0];
+                const nameSpan = userMenu.querySelector('.user-name-short');
+                if (nameSpan) nameSpan.textContent = user.name || 'Account';
             }
         } else {
             if (userMenu) userMenu.remove();
@@ -2599,10 +2608,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 loginBtn.style.textDecoration = 'none';
                 loginBtn.style.color = 'var(--cosmic-black)';
                 loginBtn.textContent = 'Login';
-                navActions.appendChild(loginBtn);
+                
+                // Smart Insertion
+                if (container.id === 'nav-auth-container') {
+                    container.appendChild(loginBtn);
+                } else if (hamburger) {
+                    navActions.insertBefore(loginBtn, hamburger);
+                } else {
+                    navActions.appendChild(loginBtn);
+                }
             }
 
-            // Ensure click handler is always attached
             loginBtn.onclick = (e) => {
                 if (e) e.preventDefault();
                 if (typeof openAuthModal === 'function') openAuthModal('login');
@@ -2641,10 +2657,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Auto-login on load
     async function checkAutoLogin() {
         const token = localStorage.getItem('authToken');
-        if (!token) {
-            updateAuthNavbar();
-            return;
-        }
+        // ✅ INSTANT UI: Show profile from localStorage immediately (no waiting)
+        updateAuthNavbar();
+
+        if (!token) return;
 
         try {
             const res = await fetch(`${API_BASE}/api/users/profile`, {
@@ -2653,20 +2669,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.ok) {
                 const userData = await res.json();
                 localStorage.setItem('efv_user', JSON.stringify(userData));
-                updateAuthNavbar();
-                // If on profile page, maybe trigger local state update
+                updateAuthNavbar(); // Re-update with fresh server data
                 if (typeof initializeDashboard === 'function') {
                     initializeDashboard(userData);
                 }
             } else {
-                // Token invalid
+                // Token invalid - clear and show login button
                 localStorage.removeItem('authToken');
-                // localStorage.removeItem('efv_user'); // Don't clear user immediately to prevent blink? Or do it for security.
+                localStorage.removeItem('efv_user');
                 updateAuthNavbar();
             }
         } catch (e) {
-            console.error('Auto-login check failed', e);
-            updateAuthNavbar();
+            // Network error - keep showing cached user in navbar
+            console.warn('Auto-login background check failed (network?):', e.message);
         }
     }
 

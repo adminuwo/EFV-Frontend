@@ -4,13 +4,15 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       { source: '/', destination: '/index.html' },
-      { source: '/marketplace', destination: '/marketplace.html' },
-      { source: '/profile', destination: '/profile.html' },
-      { source: '/checkout', destination: '/checkout.html' },
-      { source: '/admin', destination: '/admin-dashboard.html' },
-      { source: '/tracking', destination: '/tracking.html' },
-      { source: '/about', destination: '/about.html' },
-      { source: '/contact', destination: '/contact.html' }
+      { source: '/marketplace', destination: '/pages/marketplace.html' },
+      { source: '/profile', destination: '/pages/profile.html' },
+      { source: '/profile.html', destination: '/pages/profile.html' },
+      { source: '/checkout', destination: '/pages/checkout.html' },
+      { source: '/admin', destination: '/pages/admin-dashboard.html' },
+      { source: '/admin-dashboard.html', destination: '/pages/admin-dashboard.html' },
+      { source: '/tracking', destination: '/pages/tracking.html' },
+      { source: '/about', destination: '/pages/about.html' },
+      { source: '/contact', destination: '/pages/contact.html' }
     ];
   },
 };

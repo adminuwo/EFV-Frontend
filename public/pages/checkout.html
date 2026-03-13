@@ -500,11 +500,11 @@
                 <h2>Payment Method</h2>
                 <div class="payment-options">
                     <label class="payment-option active" id="option-online">
-                        <input type="radio" name="payment-mode" value="Online" checked>
+                        <input type="radio" name="payment-mode" id="radio-online" value="Online" checked>
                         <span>Online Payment</span>
                     </label>
                     <label class="payment-option" id="option-cod">
-                        <input type="radio" name="payment-mode" value="COD">
+                        <input type="radio" name="payment-mode" id="radio-cod" value="COD">
                         <span>Cash on Delivery (COD)</span>
                     </label>
                 </div>
@@ -595,7 +595,7 @@
                         <span>Shipping</span>
                         <span id="summary-shipping">₹0.00</span>
                     </div>
-                    <div class="checkout-total-row" id="cod-charge-row" style="display: none; color: #FFD369;">
+                    <div class="checkout-total-row" id="cod-charge-row" style="color: #FFD369;">
                         <span>COD Charges</span>
                         <span id="summary-cod">₹0.00</span>
                     </div>

@@ -12,6 +12,7 @@ class EFVChatbot {
         this.injectHTML();
         this.attachEventListeners();
         this.startPeriodicBlink();
+        this.checkFirstTimeIntro();
     }
 
     startPeriodicBlink() {
@@ -93,9 +94,90 @@ class EFVChatbot {
                     </div>
                 </div>
             </div>
+
+            <!-- Intro Popup -->
+            <div id="efv-intro-overlay">
+                <div class="efv-intro-popup">
+                    <div class="efv-intro-header">
+                        <div class="efv-intro-icon">✨</div>
+                        <h2>Meet EFV Assistant</h2>
+                    </div>
+                    <p>
+                        Welcome to EFV™. <br><br>
+                        If you need help exploring the platform, finding books, understanding features, or asking questions, our EFV Assistant is always ready to help. <br><br>
+                        Simply click the glowing star icon in the bottom-right corner to start chatting.
+                    </p>
+                    <div class="efv-intro-actions">
+                        <button id="efv-intro-got-it" class="efv-btn-intro efv-btn-intro-secondary">Got It</button>
+                        <button id="efv-intro-ask" class="efv-btn-intro efv-btn-intro-primary">Ask EFV Bot</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Curved Arrow Pointer (Intro only) -->
+            <svg class="efv-intro-arrow" viewBox="0 0 100 100">
+                <path d="M 10 10 Q 50 10, 80 80" fill="none" marker-end="url(#intro-arrowhead)"/>
+                <defs>
+                    <marker id="intro-arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <polygon points="0 0, 10 3, 0 6" fill="#f4d03f" />
+                    </marker>
+                </defs>
+            </svg>
         `;
 
         document.body.insertAdjacentHTML('beforeend', chatHTML);
+    }
+
+    checkFirstTimeIntro() {
+        const hasSeenIntro = localStorage.getItem('efv_bot_intro_seen');
+        if (!hasSeenIntro) {
+            setTimeout(() => {
+                this.showIntro();
+            }, 2000);
+        }
+    }
+
+    showIntro() {
+        const introOverlay = document.getElementById('efv-intro-overlay');
+        const chatToggle = document.getElementById('efv-chat-toggle');
+        
+        if (introOverlay) {
+            introOverlay.classList.add('active');
+            chatToggle.classList.add('efv-highlight');
+        }
+
+        // Event listeners for intro buttons
+        const gotItBtn = document.getElementById('efv-intro-got-it');
+        const askBtn = document.getElementById('efv-intro-ask');
+
+        if (gotItBtn) {
+            gotItBtn.onclick = () => this.closeIntro();
+        }
+
+        if (askBtn) {
+            askBtn.onclick = () => {
+                this.closeIntro();
+                this.toggleChat();
+            };
+        }
+    }
+
+    closeIntro() {
+        const introOverlay = document.getElementById('efv-intro-overlay');
+        const chatToggle = document.getElementById('efv-chat-toggle');
+        
+        if (introOverlay) {
+            introOverlay.classList.remove('active');
+            setTimeout(() => {
+                introOverlay.style.display = 'none';
+            }, 500);
+        }
+
+        if (chatToggle) {
+            chatToggle.classList.remove('efv-highlight');
+        }
+
+        localStorage.setItem('efv_bot_intro_seen', 'true');
     }
 
     attachEventListeners() {
