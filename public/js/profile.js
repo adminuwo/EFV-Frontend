@@ -247,8 +247,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
+                    const resData = await res.json();
                     showToast("Profile updated successfully", "success");
-                    fetchProfileData();
+                    
+                    // Immediately sync with localStorage for global UI consistency
+                    const legacyUser = JSON.parse(localStorage.getItem('efv_user')) || {};
+                    const updatedUser = {
+                        ...legacyUser,
+                        name: data.name // the name user just typed
+                    };
+                    localStorage.setItem('efv_user', JSON.stringify(updatedUser));
+                    
+                    // Explicitly update navbar name immediately
+                    if (typeof updateAuthNavbar === 'function') updateAuthNavbar();
+
+                    // Still fetch full data in background to stay in sync
+                    fetchProfileData().catch(e => console.warn("Background fetch failed:", e));
                 } else {
                     showToast("Failed to update profile", "error");
                 }
@@ -598,6 +612,18 @@ window.fetchProfileData = async function () {
 
         if (res.ok) {
             window.currentUserProfile = profile;
+
+            // Sync with efv_user in localStorage for global UI consistency (Navbar name etc)
+            const legacyUser = JSON.parse(localStorage.getItem('efv_user')) || {};
+            const updatedUser = {
+                ...legacyUser,
+                name: profile.name,
+                email: profile.email,
+                role: profile.role || legacyUser.role,
+                _id: profile._id || legacyUser._id
+            };
+            localStorage.setItem('efv_user', JSON.stringify(updatedUser));
+
             renderWishlistTab();
             renderNotificationsTab();
             renderSavedAddresses();
@@ -631,6 +657,13 @@ function updateDashboardOverview() {
     if (profileDisplayEmail) profileDisplayEmail.textContent = profile.email || 'user@example.com';
     const profileDisplayName = document.getElementById('profile-display-name');
     if (profileDisplayName) profileDisplayName.textContent = profile.name || 'Guest User';
+    
+    // Update other name displays for consistency
+    const welcomeName = document.getElementById('user-name-display');
+    if (welcomeName) welcomeName.textContent = profile.name;
+    
+    const sidebarName = document.getElementById('sidebar-user-name');
+    if (sidebarName) sidebarName.textContent = profile.name;
 
     // Fill form fields
     const nameInput = document.getElementById('settings-name-v2');
