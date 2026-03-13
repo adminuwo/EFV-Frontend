@@ -173,18 +173,15 @@ function calculateShipping(items = []) {
     return rate;
 }
 
-function calculateCOD(subtotal) {
-    const activeRadio = document.querySelector('input[name="payment-mode"]:checked');
-    const mode = activeRadio ? activeRadio.value : selectedPaymentMode;
-    
-    if (mode !== 'COD') return 0;
+function calculateCOD(subtotal, mode) {
+    const activeMode = mode || selectedPaymentMode;
+    if (activeMode !== 'COD') return 0;
     
     const charge = COD_CHARGES.BASE + (subtotal * COD_CHARGES.PERCENTAGE);
     return Math.round(charge * 100) / 100;
 }
 
 function setupPaymentModeHandlers(items = []) {
-    const radios = document.querySelectorAll('input[name="payment-mode"]');
     const optionCod = document.getElementById('option-cod');
 
     const hasDigital = isDigitalOrder || items.some(item => {
@@ -205,31 +202,32 @@ function setupPaymentModeHandlers(items = []) {
         selectedPaymentMode = mode;
         document.querySelectorAll('.payment-option').forEach(opt => {
             const radio = opt.querySelector('input');
-            if (radio && radio.value === mode) {
-                opt.classList.add('active');
-                radio.checked = true;
-            } else {
-                opt.classList.remove('active');
+            if (radio) {
+                if (radio.value === mode) {
+                    opt.classList.add('active');
+                    radio.checked = true;
+                } else {
+                    opt.classList.remove('active');
+                }
             }
         });
         renderSummary(null, true);
     };
 
-    // Attach to radios
-    radios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            if (e.target.checked) updateUIState(e.target.value);
+    // Attach click to parent cards
+    document.querySelectorAll('.payment-option').forEach(card => {
+        card.addEventListener('click', function(e) {
+            const radio = this.querySelector('input');
+            if (radio) {
+                updateUIState(radio.value);
+            }
         });
     });
 
-    // Attach to parent cards
-    document.querySelectorAll('.payment-option').forEach(card => {
-        card.addEventListener('click', (e) => {
-            const radio = card.querySelector('input');
-            if (radio && !radio.checked) {
-                radio.checked = true;
-                updateUIState(radio.value);
-            }
+    // Handle direct radio changes
+    document.querySelectorAll('input[name="payment-mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.checked) updateUIState(e.target.value);
         });
     });
 
@@ -411,13 +409,11 @@ function renderSummary(items, isRefresh = false) {
         `;
     }).join('');
 
+    const checkedRadio = document.querySelector('input[name="payment-mode"]:checked');
+    const currentMode = checkedRadio ? checkedRadio.value : selectedPaymentMode;
+
     const shippingCharge = calculateShipping(currentCheckoutItems);
-    
-    // Final check for mode
-    const activeRadio = document.querySelector('input[name="payment-mode"]:checked');
-    const isActuallyCOD = (activeRadio ? activeRadio.value : selectedPaymentMode) === 'COD';
-    
-    const codCharge = isActuallyCOD ? (COD_CHARGES.BASE + (subtotal * COD_CHARGES.PERCENTAGE)) : 0;
+    const codCharge = calculateCOD(subtotal, currentMode);
 
     // UI elements
     const codRow = document.getElementById('cod-charge-row');
@@ -429,13 +425,14 @@ function renderSummary(items, isRefresh = false) {
     document.getElementById('summary-shipping').textContent = `₹${shippingCharge.toFixed(2)}`;
     
     if (codRow) {
-        codRow.style.display = 'flex'; // Keep always visible
+        codRow.style.display = 'flex'; 
         if (codDisplay) {
             codDisplay.textContent = `₹${codCharge.toFixed(2)}`;
-            codDisplay.style.color = isActuallyCOD ? '#FFD369' : 'rgba(255,255,255,0.3)';
+            codDisplay.style.color = (currentMode === 'COD') ? '#FFD369' : 'rgba(255,255,255,0.3)';
+            codDisplay.style.opacity = (currentMode === 'COD') ? '1' : '0.5';
         }
         
-        if (isActuallyCOD) {
+        if (currentMode === 'COD') {
             if (placeBtn) placeBtn.innerHTML = 'PLACE ORDER <i class="fas fa-arrow-right"></i>';
         } else {
             if (placeBtn) placeBtn.innerHTML = 'PAY NOW <i class="fas fa-arrow-right"></i>';
@@ -538,7 +535,9 @@ function setupPlaceOrder(items, user) {
         // Calculate Totals using dynamic logic
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const shipping = calculateShipping(items);
-        const cod = calculateCOD(subtotal);
+        const checkedRadio = document.querySelector('input[name="payment-mode"]:checked');
+        const mode = checkedRadio ? checkedRadio.value : 'Online';
+        const cod = calculateCOD(subtotal, mode);
         let discount = 0;
         if (appliedCoupon) {
             if (appliedCoupon.type === 'Percentage') {
@@ -548,7 +547,7 @@ function setupPlaceOrder(items, user) {
             }
         }
 
-        const isCOD = document.querySelector('input[name="payment-mode"]:checked').value === 'COD';
+        const isCOD = mode === 'COD';
 
         if (isCOD && isDigitalOrder) {
             alert('Digital items (E-book/Audiobook) cannot be purchased via COD. Please select Online Payment.');

@@ -165,7 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'dashboard') updateDashboardOverview();
             if (targetId === 'admin') updateAdminStats();
             if (targetId === 'library') syncLibraryWithBackend();
-            if (targetId === 'orders') renderOrdersTab();
+            if (targetId === 'orders') {
+                renderOrdersTab();
+                // Trigger background sync for status updates
+                syncOrdersStatus();
+            }
             if (targetId === 'notifications') renderNotificationsTab();
             if (targetId === 'admin-orders') loadAdminOrdersFull();
             if (targetId === 'admin-products') loadAdminProductsFull();
@@ -1188,7 +1192,7 @@ async function renderOrdersTab(filter = 'all') {
 
 async function syncOrdersStatus() {
     const token = localStorage.getItem('authToken');
-    const syncBtn = document.querySelector('button[onclick*="renderOrdersTab"]');
+    const syncBtn = document.querySelector('button[onclick*="syncOrdersStatus"]');
     const originalText = syncBtn ? syncBtn.innerHTML : '<i class="fas fa-sync-alt"></i> Sync';
     if (syncBtn) {
         syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
