@@ -188,17 +188,18 @@ body.modal-open {
     height: 100vh;
     z-index: 100;
     backdrop-filter: blur(20px);
+    
+    /* Hide scrollbars but keep scrolling active */
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 211, 105, 0.4) transparent;
+    overflow-x: hidden;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Edge/IE */
 }
 
 .sidebar::-webkit-scrollbar {
-    width: 5px;
-}
-
-.sidebar::-webkit-scrollbar-track {
-    background: transparent;
+    display: none; /* Chrome, Safari, Edge */
+    width: 0;
+    height: 0;
 }
 
 .sidebar::-webkit-scrollbar-thumb {
@@ -231,10 +232,10 @@ body.modal-open {
 }
 
 .sidebar-nav {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+    padding-bottom: 30px;
 }
 
 .nav-item {
@@ -307,7 +308,6 @@ body.modal-open {
 }
 
 .nav-item.logout {
-    margin-top: auto;
     color: #ff6b6b;
 }
 
@@ -320,8 +320,19 @@ body.modal-open {
     flex: 1;
     margin-left: var(--sidebar-width);
     padding: 40px 60px;
-    overflow-y: auto;
     background: #0a0a0a;
+    
+    /* Hide scrollbars but keep scrolling active */
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Edge/IE */
+}
+
+.main-content::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+    width: 0;
+    height: 0;
 }
 
 .content-section {
@@ -669,6 +680,40 @@ body.modal-open {
     gap: 30px;
 }
 
+.admin-security-grid {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 993px) {
+    .admin-security-grid {
+        grid-template-columns: 1fr 1.5fr;
+    }
+}
+
+.admin-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.activity-log-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    opacity: 0.5;
+    font-size: 0.8rem;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-weight: 700;
+}
+
+@media (min-width: 769px) {
+    .activity-log-header {
+        grid-template-columns: 1.2fr 1fr 1.5fr;
+    }
+}
+
 .settings-card {
     background: var(--card-bg);
     border: var(--glass-border);
@@ -695,6 +740,16 @@ body.modal-open {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 600;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.profile-form-grid {
+    margin-top: 25px;
 }
 
 .form-group label {

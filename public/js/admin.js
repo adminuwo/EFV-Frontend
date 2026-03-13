@@ -2434,6 +2434,10 @@ window.loadAdminCustomers = async function () {
         const users = await usersRes.json();
         const orders = await ordersRes.json();
 
+        // Cache for detail view
+        window.allAdminUsers = users;
+        window.allAdminOrders = orders;
+
         tbody.innerHTML = '';
         if (!Array.isArray(users)) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; opacity:0.5;">No users found.</td></tr>';
@@ -2453,7 +2457,7 @@ window.loadAdminCustomers = async function () {
                 <td style="padding: 12px;">${u.phone || 'N/A'}</td>
                 <td style="padding: 12px; text-align:center;">${userOrders.length}</td>
                 <td style="padding: 12px; font-weight:bold; color:var(--gold-text);">₹${totalSpent.toLocaleString()}</td>
-                <td style="padding: 12px;"><button class="btn btn-outline small" onclick="alert('User profile details coming soon!')">View</button></td>
+                <td style="padding: 12px;"><button class="btn btn-outline small" onclick="window.viewCustomerDetail('${u._id || u.id}')">View</button></td>
             `;
             tbody.appendChild(tr);
         });
@@ -2993,6 +2997,60 @@ window.viewOrderDetail = window.viewAdminOrderDetail;
 
 window.closeOrderDetailModal = () => {
     document.getElementById('order-detail-modal').style.display = 'none';
+};
+
+window.viewCustomerDetail = (userId) => {
+    if (!window.allAdminUsers) return;
+    const u = window.allAdminUsers.find(user => (user._id || user.id) === userId);
+    if (!u) return;
+
+    const userOrders = (window.allAdminOrders || []).filter(o => o.customer && o.customer.email && o.customer.email.toLowerCase() === u.email.toLowerCase());
+    const totalSpent = userOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+
+    document.getElementById('cust-modal-name').textContent = u.name;
+    document.getElementById('cust-modal-email').textContent = u.email;
+    document.getElementById('cust-modal-avatar').src = u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=D4AF37&color=fff`;
+    document.getElementById('cust-modal-total-orders').textContent = userOrders.length;
+    document.getElementById('cust-modal-total-spent').textContent = `₹${totalSpent.toLocaleString()}`;
+
+    // Addresses
+    const addrList = document.getElementById('cust-modal-addresses');
+    addrList.innerHTML = u.savedAddresses && u.savedAddresses.length > 0
+        ? u.savedAddresses.map(a => `
+            <div class="glass-panel" style="padding: 10px; font-size: 0.85rem; border-color: ${a.isDefault ? 'var(--gold-text)' : 'rgba(255,255,255,0.1)'}; margin-bottom: 8px;">
+                <strong>${a.fullName} ${a.isDefault ? '<span class="gold-text">(Default)</span>' : ''}</strong><br>
+                <i class="fas fa-phone" style="font-size: 0.7rem; opacity: 0.5;"></i> ${a.phone}<br>
+                <i class="fas fa-map-marker-alt" style="font-size: 0.7rem; opacity: 0.5;"></i> ${a.fullAddress || `${a.house}, ${a.area}, ${a.city}, ${a.state} - ${a.pincode}`}
+            </div>
+        `).join('')
+        : '<p style="opacity: 0.5; font-size: 0.85rem;">No saved addresses.</p>';
+
+    // Order History
+    const orderHistory = document.getElementById('cust-modal-order-history');
+    orderHistory.innerHTML = userOrders.length > 0
+        ? userOrders.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).map(o => `
+            <div class="glass-panel" style="padding: 10px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div>
+                    <div style="font-weight: 700;">#${(o._id || o.id).slice(-6).toUpperCase()}</div>
+                    <div style="opacity: 0.6; font-size: 0.75rem;">${new Date(o.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="gold-text" style="font-weight: 800;">₹${o.totalAmount}</div>
+                    <div class="status-badge ${o.paymentStatus === 'Paid' ? 'resolved' : 'cancelled'}" style="font-size: 0.6rem; padding: 2px 6px;">${o.paymentStatus}</div>
+                </div>
+            </div>
+        `).join('')
+        : '<p style="opacity: 0.5; font-size: 0.85rem;">No orders yet.</p>';
+
+    const modal = document.getElementById('customer-detail-modal');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('active'), 10);
+};
+
+window.closeCustomerDetailModal = () => {
+    const modal = document.getElementById('customer-detail-modal');
+    modal.classList.remove('active');
+    setTimeout(() => modal.style.display = 'none', 400);
 };
 
 // Address Management

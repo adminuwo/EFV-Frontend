@@ -1,22 +1,23 @@
 /* --- ADDITIONAL DASHBOARD STYLES --- */
 
-/* Premium Scrollbar Global */
+/* Premium Scrollbar Global - Hidden as per user request */
+html, body, .sidebar, .main-content {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Edge/IE */
+}
+
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 0px;
+    height: 0px;
+    display: none;
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(3, 5, 9, 0.95);
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, #d4af37, #f1c40f);
-    border-radius: 10px;
-    border: 2px solid rgba(3, 5, 9, 0.5);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #f1c40f;
+    background: transparent;
 }
 
 /* Ensure reader canvas container (checkout) shows scrollbar */
