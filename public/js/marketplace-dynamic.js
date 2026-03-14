@@ -221,15 +221,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const productGrid = document.getElementById('product-grid');
     if (!productGrid) return;
 
+    let allProducts = [...STATIC_PRODUCTS]; // Initial state
+    let activeFilter = 'all';
+
     const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL)
         ? CONFIG.API_BASE_URL
         : 'http://localhost:8080';
 
     // Step 1: Render static products IMMEDIATELY
-    renderProducts(STATIC_PRODUCTS);
+    renderProducts(allProducts);
 
     // Step 2: Merge backend data and re-render
     mergeBackendData();
+
+    // Step 3: Initialize Filters
+    initFilters();
 
     async function mergeBackendData() {
         try {
@@ -243,27 +249,55 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!Array.isArray(backendProducts)) return;
 
             // Use backend products as the source of truth for the catalog
-            // This ensures that products deleted in Admin disappear from Marketplace
-            const combinedProducts = backendProducts.map(b => {
+            allProducts = backendProducts.map(b => {
                 const staticMatch = STATIC_PRODUCTS.find(sp => sp._id === b._id);
                 if (staticMatch) {
-                    // Update static entry with live backend data
                     const preserved = {
                         language: staticMatch.language,
                         thumbnail: staticMatch.thumbnail || b.thumbnail
                     };
                     return { ...staticMatch, ...b, ...preserved };
                 }
-                // It's a brand new product not in our static list
                 return b;
             });
 
-            // Re-render EVERYTHING to ensure all updates, additions, AND deletions are reflected
             console.log('🔄 Marketplace: Syncing with Admin inventory (Updates & Deletions)...');
-            renderProducts(combinedProducts, true);
+            applyFilter(); // Re-render with existing filter
         } catch (err) {
             console.log('ℹ️ Marketplace: Offline mode or timeout — using static catalog');
         }
+    }
+
+    function initFilters() {
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update UI state
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Update filter choice
+                activeFilter = btn.dataset.filter;
+                applyFilter();
+            });
+        });
+    }
+
+    function applyFilter() {
+        if (!productGrid) return;
+        
+        let filtered = allProducts;
+        if (activeFilter !== 'all') {
+            filtered = allProducts.filter(p => p.type === activeFilter);
+        }
+
+        // Add a small fade-out effect for smooth transition
+        productGrid.style.opacity = '0.3';
+        
+        setTimeout(() => {
+            renderProducts(filtered, true);
+            productGrid.style.opacity = '1';
+        }, 300);
     }
 
     function renderProducts(products, clearExisting = false) {
@@ -385,13 +419,20 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        card.addEventListener('click', (e) => {
-            if (!e.target.closest('button')) {
-                if (typeof window.openProductModal === 'function') {
-                    window.openProductModal(product._id || product.id, card);
-                }
+        // Modal should ONLY open when clicking specific buttons, not the whole card
+        const infoBtn = card.querySelector('.view-info');
+        const buyBtn = card.querySelector('.buy-now');
+
+        const triggerModal = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window.openProductModal === 'function') {
+                window.openProductModal(product._id || product.id, card);
             }
-        });
+        };
+
+        if (infoBtn) infoBtn.addEventListener('click', triggerModal);
+        if (buyBtn && !isComingSoon) buyBtn.addEventListener('click', triggerModal);
 
         return card;
     }

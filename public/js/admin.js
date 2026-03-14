@@ -87,6 +87,13 @@ window.editProduct = async function (productId) {
 
         if (product.thumbnail) document.getElementById('admin-current-cover').innerHTML = `<i class="fas fa-file-image"></i> Current: ${product.thumbnail.split('/').pop()}`;
         if (product.filePath && product.type === 'EBOOK') document.getElementById('admin-current-ebook').innerHTML = `<i class="fas fa-file-pdf"></i> Current: ${product.filePath.split('/').pop()}`;
+        
+        // Load Gallery
+        if (product.gallery && product.gallery.length > 0) {
+            document.getElementById('admin-current-gallery').innerHTML = `<i class="fas fa-images"></i> ${product.gallery.length} images saved`;
+        } else {
+            document.getElementById('admin-current-gallery').innerHTML = '';
+        }
 
         // Load Chapters if Audiobook
         if (product.type === 'AUDIOBOOK') {
@@ -616,6 +623,553 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     window.initializeAdminSettings = initializeAdminSettings; // Make it global
 
+// ─── AUDIOBOOK PLAYER IMPLEMENTATION (Resume Support) ───
+window.filterLibraryView = function (mode) {
+    document.querySelectorAll('.library-sub-tab').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.library-sub-tab[data-library-tab="${mode}"]`)?.classList.add('active');
+
+    const allGrid = document.getElementById('dashboard-library-list');
+    const audioGrid = document.getElementById('dashboard-audiobooks-list');
+
+    if (mode === 'all') {
+        allGrid.style.display = ''; audioGrid.style.display = 'none';
+        renderLibraryTab();
+    } else if (mode === 'ebooks') {
+        allGrid.style.display = ''; audioGrid.style.display = 'none';
+        renderLibraryTab(null, 'ebook');
+    } else if (mode === 'audiobooks') {
+        allGrid.style.display = 'none'; audioGrid.style.display = '';
+        renderAudiobooksGrid();
+    }
+};
+
+async function renderAudiobooksGrid() {
+    const libKey = getUserKey('efv_digital_library');
+    const library = JSON.parse(localStorage.getItem(libKey)) || [];
+    const audiobooks = library.filter(i => (i.type || '').toLowerCase().includes('audio'));
+    const container = document.getElementById('dashboard-audiobooks-list');
+    const emptyState = document.getElementById('library-empty-state');
+
+    if (audiobooks.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+    }
+    emptyState.classList.add('hidden');
+
+    const token = localStorage.getItem('authToken');
+
+    const cards = await Promise.all(audiobooks.map(async (item) => {
+        const prodId = item.productId || item.id || item._id;
+        let totalChapters = 0, completedChapters = 0, remainingChapters = 0;
+        let lastChapterIdx = 0, lastChapterTime = 0;
+
+        // Fetch product for chapter info
+        let productData = null;
+        let itemPrice = 'Purchased';
+        try {
+            const pRes = await fetch(`${API_BASE}/api/products/${prodId}`);
+            if (pRes.ok) productData = await pRes.json();
+        } catch (e) { }
+
+        if (productData) {
+            totalChapters = (productData.chapters || []).filter(c => c.filePath).length || productData.totalChapters || 0;
+            itemPrice = productData.discountPrice ? `₹${productData.discountPrice}` : (productData.price ? `₹${productData.price}` : 'Purchased');
+        }
+
+        // Fetch chapter-level progress
+        let abProgress = null;
+        try {
+            const apRes = await fetch(`${API_BASE}/api/audiobook-progress/${prodId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (apRes.ok) abProgress = await apRes.json();
+        } catch (e) { }
+
+        if (abProgress && abProgress.chapters) {
+            completedChapters = abProgress.totalCompletedChapters || abProgress.chapters.filter(c => c.completed).length;
+            lastChapterIdx = abProgress.currentChapterIndex || 0;
+            lastChapterTime = abProgress.currentChapterTime || 0;
+        }
+        remainingChapters = Math.max(0, totalChapters - completedChapters);
+        const progressPercent = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
+
+        // Thumbnail resolution - same logic as marketplace.html
+        let thumbUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+        if (item.thumbnail) {
+            if (item.thumbnail.startsWith('http') || item.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+                thumbUrl = item.thumbnail;
+            } else if (item.thumbnail.startsWith('img/')) {
+                thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + item.thumbnail.replace('img/', '');
+            } else {
+                thumbUrl = `${API_BASE}/${item.thumbnail}`;
+            }
+        }
+
+        const hasProgress = lastChapterTime > 0 || completedChapters > 0;
+        const continueLabel = hasProgress ? `<i class="fas fa-play"></i> Continue Listening` : `<i class="fas fa-headphones"></i> Start Listening`;
+
+        return `
+            <div class="audiobook-card fade-in">
+                <div class="audiobook-card-inner">
+                    <button onclick="event.stopPropagation(); removeFromLibrary('${prodId}')" 
+                        style="position: absolute; top: 15px; left: 15px; width: 34px; height: 34px; border-radius: 10px; background: rgba(255, 77, 77, 0.25); border: 1px solid rgba(255, 77, 77, 0.4); color: #ff6b6b; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 100; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); backdrop-filter: blur(4px);"
+                        onmouseover="this.style.background='#ff4d4d'; this.style.color='white'"
+                        onmouseout="this.style.background='rgba(255, 77, 77, 0.25)'; this.style.color='#ff6b6b'">
+                        <i class="fas fa-trash-alt" style="font-size: 0.9rem;"></i>
+                    </button>
+                    <img src="${thumbUrl}" alt="${item.name || item.title}" class="audiobook-card-cover" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
+                    <div class="audiobook-card-info">
+                        <h3 class="audiobook-card-title">${item.name || item.title}</h3>
+                        ${item.language ? `<span style="display:inline-block; background:rgba(212,175,55,0.12); border:1px solid rgba(255,211,105,0.2); color:var(--gold-text); padding:2px 8px; border-radius:4px; font-size:0.65rem; font-weight:700; text-transform:uppercase; margin-bottom:6px; width:fit-content;">${item.language} Edition</span>` : ''}
+                        <div class="audiobook-card-price" style="font-size: 0.9rem; color: var(--gold-text); font-weight: 700; margin-bottom: 8px;">${itemPrice}</div>
+                        <div class="audiobook-card-stats">
+                            <span class="audiobook-stat-pill"><i class="fas fa-list-ol"></i> ${totalChapters} Chapters</span>
+                            <span class="audiobook-stat-pill"><i class="fas fa-check-circle"></i> ${completedChapters} Done</span>
+                            <span class="audiobook-stat-pill"><i class="fas fa-hourglass-half"></i> ${remainingChapters} Left</span>
+                        </div>
+                        <div class="audiobook-card-progress">
+                            <div class="audiobook-progress-bar-wrap">
+                                <div class="audiobook-progress-bar-fill" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <div class="audiobook-progress-text">
+                                <span>${progressPercent}% Complete</span>
+                                <span>${completedChapters}/${totalChapters}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="audiobook-card-actions">
+                    <button class="btn-continue-listening" onclick="launchEFVPlayer('${prodId}', 0)">
+                        ${continueLabel}
+                    </button>
+                    <button class="btn-chapters-view" onclick="openAudiobookDetail('${prodId}', true)">
+                        <i class="fas fa-list"></i> Chapters
+                    </button>
+                </div>
+            </div>
+        `;
+    }));
+
+    container.innerHTML = cards.join('');
+}
+
+window.openAudiobookDetail = async function (productId, scrollToChapters = false) {
+    const existing = document.getElementById('audiobook-detail-overlay');
+    if (existing) existing.remove();
+
+    const token = localStorage.getItem('authToken');
+    let product = null;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/products/${productId}`);
+        if (res.ok) product = await res.json();
+    } catch (e) { }
+
+    if (!product) { alert('Failed to load audiobook details.'); return; }
+
+    const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+    const totalChapters = chapters.length;
+
+    let abProgress = null;
+    try {
+        const apRes = await fetch(`${API_BASE}/api/audiobook-progress/${productId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (apRes.ok) abProgress = await apRes.json();
+    } catch (e) { }
+
+    const completedChapters = abProgress?.totalCompletedChapters || (abProgress?.chapters || []).filter(c => c.completed).length || 0;
+    const progressPercent = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
+
+    // Thumbnail resolution - same logic as marketplace.html
+    let thumbUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+    if (product.thumbnail) {
+        if (product.thumbnail.startsWith('http') || product.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+            thumbUrl = product.thumbnail;
+        } else if (product.thumbnail.startsWith('img/')) {
+            thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + product.thumbnail.replace('img/', '');
+        } else {
+            thumbUrl = `${API_BASE}/${product.thumbnail}`;
+        }
+    }
+
+    const chapterCards = chapters.map((ch, idx) => {
+        const chProgress = abProgress?.chapters?.find(c => c.chapterIndex === idx);
+        const isCompleted = chProgress?.completed || false;
+        const chDuration = ch.duration || '--:--';
+
+        return `
+            <div class="chapter-card ${isCompleted ? 'completed' : ''}" onclick="launchEFVPlayer('${productId}', ${idx})" id="chapter-card-${idx}">
+                <div class="chapter-num">${idx + 1}</div>
+                <div class="chapter-info">
+                    <h4 class="chapter-title">${ch.title || ('Chapter ' + (idx + 1))}</h4>
+                    <div class="chapter-duration"><i class="fas fa-clock"></i> ${chDuration}</div>
+                </div>
+                <button class="chapter-play-btn" onclick="event.stopPropagation(); launchEFVPlayer('${productId}', ${idx})">
+                    <i class="fas fa-play"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+
+    const overlayHTML = `
+        <div id="audiobook-detail-overlay" class="audiobook-detail-overlay">
+            <div class="ab-detail-header">
+                <div class="ab-detail-header-title">
+                    <i class="fas fa-headphones"></i> AUDIOBOOK
+                </div>
+                <button class="ab-detail-close" onclick="document.getElementById('audiobook-detail-overlay').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="ab-detail-body">
+                <div class="ab-detail-hero">
+                    <img src="${thumbUrl}" alt="${product.title}" class="ab-detail-cover" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
+                    <h2 class="ab-detail-title">${product.title}</h2>
+                    <div class="ab-detail-meta">
+                        <div class="ab-detail-meta-item"><i class="fas fa-list-ol"></i> <strong>${totalChapters}</strong> Chapters</div>
+                        <div class="ab-detail-meta-item"><i class="fas fa-check-double"></i> <strong>${completedChapters}</strong> Completed</div>
+                        ${product.duration ? `<div class="ab-detail-meta-item"><i class="fas fa-clock"></i> <strong>${product.duration}</strong></div>` : ''}
+                    </div>
+                    <div class="ab-detail-progress-wrap">
+                        <div class="ab-detail-progress-label"><span>Reading Progress</span><span>${progressPercent}%</span></div>
+                        <div class="ab-detail-progress-track"><div class="ab-detail-progress-fill" style="width: ${progressPercent}%"></div></div>
+                    </div>
+                    <div class="ab-detail-actions">
+                        <button class="btn-view-chapters" onclick="document.getElementById('chapters-section-anchor').scrollIntoView({behavior:'smooth'})">
+                            <i class="fas fa-list"></i> View All Chapters
+                        </button>
+                    </div>
+                </div>
+                <div class="ab-chapters-section" id="chapters-section-anchor">
+                    <div class="ab-chapters-heading"><span>All Chapters (${totalChapters})</span></div>
+                    <div class="ab-chapters-list">${chapterCards.length > 0 ? chapterCards : '<p style="color:rgba(255,255,255,0.4); text-align:center; padding:30px;">No chapters uploaded yet.</p>'}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', overlayHTML);
+    if (scrollToChapters) {
+        setTimeout(() => { document.getElementById('chapters-section-anchor')?.scrollIntoView({ behavior: 'smooth' }); }, 500);
+    }
+};
+
+window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
+    const existingPlayer = document.getElementById('efv-premium-player');
+    if (existingPlayer) existingPlayer.remove();
+
+    const token = localStorage.getItem('authToken');
+    let product = null;
+    try {
+        const res = await fetch(`${API_BASE}/api/products/${productId}`);
+        if (res.ok) product = await res.json();
+    } catch (e) { }
+
+    if (!product) { alert('Failed to load audiobook.'); return; }
+
+    const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+    if (chapters.length === 0) { alert('No chapters available.'); return; }
+
+    let abProgress = null;
+    try {
+        const apRes = await fetch(`${API_BASE}/api/audiobook-progress/${productId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (apRes.ok) abProgress = await apRes.json();
+    } catch (e) { }
+
+    let initialChapter = chapterIndex;
+    let initialTime = 0;
+
+    if (abProgress && abProgress.chapters) {
+        const chProg = abProgress.chapters.find(c => c.chapterIndex === chapterIndex);
+        if (chProg && chProg.currentTime > 1) initialTime = chProg.currentTime;
+    }
+
+    if (chapterIndex === 0 && abProgress && abProgress.currentChapterIndex !== undefined) {
+        if (abProgress.currentChapterIndex > 0 || (abProgress.currentChapterTime && abProgress.currentChapterTime > 1)) {
+            initialChapter = abProgress.currentChapterIndex || 0;
+            initialTime = abProgress.currentChapterTime || 0;
+        }
+    }
+
+    let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
+    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+        thumbUrl = `${API_BASE}/${thumbUrl}`;
+    }
+
+    const currentChapter = chapters[initialChapter] || chapters[0];
+    const chTitle = currentChapter.title || `Chapter ${initialChapter + 1}`;
+
+    const playerHTML = `
+        <div id="efv-premium-player" class="efv-audio-player-overlay" oncontextmenu="return false;">
+            <div class="efv-player-toolbar">
+                <div class="efv-player-toolbar-left"><i class="fas fa-headphones"></i> <span>EFV™ AUDIO PLAYER</span></div>
+                <button class="ab-detail-close" id="efv-player-close-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="efv-player-body">
+                <img src="${thumbUrl}" alt="${product.title}" class="efv-player-cover" id="efv-player-cover" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
+                <h2 class="efv-player-chapter-title" id="efv-player-ch-title">${chTitle}</h2>
+                <p class="efv-player-book-title">${product.title}</p>
+                <div class="efv-player-seek-container">
+                    <div class="efv-player-time-row"><span id="efv-time-current">0:00</span><span id="efv-time-total">0:00</span></div>
+                    <input type="range" class="efv-seek-bar" id="efv-seek-bar" min="0" max="100" value="0" step="0.1">
+                </div>
+                <div class="efv-player-controls">
+                    <button class="efv-ctrl-btn" id="efv-btn-prev"><i class="fas fa-step-backward"></i></button>
+                    <button class="efv-ctrl-btn" id="efv-btn-rwd"><i class="fas fa-undo"></i></button>
+                    <button class="efv-play-btn" id="efv-btn-play"><i class="fas fa-play" id="efv-play-icon"></i></button>
+                    <button class="efv-ctrl-btn" id="efv-btn-fwd"><i class="fas fa-redo"></i></button>
+                    <button class="efv-ctrl-btn" id="efv-btn-next"><i class="fas fa-step-forward"></i></button>
+                </div>
+                <div class="efv-speed-control">
+                    <span class="efv-speed-label">Speed</span>
+                    <div class="efv-speed-options">
+                        <button class="efv-speed-btn active" data-speed="1">1x</button>
+                        <button class="efv-speed-btn" data-speed="1.5">1.5x</button>
+                        <button class="efv-speed-btn" data-speed="2">2x</button>
+                    </div>
+                </div>
+                <div class="efv-player-chapter-indicator" id="efv-ch-indicator">Chapter ${initialChapter + 1} of ${chapters.length}</div>
+            </div>
+            <div id="efv-resume-overlay" class="resume-modal-overlay" style="z-index:10003;">
+                <div class="resume-modal">
+                    <i class="fas fa-headphones"></i>
+                    <h3>Continue Listening?</h3>
+                    <p>You previously listened up to <span id="efv-resume-time" style="color:white; font-weight:bold;">0:00</span>.<br>Continue from where you left off?</p>
+                    <div class="resume-actions">
+                        <button id="efv-btn-resume" class="btn-resume-primary"><i class="fas fa-play"></i> Continue from <span id="efv-resume-btn-time">0:00</span></button>
+                        <button id="efv-btn-restart" class="btn-resume-secondary"><i class="fas fa-redo"></i> Start from Beginning</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', playerHTML);
+    document.body.classList.add('modal-open');
+    if (window.efvSecurity) window.efvSecurity.enable();
+
+    let currentChIdx = initialChapter;
+    let audioEl = new Audio();
+    audioEl.crossOrigin = 'anonymous';
+
+    const playIcon = document.getElementById('efv-play-icon');
+    const playBtn = document.getElementById('efv-btn-play');
+    const seekBar = document.getElementById('efv-seek-bar');
+    const timeCurrent = document.getElementById('efv-time-current');
+    const timeTotal = document.getElementById('efv-time-total');
+    const playerCover = document.getElementById('efv-player-cover');
+    const chTitleEl = document.getElementById('efv-player-ch-title');
+    const chIndicator = document.getElementById('efv-ch-indicator');
+    const resumeOverlay = document.getElementById('efv-resume-overlay');
+
+    function loadChapter(idx, startTime = 0, autoPlay = true) {
+        if (idx < 0 || idx >= chapters.length) return;
+        currentChIdx = idx;
+        const chapterSrc = `${CONTENT_CONFIG.contentApi}/chapter/${productId}/${idx}?token=${token}&t=${Date.now()}`;
+        audioEl.src = chapterSrc;
+        audioEl.load();
+        const ch = chapters[idx];
+        chTitleEl.textContent = ch.title || `Chapter ${idx + 1}`;
+        chIndicator.textContent = `Chapter ${idx + 1} of ${chapters.length}`;
+        document.getElementById('efv-btn-prev').disabled = idx === 0;
+        document.getElementById('efv-btn-next').disabled = idx === chapters.length - 1;
+
+        audioEl.addEventListener('loadedmetadata', function onMeta() {
+            audioEl.removeEventListener('loadedmetadata', onMeta);
+            timeTotal.textContent = formatTime(audioEl.duration);
+            if (startTime > 0) audioEl.currentTime = startTime;
+            if (autoPlay) audioEl.play().catch(() => { });
+        });
+    }
+
+    function saveChapterProgress(forceComplete = false) {
+        if (!audioEl.src || audioEl.currentTime < 0.5) return;
+        const completed = forceComplete || (audioEl.duration > 0 && (audioEl.currentTime / audioEl.duration) > 0.95);
+        const data = { chapterIndex: currentChIdx, currentTime: audioEl.currentTime, duration: audioEl.duration || 0, completed };
+
+        fetch(`${API_BASE}/api/audiobook-progress/${productId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        }).catch(e => console.error('Save chapter progress error:', e));
+
+        const totalChapters = chapters.length;
+        const overallProgress = totalChapters > 0 ? ((currentChIdx + (audioEl.currentTime / (audioEl.duration || 1))) / totalChapters) * 100 : 0;
+        syncProgress(productId, 'AUDIOBOOK', { currentTime: audioEl.currentTime, totalDuration: audioEl.duration || 0, progress: Math.min(overallProgress, 100) });
+    }
+
+    audioEl.addEventListener('timeupdate', () => {
+        timeCurrent.textContent = formatTime(audioEl.currentTime);
+        if (audioEl.duration) {
+            const percentage = (audioEl.currentTime / audioEl.duration) * 100;
+            seekBar.value = percentage;
+            seekBar.style.background = `linear-gradient(to right, #FFD700 0%, #FFD700 ${percentage}%, rgba(255, 255, 255, 0.1) ${percentage}%, rgba(255, 255, 255, 0.1) 100%)`;
+        }
+    });
+
+    audioEl.addEventListener('play', () => { playIcon.className = 'fas fa-pause'; playerCover.classList.add('is-playing'); });
+    audioEl.addEventListener('pause', () => { playIcon.className = 'fas fa-play'; playerCover.classList.remove('is-playing'); saveChapterProgress(); });
+    audioEl.addEventListener('ended', () => { 
+        saveChapterProgress(true);
+        if (currentChIdx < chapters.length - 1) loadChapter(currentChIdx + 1, 0, true);
+    });
+
+    seekBar.addEventListener('change', () => { audioEl.currentTime = (seekBar.value / 100) * (audioEl.duration || 0); });
+    playBtn.addEventListener('click', () => { audioEl.paused ? audioEl.play().catch(() => { }) : audioEl.pause(); });
+    document.getElementById('efv-btn-rwd').addEventListener('click', () => { audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); });
+    document.getElementById('efv-btn-fwd').addEventListener('click', () => { audioEl.currentTime = Math.min(audioEl.duration || 0, audioEl.currentTime + 10); });
+    document.getElementById('efv-btn-prev').addEventListener('click', () => { if (currentChIdx > 0) { saveChapterProgress(); loadChapter(currentChIdx - 1, 0, true); } });
+    document.getElementById('efv-btn-next').addEventListener('click', () => { if (currentChIdx < chapters.length - 1) { saveChapterProgress(); loadChapter(currentChIdx + 1, 0, true); } });
+
+    document.querySelectorAll('.efv-speed-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.efv-speed-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            audioEl.playbackRate = parseFloat(btn.dataset.speed);
+        });
+    });
+
+    document.getElementById('efv-player-close-btn').addEventListener('click', () => {
+        saveChapterProgress();
+        audioEl.pause(); audioEl.src = '';
+        document.getElementById('efv-premium-player').remove();
+        document.body.classList.remove('modal-open');
+        if (window.efvSecurity) window.efvSecurity.disable();
+        renderLibraryTab();
+        if (document.querySelector('.library-sub-tab[data-library-tab="audiobooks"].active')) renderAudiobooksGrid();
+    });
+
+    if (initialTime > 1) {
+        document.getElementById('efv-resume-time').textContent = formatTime(initialTime);
+        document.getElementById('efv-resume-btn-time').textContent = formatTime(initialTime);
+        resumeOverlay.classList.add('active');
+        document.getElementById('efv-btn-resume').addEventListener('click', () => { resumeOverlay.classList.remove('active'); loadChapter(initialChapter, initialTime, true); });
+        document.getElementById('efv-btn-restart').addEventListener('click', () => { resumeOverlay.classList.remove('active'); loadChapter(initialChapter, 0, true); });
+    } else {
+        loadChapter(initialChapter, 0, true);
+    }
+};
+
+async function fetchProgress(productId) {
+    try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return null;
+        const res = await fetch(`${CONTENT_CONFIG.progressApi}/${productId}?t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const json = await res.json();
+        return json.found ? json.data : null;
+    } catch (e) { return null; }
+}
+
+async function syncProgress(productId, type, data) {
+    try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        await fetch(`${CONTENT_CONFIG.progressApi}/${productId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type, ...data })
+        });
+    } catch (e) { }
+}
+
+function formatTime(seconds) {
+    if (!seconds) return '0:00';
+    const min = Math.floor(seconds / 60);
+    const sec = Math.floor(seconds % 60);
+    return `${min}:${sec < 10 ? '0' + sec : sec}`;
+}
+
+// ─── LEGACY FALLBACK: playAudiobook ───
+window.playAudiobook = async function (product) {
+    const bookId = product._id || product.id;
+    const token = localStorage.getItem('authToken');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/products/${bookId}`);
+        if (res.ok) {
+            const fullProduct = await res.json();
+            const hasChapters = (fullProduct.chapters || []).filter(c => c.filePath).length > 0;
+            if (hasChapters) {
+                openAudiobookDetail(bookId);
+                return;
+            }
+        }
+    } catch (e) { }
+
+    // Fallback for legacy single-file audiobooks
+    const playerModalId = 'audio-player-modal';
+    if (document.getElementById(playerModalId)) document.getElementById(playerModalId).remove();
+
+    let savedState = await fetchProgress(bookId);
+
+    let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
+    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+        thumbUrl = `${API_BASE}/${thumbUrl}`;
+    }
+
+    const audioHtml = `
+        <div id="${playerModalId}" class="efv-audio-player-overlay" oncontextmenu="return false;">
+            <div class="efv-player-toolbar">
+                <div class="efv-player-toolbar-left"><i class="fas fa-headphones"></i> <span>${product.name}</span></div>
+                <button class="ab-detail-close" onclick="document.getElementById('${playerModalId}').remove(); document.body.classList.remove('modal-open');"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="efv-player-body">
+                <img src="${thumbUrl}" class="efv-player-cover" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
+                <h2 class="efv-player-chapter-title">${product.name}</h2>
+                <div class="efv-player-seek-container">
+                    <div class="efv-player-time-row"><span id="legacy-time-cur">0:00</span><span id="legacy-time-total">0:00</span></div>
+                    <input type="range" class="efv-seek-bar" id="legacy-seek" min="0" max="100" value="0" step="0.1">
+                </div>
+                <div class="efv-player-controls">
+                    <button class="efv-ctrl-btn" id="legacy-rwd"><i class="fas fa-undo"></i></button>
+                    <button class="efv-play-btn" id="legacy-play"><i class="fas fa-play" id="legacy-play-icon"></i></button>
+                    <button class="efv-ctrl-btn" id="legacy-fwd"><i class="fas fa-redo"></i></button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', audioHtml);
+    document.body.classList.add('modal-open');
+
+    const audio = new Audio(`${CONTENT_CONFIG.contentApi}/audio/${bookId}?token=${token || ''}&t=${Date.now()}`);
+    const playIcon = document.getElementById('legacy-play-icon');
+    const seek = document.getElementById('legacy-seek');
+    let legacySeeking = false;
+
+    audio.addEventListener('loadedmetadata', () => {
+        document.getElementById('legacy-time-total').textContent = formatTime(audio.duration);
+        audio.play().catch(() => { });
+    });
+    audio.addEventListener('timeupdate', () => { 
+        if (!legacySeeking) { 
+            document.getElementById('legacy-time-cur').textContent = formatTime(audio.currentTime); 
+            seek.value = (audio.currentTime / (audio.duration || 1)) * 100; 
+        } 
+    });
+    audio.addEventListener('play', () => { playIcon.className = 'fas fa-pause'; });
+    audio.addEventListener('pause', () => { playIcon.className = 'fas fa-play'; });
+
+    document.getElementById('legacy-play').addEventListener('click', () => { audio.paused ? audio.play().catch(() => { }) : audio.pause(); });
+    document.getElementById('legacy-rwd').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
+    document.getElementById('legacy-fwd').addEventListener('click', () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
+    seek.addEventListener('input', () => { legacySeeking = true; });
+    seek.addEventListener('change', () => { audio.currentTime = (seek.value / 100) * (audio.duration || 0); legacySeeking = false; });
+};
+
+window.accessContent = function (type, name, id) {
+    const isAudio = (type || '').toLowerCase().includes('audio');
+    const product = { _id: id, name: name, id: id, type: isAudio ? 'AUDIOBOOK' : 'EBOOK' };
+    if (isAudio) {
+        window.playAudiobook(product);
+    } else {
+        window.openEbookReader(product);
+    }
+};
+
     // 3.2 Order Filters
     document.querySelectorAll('[data-order-filter]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1093,10 +1647,12 @@ async function initializeDashboard(user) {
 
     // Load initial data
     await fetchProfileData();
-    syncLibraryWithBackend();
     updateDashboardOverview();
     loadRecommendations();
     loadRecentlyViewed();
+
+    // Trigger initial library sync
+    syncLibraryWithBackend();
 }
 
 window.fetchProfileData = async function () {
@@ -1231,27 +1787,30 @@ function getStatusClass(status) {
 }
 
 window.syncLibraryWithBackend = async function () {
+    console.log('🔄 Syncing Library with Backend...');
     const user = JSON.parse(localStorage.getItem('efv_user'));
     const token = localStorage.getItem('authToken');
-    if (!user || !token) return;
+    if (!user || !token) {
+        console.warn('Sync aborted: User or Token missing', { hasUser: !!user, hasToken: !!token });
+        return;
+    }
 
     try {
         const response = await fetch(`${API_BASE}/api/library/my-library`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
+        console.log('📥 Backend Library Data Received:', data);
 
         if (response.ok) {
             const libKey = getUserKey('efv_digital_library');
 
             // IMPORTANT: Clear localStorage and replace with clean backend data.
-            // This prevents stale items (with 'id' field) from mixing with fresh
-            // backend items (with 'productId' field) causing duplicates.
             localStorage.removeItem(libKey);
 
             const localLibrary = data.map(prod => ({
-                id: prod.productId || prod._id || prod.id,        // keep 'id' field for cart.js compatibility
-                productId: prod.productId || prod._id || prod.id, // keep 'productId' for profile.js
+                id: prod.productId || prod._id || prod.id,
+                productId: prod.productId || prod._id || prod.id,
                 name: prod.title || prod.name,
                 title: prod.title || prod.name,
                 type: prod.type,
@@ -1261,12 +1820,18 @@ window.syncLibraryWithBackend = async function () {
                 subtitle: prod.subtitle || '',
                 date: prod.purchasedAt ? new Date(prod.purchasedAt).toLocaleDateString() : new Date().toLocaleDateString()
             }));
+
+            console.log('💾 Stored in LocalStorage:', localLibrary.length, 'items');
             localStorage.setItem(libKey, JSON.stringify(localLibrary));
 
             renderLibraryTab(localLibrary);
-            updateStats();
+            if (typeof updateStats === 'function') updateStats();
+        } else {
+            console.error('Library Sync Failed:', data.message);
         }
-    } catch (error) { console.error('Library sync error:', error); }
+    } catch (error) { 
+        console.error('Library sync error:', error); 
+    }
 }
 
 
@@ -1437,7 +2002,7 @@ async function renderOrdersTab(filter = 'all') {
 
 // --- TAB RENDERING: LIBRARY ---
 // --- TAB RENDERING: LIBRARY ---
-function renderLibraryTab(directData = null) {
+function renderLibraryTab(directData = null, typeFilter = null) {
     const libKey = getUserKey('efv_digital_library');
     let library = directData || JSON.parse(localStorage.getItem(libKey)) || [];
 
@@ -1474,6 +2039,15 @@ function renderLibraryTab(directData = null) {
     const container = document.getElementById('dashboard-library-list');
     const emptyState = document.getElementById('library-empty-state');
 
+    if (!container) return;
+
+    // Apply type filter if specified
+    if (typeFilter === 'ebook') {
+        library = library.filter(item => !(item.type || '').toLowerCase().includes('audio'));
+    } else if (typeFilter === 'audio') {
+        library = library.filter(item => (item.type || '').toLowerCase().includes('audio'));
+    }
+
     if (library.length === 0) {
         container.innerHTML = '';
         emptyState.classList.remove('hidden');
@@ -1490,6 +2064,18 @@ function renderLibraryTab(directData = null) {
         const isAudio = rawType.includes('audio');
         const actionLabel = isAudio ? 'Listen Now' : 'Read Now';
         const icon = isAudio ? 'fa-headphones' : 'fa-book-open';
+
+        // Thumbnail resolution - same logic as marketplace.html
+        let imageUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+        if (item.thumbnail) {
+            if (item.thumbnail.startsWith('http') || item.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+                imageUrl = item.thumbnail;
+            } else if (item.thumbnail.startsWith('img/')) {
+                imageUrl = CONFIG.BASE_PATH + 'assets/images/' + item.thumbnail.replace('img/', '');
+            } else {
+                imageUrl = `${API_BASE}/${item.thumbnail}`;
+            }
+        }
 
         let progressHtml = '';
         if (progress) {
@@ -1510,7 +2096,13 @@ function renderLibraryTab(directData = null) {
             <div class="dashboard-card fade-in">
                 <div class="card-image-container">
                     <span class="card-type-badge">${item.type}</span>
-                    <img src="${item.thumbnail}" alt="${item.name}" class="card-image">
+                    <button onclick="event.stopPropagation(); removeFromLibrary('${prodId}')" 
+                        style="position: absolute; top: 10px; left: 10px; width: 32px; height: 32px; border-radius: 8px; background: rgba(255, 77, 77, 0.2); border: 1px solid rgba(255, 77, 77, 0.4); color: #ff4d4d; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; transition: all 0.3s; backdrop-filter: blur(4px);"
+                        onmouseover="this.style.background='#ff4d4d'; this.style.color='white'"
+                        onmouseout="this.style.background='rgba(255, 77, 77, 0.2)'; this.style.color='#ff4d4d'">
+                        <i class="fas fa-trash-alt" style="font-size: 0.85rem;"></i>
+                    </button>
+                    <img src="${imageUrl}" alt="${item.name || item.title}" class="card-image" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
                 </div>
                 <div class="card-details">
                     ${item.language ? `<span style="display:inline-block; background: rgba(212,175,55,0.15); border: 1px solid var(--gold-energy); color: var(--gold-energy); padding: 1px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase;">${item.language} Edition</span>` : ''}
@@ -1520,9 +2112,6 @@ function renderLibraryTab(directData = null) {
                     <div class="card-actions" style="margin-top:auto; padding-top:10px; display:flex; gap:10px;">
                         <button class="btn-dashboard btn-primary" onclick="accessContent('${item.type}', '${(item.name || item.title).replace(/'/g, "\\'")}', '${prodId}')" style="flex:1;">
                             <i class="fas ${icon}"></i> ${actionLabel}
-                        </button>
-                        <button class="btn-dashboard" onclick="removeFromLibrary('${prodId}')" style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); color: #ff4d4d; border-radius: 8px; width: 44px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer;" onmouseenter="this.style.background='rgba(255,77,77,0.2)'" onmouseleave="this.style.background='rgba(255,77,77,0.1)'" title="Remove from Library">
-                            <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 </div>
@@ -2649,10 +3238,14 @@ if (productForm) {
 
             const cover = document.getElementById('admin-file-cover').files[0];
             const ebook = document.getElementById('admin-file-ebook').files[0];
+            const galleryFiles = document.getElementById('admin-file-gallery')?.files;
             const productType = document.getElementById('admin-prod-type').value;
 
             if (cover) formData.append('cover', cover);
             if (ebook) formData.append('ebook', ebook);
+            if (galleryFiles && galleryFiles.length > 0) {
+                Array.from(galleryFiles).forEach(file => formData.append('gallery', file));
+            }
 
             // Handle Chapter Uploads
             if (productType === 'AUDIOBOOK') {
@@ -2671,7 +3264,7 @@ if (productForm) {
 
             let uploadData = {};
             // Check if any files are selected (including chapters)
-            let hasFiles = !!(cover || ebook);
+            let hasFiles = !!(cover || ebook || (galleryFiles && galleryFiles.length > 0));
             if (productType === 'AUDIOBOOK') {
                 const chapterFiles = document.querySelectorAll('.chapter-card input[type="file"]');
                 for (let input of chapterFiles) {
@@ -2726,13 +3319,28 @@ if (productForm) {
                 height: getNum('admin-prod-height'),
                 duration: getVal('admin-prod-duration'),
                 description: getVal('admin-prod-desc'),
-                category: 'Digital'
+                category: (getVal('admin-prod-type') === 'EBOOK' || getVal('admin-prod-type') === 'AUDIOBOOK') ? 'Digital' : 'Physical'
             };
 
-            if (uploadData.coverPath) productData.thumbnail = uploadData.coverPath;
+            // Persistence Logic: If no new file uploaded, keep the old one
+            if (uploadData.coverPath) {
+                productData.thumbnail = uploadData.coverPath;
+            } else if (window._currentEditingProduct?.thumbnail) {
+                productData.thumbnail = window._currentEditingProduct.thumbnail;
+            }
 
-            if (productData.type === 'EBOOK' && uploadData.ebookPath) {
-                productData.filePath = uploadData.ebookPath;
+            if (uploadData.galleryPaths && uploadData.galleryPaths.length > 0) {
+                productData.gallery = uploadData.galleryPaths;
+            } else if (window._currentEditingProduct?.gallery) {
+                productData.gallery = window._currentEditingProduct.gallery;
+            }
+
+            if (productData.type === 'EBOOK') {
+                if (uploadData.ebookPath) {
+                    productData.filePath = uploadData.ebookPath;
+                } else if (window._currentEditingProduct?.filePath) {
+                    productData.filePath = window._currentEditingProduct.filePath;
+                }
             } else if (productData.type === 'AUDIOBOOK') {
                 productData.totalChapters = Number(document.getElementById('admin-prod-total-chapters').value) || 0;
 
@@ -2878,7 +3486,7 @@ window.viewAdminOrderDetail = async function (id) {
             timeline.innerHTML = stepsList.map((s, idx) => {
                 const isCompleted = idx < currentIdx;
                 const isActive = idx === currentIdx;
-                const hist = order.history ? order.history.find(t => t.status === s) : null;
+                const hist = order.timeline ? order.timeline.find(t => t.status === s) : null;
                 return `
                     <div class="timeline-step ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}">
                         <div class="step-dot"></div>
@@ -2890,7 +3498,10 @@ window.viewAdminOrderDetail = async function (id) {
         }
 
         modal.style.display = 'flex';
-        modal.classList.add('active');
+        setTimeout(() => {
+            modal.classList.add('active');
+            document.body.classList.add('modal-open');
+        }, 10);
 
         // Add Create Shipment button if physical and not shipped
         const isPhysical = order.items.some(i => ['HARDCOVER', 'PAPERBACK'].includes(i.type));
@@ -2996,7 +3607,12 @@ window.syncShipment = async function (id, btnId) {
 window.viewOrderDetail = window.viewAdminOrderDetail;
 
 window.closeOrderDetailModal = () => {
-    document.getElementById('order-detail-modal').style.display = 'none';
+    const modal = document.getElementById('order-detail-modal');
+    modal.classList.remove('active');
+    document.body.classList.remove('modal-open');
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 400);
 };
 
 window.viewCustomerDetail = (userId) => {
@@ -3044,12 +3660,16 @@ window.viewCustomerDetail = (userId) => {
 
     const modal = document.getElementById('customer-detail-modal');
     modal.style.display = 'flex';
-    setTimeout(() => modal.classList.add('active'), 10);
+    setTimeout(() => {
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+    }, 10);
 };
 
 window.closeCustomerDetailModal = () => {
     const modal = document.getElementById('customer-detail-modal');
     modal.classList.remove('active');
+    document.body.classList.remove('modal-open');
     setTimeout(() => modal.style.display = 'none', 400);
 };
 

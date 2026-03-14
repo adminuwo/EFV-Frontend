@@ -58,6 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCouponHandlers();
 
     // AUTO-APPLY COUPON ONLY IF IN URL (Marketing Links)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlCoupon = urlParams.get('coupon') || urlParams.get('code');
     if (urlCoupon) {
         document.getElementById('coupon-input').value = urlCoupon;
         applyCoupon(urlCoupon, checkoutSubtotal);
@@ -173,10 +175,7 @@ function calculateShipping(items = []) {
     return rate;
 }
 
-function calculateCOD(subtotal, mode) {
-    const activeMode = mode || selectedPaymentMode;
-    if (activeMode !== 'COD') return 0;
-    
+function calculateCOD(subtotal) {
     const charge = COD_CHARGES.BASE + (subtotal * COD_CHARGES.PERCENTAGE);
     return Math.round(charge * 100) / 100;
 }
@@ -409,8 +408,7 @@ function renderSummary(items, isRefresh = false) {
         `;
     }).join('');
 
-    const checkedRadio = document.querySelector('input[name="payment-mode"]:checked');
-    const currentMode = checkedRadio ? checkedRadio.value : selectedPaymentMode;
+    const currentMode = selectedPaymentMode;
 
     const shippingCharge = calculateShipping(currentCheckoutItems);
     const codCharge = calculateCOD(subtotal, currentMode);
@@ -427,9 +425,15 @@ function renderSummary(items, isRefresh = false) {
     if (codRow) {
         codRow.style.display = 'flex'; 
         if (codDisplay) {
-            codDisplay.textContent = `₹${codCharge.toFixed(2)}`;
-            codDisplay.style.color = (currentMode === 'COD') ? '#FFD369' : 'rgba(255,255,255,0.3)';
-            codDisplay.style.opacity = (currentMode === 'COD') ? '1' : '0.5';
+            if (currentMode === 'COD') {
+                codDisplay.textContent = `₹${codCharge.toFixed(2)}`;
+                codDisplay.style.color = '#FFD369';
+                codDisplay.style.opacity = '1';
+            } else {
+                codDisplay.textContent = `₹000`;
+                codDisplay.style.color = 'rgba(255,255,255,0.3)';
+                codDisplay.style.opacity = '0.5';
+            }
         }
         
         if (currentMode === 'COD') {
@@ -449,7 +453,8 @@ function renderSummary(items, isRefresh = false) {
         }
     }
 
-    const total = Math.max(0, subtotal - discount + shippingCharge + codCharge);
+    const finalCodCharge = (currentMode === 'COD') ? codCharge : 0;
+    const total = Math.max(0, subtotal - discount + shippingCharge + finalCodCharge);
 
     // Add/Update discount row if applicable
     let summaryBox = document.querySelector('.checkout-summary');

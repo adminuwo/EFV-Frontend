@@ -10,15 +10,22 @@
     window.googleTranslateElementInit = function() {
         new google.translate.TranslateElement({ pageLanguage: 'en', autoDisplay: false }, 'google_translate_element');
         
-        // Ensure default combo picks up saved lang
-        setTimeout(() => {
+        // Ensure default combo picks up saved lang with robust polling
+        let attempts = 0;
+        const applySavedLang = () => {
             const savedLang = localStorage.getItem('efv_lang');
             const selectElement = document.querySelector('.goog-te-combo');
+            
             if (selectElement && savedLang && savedLang !== 'en') {
                 selectElement.value = savedLang;
                 selectElement.dispatchEvent(new Event('change'));
+                console.log("🌍 i18n: Language applied successfully.");
+            } else if (!selectElement && attempts < 10) {
+                attempts++;
+                setTimeout(applySavedLang, 500);
             }
-        }, 1000);
+        };
+        setTimeout(applySavedLang, 500);
     };
     const gtScript = document.createElement('script');
     gtScript.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';

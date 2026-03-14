@@ -1454,7 +1454,7 @@ body.modal-open {
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 110000;
+    z-index: 2000000;
     padding: 20px;
     box-sizing: border-box;
 }
@@ -1817,6 +1817,40 @@ body.modal-open {
     font-size: 0.85rem;
     opacity: 0.6;
     line-height: 1.4;
+}
+
+/* Professional Welcome Message Styling */
+.notification-item.welcome-note {
+    background: linear-gradient(90deg, rgba(255, 211, 105, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+    border: 1px solid rgba(255, 211, 105, 0.2);
+    cursor: default;
+}
+
+.notification-item.welcome-note h5 {
+    color: var(--gold-text);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+}
+
+.notification-icon.system {
+    background: rgba(255, 211, 105, 0.15);
+    color: var(--gold-text);
+    box-shadow: 0 0 15px rgba(255, 211, 105, 0.1);
+}
+
+.welcome-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: var(--gold-text);
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 5px rgba(255, 211, 105, 0.3));
+    animation: goldShine 3s infinite alternate;
+}
+
+@keyframes goldShine {
+    from { opacity: 0.5; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1.1); }
 }
 
 .notification-time {

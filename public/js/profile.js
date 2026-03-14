@@ -787,29 +787,46 @@ function renderNotificationsTab(filter = 'all') {
     const emptyState = document.getElementById('notifications-empty-state');
     const badge = document.getElementById('unread-notifications-count');
 
-    if (!profile || !profile.notifications || profile.notifications.length === 0) {
-        container.innerHTML = '';
-        emptyState.classList.remove('hidden');
-        if (badge) badge.classList.add('hidden');
-        return;
+    if (!container) return;
+
+    let rawNotifications = (profile && profile.notifications) ? [...profile.notifications] : [];
+
+    // 1. Ensure a professional Welcome message exists
+    const hasWelcome = rawNotifications.some(n => 
+        (n.title || '').toLowerCase().includes('welcome') || 
+        (n.message || '').toLowerCase().includes('welcome')
+    );
+
+    if (!hasWelcome) {
+        // Professional Welcome Message
+        rawNotifications.push({
+            id: 'welcome-system-msg',
+            title: 'Welcome to EFV™ Universe',
+            message: `Greetings, ${profile ? (profile.name || 'Explorer') : 'Explorer'}. We are honored to have you on this journey of Energy, Frequency, and Vibration. Explore your dashboard to unlock the secrets of human transformation and digital wisdom.`,
+            type: 'System',
+            createdAt: new Date().toISOString(),
+            isRead: true,
+            isSystem: true
+        });
     }
 
-    let notifications = [...profile.notifications];
-
-    // Pin Welcome notification to top, rest sorted by newest first
-    const welcomeNotes = notifications.filter(n =>
+    // 2. Separate Welcome from others
+    const welcomeNotes = rawNotifications.filter(n =>
         (n.title || '').toLowerCase().includes('welcome') || (n.message || '').toLowerCase().includes('welcome')
     );
-    const otherNotes = notifications.filter(n =>
+    const otherNotes = rawNotifications.filter(n =>
         !(n.title || '').toLowerCase().includes('welcome') && !(n.message || '').toLowerCase().includes('welcome')
     );
-    otherNotes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    notifications = [...welcomeNotes, ...otherNotes];
 
-    // Apply filter
+    // Sort others by newest first
+    otherNotes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Combine: Welcome always on top
+    let notifications = [...welcomeNotes, ...otherNotes];
+
+    // 3. Apply filter
     if (filter !== 'all') {
         notifications = notifications.filter(n => {
-            // Mapping UI filters to notification types
             if (filter === 'orders') return n.type === 'Order' || n.type === 'Shipment';
             if (filter === 'payments') return n.type === 'Payment' || n.type === 'Subscription';
             if (filter === 'offers') return n.type === 'Promo' || n.type === 'Digital';
@@ -819,12 +836,12 @@ function renderNotificationsTab(filter = 'all') {
 
     if (notifications.length === 0) {
         container.innerHTML = '';
-        emptyState.classList.remove('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
     } else {
-        emptyState.classList.add('hidden');
+        if (emptyState) emptyState.classList.add('hidden');
     }
 
-    const unreadCount = profile.notifications.filter(n => !n.isRead).length;
+    const unreadCount = rawNotifications.filter(n => !n.isRead).length;
     if (badge) {
         if (unreadCount > 0) {
             badge.textContent = unreadCount;
@@ -836,35 +853,41 @@ function renderNotificationsTab(filter = 'all') {
 
     container.innerHTML = notifications.map(note => {
         const icon = getNotificationIcon(note.type);
-        const noteId = note._id || note.id || `temp-${Date.now()}-${Math.random()}`;
+        const noteId = note._id || note.id;
 
-        // Don't show delete button for welcome messages
-        const isWelcome = note.title.toLowerCase().includes('welcome') ||
-            note.message.toLowerCase().includes('welcome');
+        const isWelcome = (note.title || '').toLowerCase().includes('welcome') ||
+                          (note.message || '').toLowerCase().includes('welcome');
 
         return `
-            <div class="notification-item ${note.isRead ? '' : 'unread'}" onclick="markNotificationRead('${noteId}')">
-                <div class="notification-icon ${note.type.toLowerCase()}">${icon}</div>
+            <div class="notification-item ${note.isRead ? '' : 'unread'} ${isWelcome ? 'welcome-note' : ''}" 
+                 ${!isWelcome ? `onclick="markNotificationRead('${noteId}')"` : ''}>
+                <div class="notification-icon ${note.type ? note.type.toLowerCase() : 'system'}">${icon}</div>
                 <div class="notification-body">
                     <h5>${note.title}</h5>
                     <p>${note.message}</p>
-                    <span class="notification-time">${new Date(note.createdAt).toLocaleString()}</span>
+                    <span class="notification-time">${isWelcome ? 'PINNED • OFFICIAL ACCESS' : new Date(note.createdAt).toLocaleString()}</span>
                 </div>
                 ${!isWelcome ? `
                     <button class="notification-delete-btn" onclick="deleteNotification(event, '${noteId}')" title="Delete Notification">
                         <i class="fas fa-trash-alt"></i>
                     </button>
-                ` : ''}
+                ` : `
+                    <div class="welcome-badge">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                `}
             </div>
         `;
     }).join('');
 }
 
 function getNotificationIcon(type) {
+    if (!type) return '<i class="fas fa-bell"></i>';
     switch (type) {
         case 'Order': return '<i class="fas fa-shopping-bag"></i>';
         case 'Shipment': return '<i class="fas fa-truck"></i>';
         case 'Digital': return '<i class="fas fa-play-circle"></i>';
+        case 'System': return '<i class="fas fa-shield-alt"></i>';
         default: return '<i class="fas fa-bell"></i>';
     }
 }
@@ -1562,10 +1585,21 @@ function renderLibraryTab(directData = null, typeFilter = null) {
         const prodId = item.productId || item.id || item._id;
         const progress = await fetchProgress(prodId);
 
-        const rawType = (item.type || '').toLowerCase();
         const isAudio = rawType.includes('audio');
         const actionLabel = isAudio ? 'Listen Now' : 'Read Now';
         const icon = isAudio ? 'fa-headphones' : 'fa-book-open';
+
+        // Thumbnail resolution - same logic as marketplace.html
+        let imageUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+        if (item.thumbnail) {
+            if (item.thumbnail.startsWith('http') || item.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+                imageUrl = item.thumbnail;
+            } else if (item.thumbnail.startsWith('img/')) {
+                imageUrl = CONFIG.BASE_PATH + 'assets/images/' + item.thumbnail.replace('img/', '');
+            } else {
+                imageUrl = `${API_BASE}/${item.thumbnail}`;
+            }
+        }
 
         let progressHtml = '';
         if (progress) {
@@ -1586,7 +1620,7 @@ function renderLibraryTab(directData = null, typeFilter = null) {
             <div class="dashboard-card fade-in">
                 <div class="card-image-container">
                     <span class="card-type-badge">${item.type}</span>
-                    <img src="${item.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png')}" alt="${item.name}" class="card-image" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
+                    <img src="${imageUrl}" alt="${item.name || item.title}" class="card-image" onerror="this.src='${CONFIG.BASE_PATH}assets/images/vol1-cover.png'">
                 </div>
                 <div class="card-details">
                     ${item.language ? `<span style="display:inline-block; background: rgba(212,175,55,0.15); border: 1px solid var(--gold-energy); color: var(--gold-energy); padding: 1px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase;">${item.language} Edition</span>` : ''}
@@ -2464,10 +2498,16 @@ async function renderAudiobooksGrid() {
         remainingChapters = Math.max(0, totalChapters - completedChapters);
         const progressPercent = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
 
-        // Thumbnail resolution
-        let thumbUrl = item.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
-        if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
-            thumbUrl = `${API_BASE}/${thumbUrl}`;
+        // Thumbnail resolution - same logic as marketplace.html
+        let thumbUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+        if (item.thumbnail) {
+            if (item.thumbnail.startsWith('http') || item.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+                thumbUrl = item.thumbnail;
+            } else if (item.thumbnail.startsWith('img/')) {
+                thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + item.thumbnail.replace('img/', '');
+            } else {
+                thumbUrl = `${API_BASE}/${item.thumbnail}`;
+            }
         }
 
         const hasProgress = lastChapterTime > 0 || completedChapters > 0;

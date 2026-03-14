@@ -1,5 +1,4 @@
 {
   "/api/config.js/route": "app/api/config.js/route.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/_not-found/page": "app/_not-found/page.js"
+  "/favicon.ico/route": "app/favicon.ico/route.js"
 }

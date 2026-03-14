@@ -907,7 +907,7 @@
 
 /* ─── RESUME MODAL ────────────────────────────────────────────── */
 .resume-modal-overlay {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -917,7 +917,7 @@
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 10003;
+    z-index: 2000000;
     animation: fadeIn 0.3s ease;
 }
 
