@@ -66,52 +66,44 @@
             <div class="horizontal-marquee-wrapper reveal">
                 <div class="horizontal-testimonial-track">
                     <!-- Card 1 -->
-                    <div class="glass-panel testimonial-card" style="padding: 25px;">
+                    <div class="glass-panel testimonial-card">
                         <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i
                                 class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p style="font-size: 1rem; line-height: 1.6; color: #fff; font-style: italic;">"Mind-blowing
-                            book! It helped me a lot by building a new perspective on my personality."</p>
-                        <h4 style="margin-top: 15px; color: gold; font-size: 0.9rem;">Rohit S.</h4>
+                        <p>"Mind-blowing book! It helped me a lot by building a new perspective on my personality."</p>
+                        <h4>Rohit S.</h4>
                     </div>
                     <!-- Card 2 -->
-                    <div class="glass-panel testimonial-card" style="padding: 25px;">
+                    <div class="glass-panel testimonial-card">
                         <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i
                                 class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p style="font-size: 1rem; line-height: 1.6; color: #fff; font-style: italic;">"This book
-                            gave me the whole different perspective of seeing the world. Great for those seeking
-                            peace."</p>
-                        <h4 style="margin-top: 15px; color: gold; font-size: 0.9rem;">Ananya M.</h4>
+                        <p>"This book gave me the whole different perspective of seeing the world. Great for those seeking peace."</p>
+                        <h4>Ananya M.</h4>
                     </div>
                     <!-- Card 3 -->
-                    <div class="glass-panel testimonial-card" style="padding: 25px;">
+                    <div class="glass-panel testimonial-card">
                         <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i
                                 class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p style="font-size: 1rem; line-height: 1.6; color: #fff; font-style: italic;">"Truly life
-                            changing. Content quality is top-notch and it helped me improve my daily habits."</p>
-                        <h4 style="margin-top: 15px; color: gold; font-size: 0.9rem;"> Nikhil B.</h4>
+                        <p>"Truly life changing. Content quality is top-notch and it helped me improve my daily habits."</p>
+                        <h4>Nikhil B.</h4>
                     </div>
                     <!-- Duplicate set for seamless loop -->
-                    <div class="glass-panel testimonial-card" style="padding: 25px;">
+                    <div class="glass-panel testimonial-card">
                         <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i
                                 class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p style="font-size: 1rem; line-height: 1.6; color: #fff; font-style: italic;">"Mind-blowing
-                            book! It helped me a lot by building a new perspective on my personality."</p>
-                        <h4 style="margin-top: 15px; color: gold; font-size: 0.9rem;"> Rohit S.</h4>
+                        <p>"Mind-blowing book! It helped me a lot by building a new perspective on my personality."</p>
+                        <h4>Rohit S.</h4>
                     </div>
-                    <div class="glass-panel testimonial-card" style="padding: 25px;">
+                    <div class="glass-panel testimonial-card">
                         <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i
                                 class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p style="font-size: 1rem; line-height: 1.6; color: #fff; font-style: italic;">"This book
-                            gave me the whole different perspective of seeing the world. Great for those seeking
-                            peace."</p>
-                        <h4 style="margin-top: 15px; color: gold; font-size: 0.9rem;"> Ananya M.</h4>
+                        <p>"This book gave me the whole different perspective of seeing the world. Great for those seeking peace."</p>
+                        <h4>Ananya M.</h4>
                     </div>
-                    <div class="glass-panel testimonial-card" style="padding: 25px;">
+                    <div class="glass-panel testimonial-card">
                         <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i
                                 class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p style="font-size: 1rem; line-height: 1.6; color: #fff; font-style: italic;">"Truly life
-                            changing. Content quality is top-notch and it helped me improve my daily habits."</p>
-                        <h4 style="margin-top: 15px; color: gold; font-size: 0.9rem;"> Nikhil B.</h4>
+                        <p>"Truly life changing. Content quality is top-notch and it helped me improve my daily habits."</p>
+                        <h4>Nikhil B.</h4>
                     </div>
                 </div>
             </div>
@@ -437,7 +429,6 @@
             function createCard(review) {
                 const card = document.createElement('div');
                 card.className = 'glass-panel testimonial-card';
-                card.style.padding = '25px';
                 
                 let starsHTML = '';
                 for(let i=1; i<=5; i++) {
@@ -446,8 +437,8 @@
 
                 card.innerHTML = `
                     <div class="stars">${starsHTML}</div>
-                    <p style="font-size: 1rem; line-height: 1.6; color: #fff; font-style: italic; margin-top: 10px;">"${review.text}"</p>
-                    <h4 style="margin-top: 15px; color: gold; font-size: 0.9rem;">${review.name}</h4>
+                    <p>"${review.text}"</p>
+                    <h4>${review.name}</h4>
                 `;
                 return card;
             }

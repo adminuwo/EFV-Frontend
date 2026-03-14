@@ -2030,7 +2030,7 @@ window.openEbookReader = async function (product) {
                 <div class="reader-title">${product.name}</div>
                 <div class="reader-controls">
                     <span id="page-indicator">Scroll to Read</span>
-                    <button class="btn-icon" id="close-reader" title="Close"><i class="fas fa-times"></i></button>
+                    <button class="btn-icon" id="close-reader" title="Close" style="pointer-events: auto !important; position: relative; z-index: 100;" onclick="window.forceCloseEbookReader()"><i class="fas fa-times"></i></button>
                 </div>
             </div>
             <div class="reader-canvas-container" id="reader-container">
@@ -2044,15 +2044,29 @@ window.openEbookReader = async function (product) {
     `;
     document.body.insertAdjacentHTML('beforeend', readerHtml);
 
-    // SECURITY: Actively start protection before rendering begins
-    if (window.efvSecurity) {
-        window.efvSecurity.enable();
+    const modal = document.getElementById(readerId);
+    if (!modal) {
+        console.error("❌ Reader Modal failed to inject");
+        return;
     }
-    document.getElementById(readerId).classList.add('no-select');
 
-    const container = document.getElementById('reader-container');
-    const indicator = document.getElementById('page-indicator');
-    const loading = document.querySelector('.reader-loading');
+    if (window.efvSecurity) {
+        window.efvSecurity.isTampered = false;
+        window.efvSecurity.enable(); 
+        window.efvSecurity.applyWatermark(modal);
+    }
+    modal.classList.add('no-select');
+
+    const container = modal.querySelector('#reader-container');
+    const indicator = modal.querySelector('#page-indicator');
+    const loading = modal.querySelector('.reader-loading');
+
+    if (!container) {
+        console.error("❌ Reader container not found in modal. Check HTML template.");
+        alert("Ebook Reader Error: UI components missing. Please refresh.");
+        modal.remove();
+        return;
+    }
 
     // 3. Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = CONTENT_CONFIG.pdfWorkerSrc;
@@ -2062,18 +2076,30 @@ window.openEbookReader = async function (product) {
         if (!token) throw new Error("Please re-login");
 
         const effectiveId = product._id || product.id;
-        let url = `${CONTENT_CONFIG.contentApi}/ebook/${effectiveId}?token=${token}&t=${Date.now()}`;
+        // Optimization: Use token in both URL and Headers for maximum compatibility with Range requests
+        let url = `${CONTENT_CONFIG.contentApi}/ebook/${effectiveId}?token=${encodeURIComponent(token)}&t=${Date.now()}`;
 
         const loadingTask = pdfjsLib.getDocument({
-            url: `${url}&pdfjs_cache_buster=${Date.now()}`,
-            httpHeaders: { 'Authorization': `Bearer ${token}` }
+            url: url,
+            httpHeaders: { 'Authorization': `Bearer ${token}` },
+            disableAutoFetch: true, 
+            disableStream: false,
+            rangeChunkSize: 1024 * 128
         });
 
-        pdfDoc = await loadingTask.promise;
-        totalPages = pdfDoc.numPages;
-        loading.style.display = 'none';
+        // Safety Timeout: Auto-hide loader after 10s even if something is stuck
+        const loaderTimeout = setTimeout(() => {
+            if (loading && loading.style.display !== 'none') {
+                console.warn("⚠️ Ebook loader took too long. Hiding...");
+                loading.style.display = 'none';
+            }
+        }, 10000);
 
-        // 4. Create Page Wrappers
+        pdfDoc = await loadingTask.promise;
+        clearTimeout(loaderTimeout); 
+        totalPages = pdfDoc.numPages;
+        
+        // 4. Create Page Wrappers (CRITICAL: Must exist before any rendering)
         for (let i = 1; i <= totalPages; i++) {
             const pageWrapper = document.createElement('div');
             pageWrapper.className = 'pdf-page-wrapper';
@@ -2084,6 +2110,10 @@ window.openEbookReader = async function (product) {
             pageWrapper.appendChild(canvas);
             container.appendChild(pageWrapper);
         }
+
+        // SPEED OPTIMIZATION: Render page 1 FIRST
+        if (loading) loading.style.display = 'none';
+        await renderPageToCanvas(1); 
 
         // 5. Intersection Observer for Lazy Rendering & Progress tracking
         const observerOptions = {
@@ -2164,21 +2194,25 @@ window.openEbookReader = async function (product) {
 
     } catch (error) {
         console.error("Reader Error:", error);
-        let errorMsg = "Failed to load PDF. Please ensure you are logged in.";
+        let errorMsg = `Failed to load PDF (${error.message || 'Unknown Error'}). Please ensure you are logged in.`;
         if (error.name === 'MissingPDFException' || (error.message && error.message.includes('404'))) {
-            errorMsg = "PDF file not found on server. Please contact support.";
+            errorMsg = "PDF file not found on server. Please ensure the file was uploaded correctly.";
         } else if (error.message && error.message.includes('401')) {
             errorMsg = "Your session has expired. Please log in again.";
+        } else if (error.message && error.message.includes('403')) {
+            errorMsg = "Access Denied: You do not have permission to view this content.";
         }
         alert(errorMsg);
-        document.getElementById(readerId).remove();
+        const modal = document.getElementById(readerId);
+        if (modal) modal.remove();
         return;
     }
 
     async function renderPageToCanvas(num) {
         const wrapper = document.getElementById(`page-${num}`);
+        if (!wrapper) return; // Safety check
         const canvas = wrapper.querySelector('canvas');
-        if (wrapper.dataset.rendered === 'true') return;
+        if (!canvas || wrapper.dataset.rendered === 'true') return;
 
         try {
             const page = await pdfDoc.getPage(num);
@@ -2196,18 +2230,42 @@ window.openEbookReader = async function (product) {
     }
 
     // 7. Event Listeners
-    document.getElementById('close-reader').addEventListener('click', () => {
-        document.getElementById(readerId).remove();
-        if (window.efvSecurity) window.efvSecurity.disable(); // Stop protection when closing
-        // Refresh library tab to show new progress
-        renderLibraryTab();
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && document.getElementById(readerId)) {
-            document.getElementById(readerId).remove();
+    window.forceCloseEbookReader = (e) => {
+        if (e && typeof e.stopPropagation === 'function') {
+            e.preventDefault();
+            e.stopPropagation();
         }
-    });
+        const modal = document.getElementById(readerId);
+        if (modal) modal.remove();
+        if (window.efvSecurity) window.efvSecurity.disable(); 
+        if (typeof renderLibraryTab === 'function') renderLibraryTab();
+        delete window.forceCloseEbookReader;
+    };
+
+    const closeAction = (e) => {
+        window.forceCloseEbookReader(e);
+    };
+
+    if (closeBtn) {
+        ['click', 'mousedown', 'touchstart'].forEach(evtType => {
+            closeBtn.addEventListener(evtType, closeAction, { capture: true });
+        });
+    }
+
+    // Secondary Close: Toolbar Click
+    const toolbar = document.querySelector('.reader-toolbar');
+    if (toolbar) {
+        toolbar.addEventListener('dblclick', closeAction);
+    }
+
+    // Global Key Failsafe: Shift + X or Alt + C
+    const globalKeyHandler = (e) => {
+        if ((e.key === 'Escape') || (e.shiftKey && (e.key === 'X' || e.key === 'x')) || (e.altKey && e.key === 'c')) {
+            closeAction();
+            document.removeEventListener('keydown', globalKeyHandler);
+        }
+    };
+    document.addEventListener('keydown', globalKeyHandler);
 };
 
 // --- PREMIUM MODAL EXTRAS ---

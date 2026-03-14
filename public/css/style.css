@@ -1018,27 +1018,52 @@ footer::after {
     flex: 0 0 400px;
     white-space: normal;
     text-align: left;
-    padding: 40px;
+    padding: 30px; /* Slightly reduced padding for better fit */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent spill */
 }
 
 .stars {
     color: var(--gold-energy);
     margin-bottom: 20px;
     font-size: 0.9rem;
+    flex-shrink: 0; /* Don't hide stars */
 }
 
 .testimonial-card p {
     font-style: italic;
-    font-size: 1.1rem;
+    font-size: 1rem; /* Slightly reduced for better fit */
     line-height: 1.6;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     color: var(--white-text);
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0; /* Allow the p tag to shrink and scroll */
+    padding-right: 10px;
+}
+
+/* Specific scrollbar for testimonial cards */
+.testimonial-card p::-webkit-scrollbar {
+    width: 4px;
+}
+
+.testimonial-card p::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.testimonial-card p::-webkit-scrollbar-thumb {
+    background: var(--gold-energy);
+    border-radius: 10px;
 }
 
 .testimonial-card h4 {
     font-size: 0.9rem;
     color: var(--gold-energy);
+    margin-top: 15px;
     margin-bottom: 0;
+    flex-shrink: 0; /* Don't hide name */
 }
 
 @keyframes marquee {
@@ -2452,6 +2477,7 @@ body.modal-open {
     display: flex;
     gap: 30px;
     width: max-content;
+    align-items: center;
     animation: horizontalMarquee 40s linear infinite;
 }
 
@@ -2461,11 +2487,10 @@ body.modal-open {
 
 .horizontal-testimonial-track .testimonial-card {
     flex: 0 0 320px;
-    height: 250px;
+    height: 280px; /* Slightly increased height for better content display */
     margin-bottom: 0;
     display: flex;
     flex-direction: column;
-    justify-content: center;
 }
 
 @keyframes horizontalMarquee {

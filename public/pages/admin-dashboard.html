@@ -1057,6 +1057,12 @@
                             <option value="instock">In Stock</option>
                             <option value="outofstock">Out of Stock</option>
                         </select>
+                        <select id="admin-product-filter-lang" onchange="filterAdminProducts()"
+                            style="padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                            <option value="all">All Languages</option>
+                            <option value="English">English</option>
+                            <option value="Hindi">Hindi</option>
+                        </select>
                     </div>
                 </div>
                 <div class="settings-card glass-panel" style="padding: 20px; overflow-x: auto;">
@@ -1066,6 +1072,7 @@
                                 <th style="padding: 12px;">Image</th>
                                 <th style="padding: 12px;">Title</th>
                                 <th style="padding: 12px;">Type</th>
+                                <th style="padding: 12px;">Language</th>
                                 <th style="padding: 12px;">Price</th>
                                 <th style="padding: 12px;">Media</th>
                                 <th style="padding: 12px;">Stock</th>

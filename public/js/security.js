@@ -71,7 +71,7 @@ class EFVSecurity {
         if (!document.getElementById('security-blackout-shield')) {
             const shield = document.createElement('div');
             shield.id = 'security-blackout-shield';
-            shield.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:black; z-index:2147483647; display:none; pointer-events:all; backface-visibility:hidden; transform:translateZ(0);';
+            shield.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:black; z-index:2147483600; display:none; pointer-events:all; backface-visibility:hidden; transform:translateZ(0);';
             document.body.appendChild(shield);
         }
 
@@ -79,7 +79,7 @@ class EFVSecurity {
         if (!document.getElementById('security-watermark-container')) {
             const wmContainer = document.createElement('div');
             wmContainer.id = 'security-watermark-container';
-            wmContainer.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:2147483646; overflow:hidden; display:none;';
+            wmContainer.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:2147483610; overflow:hidden; display:none;';
             document.body.appendChild(wmContainer);
         }
     }
@@ -148,8 +148,9 @@ class EFVSecurity {
 
         const check = () => {
             if (this.isProtected && !this.isTampered) {
-                // Instantly blackout if focus is shaky or document is not fully visible
-                if (!document.hasFocus() || document.hidden || !document.hasFocus()) {
+                // Reduced aggression: only blackout if truly hidden or visibility lost
+                // focus check removed as it triggers on simple clicks outside the window
+                if (document.hidden || document.visibilityState === 'hidden') {
                     this.blackout(true);
                 }
             }
@@ -210,10 +211,30 @@ class EFVSecurity {
     }
 
     updateWatermark() {
-        const container = document.getElementById('security-watermark-container');
-        if (!container || !this.isActive) return;
+        this._drawWatermark(document.getElementById('security-watermark-container'));
+    }
 
-        container.innerHTML = '';
+    applyWatermark(container) {
+        if (!container) return;
+        this._drawWatermark(container);
+    }
+
+    _drawWatermark(target) {
+        if (!target || !this.isActive) return;
+
+        // Ensure we have a dedicated watermark layer so we don't wipe the reader
+        let wmLayer = target.id === 'security-watermark-container' ? target : target.querySelector('.efv-internal-watermark');
+        
+        if (!wmLayer && target.id !== 'security-watermark-container') {
+            wmLayer = document.createElement('div');
+            wmLayer.className = 'efv-internal-watermark security-watermark-container';
+            wmLayer.style.cssText = 'position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:hidden; opacity:0.15;';
+            target.appendChild(wmLayer);
+        }
+
+        if (!wmLayer) return;
+
+        wmLayer.innerHTML = '';
         const timestamp = new Date().toLocaleTimeString();
         const text = `${this.userEmail} | ${this.userId} | ${timestamp} | IP: ${this.userIP}`;
 
@@ -226,9 +247,11 @@ class EFVSecurity {
                 const item = document.createElement('div');
                 item.className = 'security-watermark-item';
                 item.textContent = text;
-                item.style.top = `${(i * (100 / rows))}vh`;
-                item.style.left = `${(j * (100 / cols))}vw`;
-                container.appendChild(item);
+                item.style.position = 'absolute';
+                item.style.pointerEvents = 'none';
+                item.style.top = `${(i * (100 / rows))}%`;
+                item.style.left = `${(j * (100 / cols))}%`;
+                wmLayer.appendChild(item);
             }
         }
     }
