@@ -2545,6 +2545,7 @@ window.openEbookReader = async function (product) {
         window.forceCloseEbookReader(e);
     };
 
+    const closeBtn = modal.querySelector('#close-reader');
     if (closeBtn) {
         ['click', 'mousedown', 'touchstart'].forEach(evtType => {
             closeBtn.addEventListener(evtType, closeAction, { capture: true });
@@ -3460,6 +3461,7 @@ if (productForm) {
             if (res.ok) {
                 closeProductModal();
                 loadAdminProductsFull();
+                if (typeof renderLibraryTab === 'function') renderLibraryTab(); 
                 updateAdminStats();
                 showToast(isEdit ? 'Product updated' : 'Product added', 'success');
             } else {
