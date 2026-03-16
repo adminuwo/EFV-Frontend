@@ -2131,7 +2131,7 @@ window.syncLibraryWithBackend = async function () {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
-        console.log('📥 Backend Library Data Received:', data);
+        console.log('📥 Backend Library Data Received:', data, 'User Role:', user.role);
 
         if (response.ok) {
             const libKey = getUserKey('efv_digital_library');
