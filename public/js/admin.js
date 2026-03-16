@@ -509,6 +509,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const userEmail = (user?.email || '').toLowerCase().trim();
     const isAdmin = user && (user.role === 'admin' || userEmail === 'admin@uwo24.com');
+
+    const isAdminPage = window.location.pathname.includes('admin-dashboard.html');
+    const isProfilePage = window.location.pathname.includes('profile.html');
+
     if (isAdminPage && !isAdmin) {
         console.warn("Security: Unauthorized admin access attempt.");
         window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
