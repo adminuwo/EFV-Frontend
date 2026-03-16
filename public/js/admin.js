@@ -507,10 +507,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Role-Based Page Protection
-    const isProfilePage = window.location.pathname.includes('profile.html');
-    const isAdminPage = window.location.pathname.includes('admin-dashboard.html');
-    const isAdmin = user && (user.role === 'admin' || (user.email && user.email.toLowerCase() === 'admin@uwo24.com'));
+    const userEmail = (user?.email || '').toLowerCase().trim();
+    const isAdmin = user && (user.role === 'admin' || userEmail === 'admin@uwo24.com');
     if (isAdminPage && !isAdmin) {
         console.warn("Security: Unauthorized admin access attempt.");
         window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
@@ -2335,7 +2333,8 @@ async function renderOrdersTab(filter = 'all') {
 // --- TAB RENDERING: LIBRARY ---
 function renderLibraryTab(directData = null, typeFilter = null) {
     const user = JSON.parse(localStorage.getItem('efv_user') || '{}');
-    const isAdmin = user.role === 'admin' || (user.email && user.email.toLowerCase() === 'admin@uwo24.com');
+    const userEmail = (user.email || '').toLowerCase().trim();
+    const isAdmin = user.role === 'admin' || userEmail === 'admin@uwo24.com';
     const libKey = getUserKey('efv_digital_library');
     let library = directData || JSON.parse(localStorage.getItem(libKey)) || [];
 
