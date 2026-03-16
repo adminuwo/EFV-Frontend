@@ -93,9 +93,15 @@
     ];
 
     const languages = [
-        { code: 'en', name: 'English' }, { code: 'hi', name: 'Hindi' }, { code: 'es', name: 'Spanish' },
-        { code: 'fr', name: 'French' }, { code: 'de', name: 'German' }, { code: 'ar', name: 'Arabic' },
-        { code: 'zh-CN', name: 'Chinese' }, { code: 'ja', name: 'Japanese' }, { code: 'it', name: 'Italian' }
+        { code: 'en', name: 'English', flag: 'us' },
+        { code: 'hi', name: 'Hindi', flag: 'in' },
+        { code: 'es', name: 'Spanish', flag: 'es' },
+        { code: 'fr', name: 'French', flag: 'fr' },
+        { code: 'de', name: 'German', flag: 'de' },
+        { code: 'ar', name: 'Arabic', flag: 'ae' },
+        { code: 'zh-CN', name: 'Chinese', flag: 'cn' },
+        { code: 'ja', name: 'Japanese', flag: 'jp' },
+        { code: 'it', name: 'Italian', flag: 'it' }
     ];
 
     function applyLanguage(langCode) {
@@ -128,9 +134,9 @@
                 </div>
                 <div style="padding:15px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                     ${countries.map(c => `
-                        <button class="i18n-country-btn notranslate" data-code="${c.code}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;color:white;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;">
-                            <span style="font-size:1.5rem;">${c.flag}</span>
-                            <span style="font-size:0.9rem;">${c.name}</span>
+                        <button class="i18n-country-btn notranslate" data-code="${c.code}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;color:white;text-align:left;cursor:pointer;display:flex;align-items:center;gap:15px;transition:all 0.2s;">
+                            <img src="https://flagcdn.com/w40/${c.code.toLowerCase()}.png" width="30" style="border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.3); flex-shrink:0;" alt="${c.name}">
+                            <span style="font-size:0.9rem; font-weight: 500;">${c.name}</span>
                         </button>
                     `).join('')}
                 </div>
@@ -153,10 +159,11 @@
                     <span id="i18n-current-lang" class="notranslate">English</span>
                     <i class="fas fa-chevron-down" style="font-size:0.7rem;opacity:0.7;margin-left:4px;"></i>
                 </button>
-                <div id="i18n-switcher-dropdown" style="position:absolute;top:calc(100% + 10px);right:0;width:160px;background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);display:none;flex-direction:column;overflow:hidden;z-index:999999;">
-                    <div style="max-height:250px;overflow-y:auto;padding:5px 0;">
+                <div id="i18n-switcher-dropdown" style="position:absolute;top:calc(100% + 10px);right:0;width:180px;background:#0a0a0a;border:1px solid rgba(255,255,255,0.1);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);display:none;flex-direction:column;overflow:hidden;z-index:999999;">
+                    <div style="max-height:300px;overflow-y:auto;padding:5px 0;">
                         ${languages.map(l => `
-                            <button class="i18n-lang-btn notranslate" data-code="${l.code}" style="background:transparent;border:none;width:100%;text-align:left;padding:10px 15px;color:white;font-size:0.85rem;cursor:pointer;transition:background 0.2s;">
+                            <button class="i18n-lang-btn notranslate" data-code="${l.code}" style="background:transparent;border:none;width:100%;text-align:left;padding:10px 15px;color:white;font-size:0.85rem;cursor:pointer;transition:background 0.2s;display:flex;align-items:center;gap:10px;">
+                                <img src="https://flagcdn.com/w20/${l.flag}.png" width="18" style="border-radius:2px; flex-shrink:0;" alt="${l.name}">
                                 ${l.name}
                             </button>
                         `).join('')}

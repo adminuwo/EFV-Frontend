@@ -95,34 +95,45 @@ class EFVChatbot {
                 </div>
             </div>
 
-            <!-- Intro Popup -->
+            <!-- Premium Intro Popup -->
             <div id="efv-intro-overlay">
                 <div class="efv-intro-popup">
                     <div class="efv-intro-header">
-                        <div class="efv-intro-icon">✨</div>
-                        <h2>Meet EFV Assistant</h2>
+                        <div class="efv-intro-icon-glow">
+                             <svg width="60" height="60" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2C12 2 12.5 9.5 23 12C12.5 14.5 12 22 12 22C12 22 11.5 14.5 1 12C11.5 9.5 12 2 12 2Z" fill="#D4AF37"/>
+                            </svg>
+                        </div>
+                        <h2>MEET EFV ASSISTANT</h2>
+                        <span class="efv-intro-subtitle">Your intelligent guide across the EFV platform.</span>
                     </div>
-                    <p>
-                        Welcome to EFV™. <br><br>
-                        If you need help exploring the platform, finding books, understanding features, or asking questions, our EFV Assistant is always ready to help. <br><br>
-                        Simply click the glowing star icon in the bottom-right corner to start chatting.
-                    </p>
+                    
+                    <div class="efv-intro-body">
+                        <p>Welcome to EFV™.</p>
+                        <p>If you ever need help exploring the platform, finding books, understanding features, or asking questions, our EFV Assistant is always here for you.</p>
+                        <p class="efv-highlight-text">Simply click the glowing star icon in the bottom-right corner to start chatting.</p>
+                    </div>
+
                     <div class="efv-intro-actions">
-                        <button id="efv-intro-got-it" class="efv-btn-intro efv-btn-intro-secondary">Got It</button>
-                        <button id="efv-intro-ask" class="efv-btn-intro efv-btn-intro-primary">Ask EFV Bot</button>
+                        <button id="efv-intro-got-it" class="efv-btn-intro-outline">Got It</button>
+                        <button id="efv-intro-ask" class="efv-btn-intro-glow">Ask EFV Bot</button>
+                    </div>
+
+                    <!-- Short Elegant Pointer -->
+                    <div class="efv-card-pointer">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                            <path d="M5 5 L35 35 M35 15 L35 35 L15 35" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
                     </div>
                 </div>
             </div>
 
-            <!-- Curved Arrow Pointer (Intro only) -->
-            <svg class="efv-intro-arrow" viewBox="0 0 100 100">
-                <path d="M 10 10 Q 50 10, 80 80" fill="none" marker-end="url(#intro-arrowhead)"/>
-                <defs>
-                    <marker id="intro-arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                        <polygon points="0 0, 10 3, 0 6" fill="#f4d03f" />
-                    </marker>
-                </defs>
-            </svg>
+            <!-- Enhanced Bot Highlight System -->
+            <div id="efv-guide-system" class="efv-hidden">
+                <div class="efv-bot-ring"></div>
+                <div class="efv-bot-ring" style="animation-delay: 0.8s"></div>
+                <div class="efv-bot-ring" style="animation-delay: 1.6s"></div>
+            </div>
         `;
 
         document.body.insertAdjacentHTML('beforeend', chatHTML);
@@ -140,10 +151,11 @@ class EFVChatbot {
     showIntro() {
         const introOverlay = document.getElementById('efv-intro-overlay');
         const chatToggle = document.getElementById('efv-chat-toggle');
-        
+
         if (introOverlay) {
             introOverlay.classList.add('active');
             chatToggle.classList.add('efv-highlight');
+            document.getElementById('efv-guide-system').classList.remove('efv-hidden');
         }
 
         // Event listeners for intro buttons
@@ -165,9 +177,10 @@ class EFVChatbot {
     closeIntro() {
         const introOverlay = document.getElementById('efv-intro-overlay');
         const chatToggle = document.getElementById('efv-chat-toggle');
-        
+
         if (introOverlay) {
             introOverlay.classList.remove('active');
+            document.getElementById('efv-guide-system').classList.add('efv-hidden');
             setTimeout(() => {
                 introOverlay.style.display = 'none';
             }, 500);

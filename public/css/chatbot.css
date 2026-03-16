@@ -43,21 +43,24 @@
     }
 }
 
-/* Intro Highlight Animation */
+/* Intro Highlight Animation - Pulsing Glow */
 .efv-chat-button.efv-highlight {
-    animation: efv-intro-pulse 1.5s infinite alternate ease-in-out;
-    filter: drop-shadow(0 0 25px #F4D03F) !important;
-    z-index: 100000001 !important;
+    animation: efv-bot-glow-pulse 2s infinite ease-in-out !important;
+    filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.8)) !important;
+    z-index: 100000002 !important;
 }
 
-@keyframes efv-intro-pulse {
-    from {
+@keyframes efv-bot-glow-pulse {
+
+    0%,
+    100% {
         transform: scale(1);
-        filter: drop-shadow(0 0 10px #F4D03F);
+        filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6));
     }
-    to {
-        transform: scale(1.3);
-        filter: drop-shadow(0 0 35px #F4D03F);
+
+    50% {
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 35px rgba(212, 175, 55, 1));
     }
 }
 
@@ -543,19 +546,21 @@
     }
 }
 
-/* Bot Introduction Popup Styles */
+/* Bot Introduction Premium Styles */
 #efv-intro-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(3, 5, 9, 0.6);
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     z-index: 100000000;
     display: none;
     opacity: 0;
-    transition: opacity 0.5s ease;
+    padding: 20px;
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #efv-intro-overlay.active {
@@ -566,53 +571,92 @@
 }
 
 .efv-intro-popup {
-    max-width: 500px;
-    width: 90%;
-    background: linear-gradient(135deg, rgba(10, 15, 30, 0.98) 0%, rgba(3, 5, 9, 0.98) 100%);
-    border: 1px solid rgba(212, 175, 55, 0.4);
-    border-radius: 28px;
-    padding: 40px;
+    max-width: 550px;
+    width: 100%;
+    background: linear-gradient(165deg, rgba(15, 20, 35, 0.95) 0%, rgba(5, 8, 15, 0.98) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 32px;
+    padding: 50px 40px;
     text-align: center;
-    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 175, 55, 0.2);
-    transform: scale(0.85);
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.15);
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
+    /* Removed overflow: hidden to show pointer */
 }
 
 #efv-intro-overlay.active .efv-intro-popup {
-    transform: scale(1);
+    transform: translateY(0) scale(1);
 }
 
-.efv-intro-header {
+.efv-intro-popup::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.05), transparent 70%);
+    pointer-events: none;
+}
+
+.efv-intro-icon-glow {
     margin-bottom: 25px;
-}
-
-.efv-intro-icon {
-    font-size: 50px;
-    text-shadow: 0 0 25px rgba(212, 175, 55, 0.8);
-    margin-bottom: 15px;
     display: inline-block;
-    animation: efv-float 3s infinite ease-in-out;
 }
 
-@keyframes efv-float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+.efv-intro-icon-glow svg {
+    filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.8));
+    animation: efv-intro-star-pulse 3s infinite ease-in-out;
+}
+
+@keyframes efv-intro-star-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6));
+    }
+
+    50% {
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 30px rgba(212, 175, 55, 1));
+    }
 }
 
 .efv-intro-popup h2 {
     color: #d4af37;
-    font-size: 28px;
-    margin: 0;
+    font-size: 24px;
     font-weight: 800;
-    letter-spacing: 1px;
+    letter-spacing: 3px;
+    margin: 0 0 8px 0;
+    font-family: 'Cinzel', serif;
 }
 
-.efv-intro-popup p {
+.efv-intro-subtitle {
+    display: block;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 30px;
+}
+
+.efv-intro-body {
+    margin-bottom: 40px;
+}
+
+.efv-intro-body p {
     color: rgba(255, 255, 255, 0.85);
     font-size: 16px;
-    line-height: 1.7;
-    margin-bottom: 35px;
+    line-height: 1.8;
+    margin: 0 0 15px 0;
+}
+
+.efv-highlight-text {
+    color: #d4af37 !important;
+    font-weight: 600;
+    margin-top: 20px !important;
 }
 
 .efv-intro-actions {
@@ -621,87 +665,138 @@
     justify-content: center;
 }
 
-.efv-btn-intro {
-    padding: 12px 24px;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    font-size: 14px;
-    border: none;
-}
-
-.efv-btn-intro-primary {
+.efv-btn-intro-glow {
     background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
     color: #000;
-    box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+    padding: 14px 32px;
+    border-radius: 14px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+    transition: all 0.3s;
 }
 
-.efv-btn-intro-primary:hover {
-    transform: scale(1.08);
-    box-shadow: 0 15px 30px rgba(212, 175, 55, 0.5);
+.efv-btn-intro-glow:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 15px 35px rgba(212, 175, 55, 0.6);
 }
 
-.efv-btn-intro-secondary {
-    background: rgba(255, 255, 255, 0.08);
+.efv-btn-intro-outline {
+    background: transparent;
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 14px 32px;
+    border-radius: 14px;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    font-size: 15px;
+    transition: all 0.3s;
 }
 
-.efv-btn-intro-secondary:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: scale(1.05);
+.efv-btn-intro-outline:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Highlight Arrow Pointer */
-.efv-intro-arrow {
+/* Elegant Short Pointer */
+.efv-card-pointer {
+    position: absolute;
+    bottom: -10px;
+    right: -10px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.8));
+    animation: efv-pointer-pulse-simple 2s infinite ease-in-out;
+}
+
+@keyframes efv-pointer-pulse-simple {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: translate(10px, 10px);
+        opacity: 1;
+    }
+}
+
+/* Enhanced Highlight Ring for Bot */
+#efv-guide-system {
     position: fixed;
-    bottom: 120px;
-    right: 120px;
-    width: 100px;
-    height: 100px;
-    pointer-events: none;
+    inset: 0;
     z-index: 100000001;
-    display: none;
-    fill: none;
-    stroke: #f4d03f;
-    stroke-width: 3;
-    stroke-dasharray: 200;
-    stroke-dashoffset: 200;
-    filter: drop-shadow(0 0 15px #f4d03f);
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.5s;
 }
 
-#efv-intro-overlay.active ~ .efv-intro-arrow {
-    display: block;
-    animation: efv-draw-arrow 1s forwards ease-in-out, efv-arrow-bounce 2s infinite 1.5s;
+#efv-guide-system.efv-hidden {
+    opacity: 0;
 }
 
-@keyframes efv-draw-arrow {
-    to { stroke-dashoffset: 0; }
+.efv-bot-ring {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border: 1px solid #d4af37;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+    opacity: 0;
+    animation: efv-ring-ripple 2.4s infinite ease-out;
 }
 
-@keyframes efv-arrow-bounce {
-    0%, 100% { transform: translate(0, 0); }
-    50% { transform: translate(15px, 15px); }
+@keyframes efv-ring-ripple {
+    0% {
+        transform: scale(1);
+        opacity: 0;
+    }
+
+    30% {
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
 }
 
+/* Mobile Adjustments for Intro */
 @media (max-width: 600px) {
     .efv-intro-popup {
-        padding: 30px 20px;
+        padding: 40px 25px;
+        border-radius: 24px;
     }
+
     .efv-intro-popup h2 {
-        font-size: 24px;
+        font-size: 20px;
     }
-    .efv-intro-popup p {
+
+    .efv-intro-body p {
         font-size: 14px;
     }
+
     .efv-intro-actions {
-        flex-direction: column;
+        flex-direction: column-reverse;
     }
-    .efv-intro-arrow {
-        bottom: 80px;
-        right: 80px;
-        width: 80px;
-        height: 80px;
+
+    .efv-btn-intro-glow,
+    .efv-btn-intro-outline {
+        width: 100%;
     }
-}
+
+    #efv-guide-path {
+        d: path("M 50 60 Q 60 70, 85 85");
+        /* Adjusted curve for mobile centering */
+    }
+}

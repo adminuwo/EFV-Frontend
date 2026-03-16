@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const message = document.getElementById('contact-message').value;
 
             btn.disabled = true;
-            btn.textContent = 'Transmitting...';
+            btn.textContent = 'Sending...';
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}/api/support/message`, {
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const originalText = waitlistBtn.textContent;
             waitlistBtn.disabled = true;
-            waitlistBtn.textContent = 'Aligning...';
+            waitlistBtn.textContent = 'Joining...';
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}/api/subscribe`, {
