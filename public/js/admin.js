@@ -2480,12 +2480,13 @@ function renderLibraryTab(directData = null, typeFilter = null) {
         // Thumbnail resolution - same logic as marketplace.html
         let imageUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
         if (item.thumbnail) {
-            if (item.thumbnail.startsWith('http') || item.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
-                imageUrl = item.thumbnail;
-            } else if (item.thumbnail.startsWith('img/')) {
-                imageUrl = CONFIG.BASE_PATH + 'assets/images/' + item.thumbnail.replace('img/', '');
+            const thumb = item.thumbnail.replace(/^\/+/, '');
+            if (thumb.startsWith('http')) {
+                imageUrl = thumb;
+            } else if (thumb.startsWith('assets/images/')) {
+                imageUrl = CONFIG.BASE_PATH + thumb;
             } else {
-                imageUrl = `${API_BASE}/${item.thumbnail}`;
+                imageUrl = `${API_BASE}/${thumb}`;
             }
         }
 
