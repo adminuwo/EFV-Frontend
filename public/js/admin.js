@@ -1,5 +1,12 @@
 // Integrated with global security.js
-console.log("📂 admin.js: Loading Version 1.2 (Active)...");
+console.log("📂 admin.js: Loading Version 1.3 (Active)...");
+
+// ✅ Resolve API base URL from api-config.js (CONFIG must be loaded first)
+const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL)
+    ? CONFIG.API_BASE_URL
+    : 'http://localhost:8080';
+console.log("🌐 admin.js API_BASE resolved to:", API_BASE);
+
 
 // --- NOTIFICATION SYSTEM ---
 window.simulateAdminEvent = (toggleId, title, message) => {
@@ -131,7 +138,7 @@ function formatRelativeTime(iso) {
     return new Date(iso).toLocaleDateString();
 }
 
-const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : 'http://localhost:8080';
+// API_BASE is resolved at the top of the file
 
 // --- GLOBAL CONTENT CONFIGURATION ---
 const CONTENT_CONFIG = {
@@ -442,23 +449,37 @@ window.deleteProduct = async function (id) {
 window.updateAdminStats = async function () {
     try {
         const token = localStorage.getItem('authToken');
+        console.log(`📊 Updating Admin Stats (URL: ${API_BASE}, Token Present: ${!!token})`);
+        
+        const fetchWithAuth = (url) => fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
 
         const [productsRes, ordersRes, usersRes] = await Promise.all([
-            fetch(`${API_BASE}/api/products`),
-            fetch(`${API_BASE}/api/orders`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${API_BASE}/api/users`, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => ({}))
+            fetch(`${API_BASE}/api/products`).catch(e => ({ ok: false, error: e })),
+            fetchWithAuth(`${API_BASE}/api/orders`).catch(e => ({ ok: false, error: e })),
+            fetchWithAuth(`${API_BASE}/api/users`).catch(e => ({ ok: false, error: e }))
         ]);
 
-        const productsJson = await productsRes.json();
-        const ordersJson = ordersRes.ok ? await ordersRes.json() : [];
+        console.log(`📡 Responses - Products: ${productsRes.ok}, Orders: ${ordersRes.ok}, Users: ${usersRes.ok}`);
 
-        const products = Array.isArray(productsJson) ? productsJson : [];
-        const orders = Array.isArray(ordersJson) ? ordersJson : [];
+        let products = [];
+        if (productsRes.ok) {
+            const productsJson = await productsRes.json().catch(() => []);
+            products = Array.isArray(productsJson) ? productsJson : [];
+        }
+
+        let orders = [];
+        if (ordersRes.ok) {
+            const ordersJson = await ordersRes.json().catch(() => []);
+            orders = Array.isArray(ordersJson) ? ordersJson : [];
+        }
+
         let users = [];
         if (usersRes && usersRes.ok) {
             const usersJson = await usersRes.json().catch(() => []);
             users = Array.isArray(usersJson) ? usersJson : [];
         }
+
+        console.log(`📈 Data Loaded - Products: ${products.length}, Orders: ${orders.length}, Users: ${users.length}`);
 
         const revenue = orders.reduce((sum, o) => {
             if (!o || ['Failed', 'Cancelled', 'Returned'].includes(o.status)) return sum;
@@ -472,11 +493,13 @@ window.updateAdminStats = async function () {
 
         if (totalProdEl) totalProdEl.textContent = products.length;
         if (totalOrderEl) totalOrderEl.textContent = orders.length;
-        if (revenueEl) revenueEl.textContent = '₹' + revenue.toLocaleString();
-        if (usersEl) usersEl.textContent = users.length || '--';
+        if (revenueEl) revenueEl.textContent = '₹' + Math.round(revenue).toLocaleString();
+        if (usersEl) usersEl.textContent = users.length || '0';
+
+        console.log("✅ Admin Dashboard Stats Updated Successfully");
 
     } catch (e) {
-        console.error("Admin Stats Update Error:", e);
+        console.error("❌ Admin Stats Update CRITICAL Error:", e);
     }
 };
 
@@ -633,6 +656,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Tab Logic
     const tabs = document.querySelectorAll('.nav-item[data-tab]');
     const sections = document.querySelectorAll('.content-section');
+
+    // NEW: URL Param Tab Logic (e.g. ?tab=admin-products)
+    const currentUrlParams = new URLSearchParams(window.location.search);
+    const requestedTab = currentUrlParams.get('tab') || (currentUrlParams.get('tab-dashboard') === null ? null : 'dashboard');
+    if (requestedTab) {
+        setTimeout(() => window.switchTab(requestedTab), 100);
+    }
 
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -1915,7 +1945,11 @@ async function initializeDashboard(user) {
     if (dateDisp) dateDisp.textContent = new Date().toLocaleDateString('en-US', options);
 
     // Admin Check & Sidebar Customization
-    const isAdmin = user.role === 'admin' || user.email.toLowerCase() === 'admin@uwo24.com';
+    const userEmail = (user && user.email) ? user.email.toLowerCase().trim() : '';
+    const userRole = (user && user.role) ? user.role.toLowerCase().trim() : '';
+    const isAdmin = userRole === 'admin' || userEmail === 'admin@uwo24.com';
+
+    console.log("🛠️ Initializing Dashboard. User:", userEmail, "Role:", userRole, "isAdmin:", isAdmin);
 
     if (isAdmin) {
         // 1. Hide customer-only sidebar items
@@ -1979,8 +2013,50 @@ async function initializeDashboard(user) {
     }
 
     // Load initial data
-    await fetchProfileData();
+    try {
+        await fetchProfileData();
+        
+        // Re-check Admin status after profile load to ensure sidebar is correct
+        const profile = window.currentUserProfile;
+        if (profile) {
+            const pEmail = (profile.email || '').toLowerCase().trim();
+            const pRole = (profile.role || '').toLowerCase().trim();
+            const pIsAdmin = pRole === 'admin' || pEmail === 'admin@uwo24.com';
+            console.log("🔄 Re-checking Admin status after profile fetch:", pIsAdmin, "Role:", pRole);
+            
+            if (pIsAdmin) {
+                // Show admin items
+                document.querySelectorAll('.admin-nav').forEach(btn => btn.classList.remove('hidden'));
+                
+                // Hide customer-only items
+                const customerTabs = ['cart', 'orders', 'wishlist', 'notifications', 'support'];
+                customerTabs.forEach(tab => {
+                    const btn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+                    if (btn) btn.classList.add('hidden');
+                });
+                
+                const settingsBtn = document.querySelector('button[data-tab="settings"]');
+                if (settingsBtn) {
+                    const span = settingsBtn.querySelector('span');
+                    if (span) span.textContent = 'System Control';
+                }
+
+                // If on Admin Dashboard, ensure we show the Admin version of the dashboard
+                const requestedTab = new URLSearchParams(window.location.search).get('tab');
+                if (!requestedTab || requestedTab === 'dashboard') {
+                    window.switchTab('admin');
+                }
+            } else {
+                console.warn("User is NOT an admin based on profile data.");
+            }
+        }
+    } catch (err) {
+        console.error("Dashboard init error:", err);
+    }
+
     updateDashboardOverview();
+    if (typeof updateAdminStats === 'function') updateAdminStats();
+    
     loadRecommendations();
     loadRecentlyViewed();
 
