@@ -421,6 +421,10 @@
                         <p>Your digital collection (Full Access for Admin)</p>
                     </div>
                     <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-outline small admin-only-btn" onclick="openAddLibraryModal()"
+                            style="width: auto; padding: 0 15px; font-weight: 700; border-color: var(--gold-text); color: var(--gold-text);">
+                            <i class="fas fa-plus-circle"></i> ADD PRODUCTS
+                        </button>
                         <div class="search-box premium-search" style="width: 240px; position: relative;">
                             <input type="text" id="library-search" placeholder="Search your collection..."
                                 style="width: 100%; padding: 10px 15px 10px 40px; background: var(--gold-text); border: 1px solid var(--gold-text); border-radius: 12px; color: black; font-weight: 600; font-size: 0.85rem; outline: none; transition: all 0.3s; backdrop-filter: blur(5px);">
@@ -2168,7 +2172,31 @@
     </div>
 
 
-    <!-- Scripts -->
+    <!-- ADD TO LIBRARY MODAL (Admin Only) -->
+    <div id="add-library-modal" class="admin-premium-overlay" style="z-index: 100005;">
+        <div class="admin-premium-card" style="max-width: 800px; width: 90%;">
+            <div class="modal-header-premium">
+                <div>
+                    <h2>Add to Library</h2>
+                    <p style="font-size: 0.8rem; opacity: 0.6; margin: 0;">Grant yourself free access to digital items</p>
+                </div>
+                <button onclick="closeAddLibraryModal()" class="close-premium">&times;</button>
+            </div>
+            <div class="modal-main-content">
+                <div style="margin-bottom: 20px;">
+                    <input type="text" id="add-library-search" class="p-input" placeholder="Search marketplace products..." 
+                        oninput="filterAddLibraryList()" style="background: rgba(255,255,255,0.05);">
+                </div>
+                <div id="add-library-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; max-height: 50vh; overflow-y: auto; padding: 5px;">
+                    <!-- Products injected here -->
+                    <div style="text-align: center; padding: 40px; opacity: 0.5;">Loading products...</div>
+                </div>
+            </div>
+            <div class="modal-footer-premium" style="justify-content: flex-end;">
+                <button onclick="closeAddLibraryModal()" class="p-btn p-btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="../js/api-config.js"></script>
     <script src="../js/admin.js"></script>
@@ -2587,36 +2615,115 @@
             }
         };
 
+            // --- ADMIN LIBRARY MODAL LOGIC ---
+            window.openAddLibraryModal = async function() {
+                const modal = document.getElementById('add-library-modal');
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('active'), 10);
+                
+                const list = document.getElementById('add-library-list');
+                list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; opacity: 0.5;">Searching products...</div>';
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/products`);
+                    const products = await res.json();
+                    window.allMarketplaceProducts = products.filter(p => /^(EBOOK|AUDIOBOOK)$/i.test(p.type));
+                    renderAddLibraryList(window.allMarketplaceProducts);
+                } catch (e) {
+                    list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 40px;">Failed to load products</div>';
+                }
+            };
+
+            window.closeAddLibraryModal = function() {
+                const modal = document.getElementById('add-library-modal');
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 400);
+            };
+
+            function renderAddLibraryList(products) {
+                const list = document.getElementById('add-library-list');
+                const libKey = getUserKey('efv_digital_library');
+                const myLibrary = JSON.parse(localStorage.getItem(libKey)) || [];
+                const ownedIds = new Set(myLibrary.map(item => (item.productId || item.id || '').toString()));
+
+                if (products.length === 0) {
+                    list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; opacity: 0.5;">No digital products found.</div>';
+                    return;
+                }
+
+                list.innerHTML = products.map(p => {
+                    const isAdded = ownedIds.has(p._id.toString());
+                    return `
+                        <div class="glass-panel" style="display: flex; gap: 15px; padding: 12px; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
+                            <img src="${p.thumbnail.startsWith('http') ? p.thumbnail : (API_BASE + '/' + p.thumbnail)}" 
+                                style="width: 50px; height: 70px; object-fit: cover; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: white;">${p.title}</div>
+                                <div style="font-size: 0.7rem; color: var(--gold-text); opacity: 0.8; margin-bottom: 8px;">${p.type} • ${p.language || 'Edition'}</div>
+                            </div>
+                            <button onclick="addToLibraryDirect('${p._id}')" class="p-btn small ${isAdded ? 'p-btn-secondary' : 'p-btn-primary'}" 
+                                style="padding: 6px 12px; font-size: 0.75rem; white-space: nowrap;" ${isAdded ? 'disabled' : ''}>
+                                ${isAdded ? '<i class="fas fa-check"></i> Added' : '<i class="fas fa-plus"></i> Add'}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.filterAddLibraryList = function() {
+                const query = document.getElementById('add-library-search').value.toLowerCase();
+                const filtered = window.allMarketplaceProducts.filter(p => p.title.toLowerCase().includes(query));
+                renderAddLibraryList(filtered);
+            };
+
+            window.addToLibraryDirect = async function(prodId) {
+                const token = localStorage.getItem('authToken');
+                try {
+                    const res = await fetch(`${API_BASE}/api/library/add`, {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ productId: prodId })
+                    });
+                    if (res.ok) {
+                        showToast('Product added to your library!', 'success');
+                        if (window.syncLibraryWithBackend) await window.syncLibraryWithBackend();
+                        renderAddLibraryList(window.allMarketplaceProducts); // Update UI
+                    } else {
+                        const err = await res.json();
+                        showToast(err.message || 'Failed to add', 'error');
+                    }
+                } catch (e) {
+                    showToast('Network error', 'error');
+                }
+            };
+
             // --- TAB SWITCHER OVERRIDE ---
-            // Move inside DOMContentLoaded with timeout to ensure admin.js has finished setting window.switchTab
             setTimeout(() => {
                 const originalSwitchTab = window.switchTab;
-                console.log("🔌 Overriding switchTab for Partner Marketing...");
+                console.log("🔌 Overriding switchTab for Admin Dashboard...");
                 window.switchTab = function(tabId, subTab = null) {
                     console.log("📍 switchTab call:", tabId);
+                    
+                    // Call original
                     if (typeof originalSwitchTab === 'function') {
                         originalSwitchTab(tabId, subTab);
                     }
+
+                    // Handle specific admin loads
                     if (tabId === 'admin-partners') {
-                        fetchPartners();
+                        if (typeof fetchPartners === 'function') fetchPartners();
                     } else if (tabId === 'admin-partner-messages') {
-                        fetchPartnerMessages();
+                        if (typeof fetchPartnerMessages === 'function') fetchPartnerMessages();
+                    } else if (tabId === 'library') {
+                        if (typeof renderLibraryTab === 'function') renderLibraryTab();
                     }
                 };
-                
-                // If starting on this tab, trigger fetch
-                const partnerSection = document.getElementById('admin-partners');
-                if (partnerSection && partnerSection.classList.contains('active')) {
-                    window.fetchPartners();
-                }
-
-                // Initial notifications check
-                fetchPartnerMessages();
-                setInterval(fetchPartnerMessages, 60000);
             }, 600);
         });
     </script>
     <script src="../js/i18n.js"></script>
 </body>
-
 </html>
