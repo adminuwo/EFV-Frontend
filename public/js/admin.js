@@ -2334,6 +2334,8 @@ async function renderOrdersTab(filter = 'all') {
 // --- TAB RENDERING: LIBRARY ---
 // --- TAB RENDERING: LIBRARY ---
 function renderLibraryTab(directData = null, typeFilter = null) {
+    const user = JSON.parse(localStorage.getItem('efv_user') || '{}');
+    const isAdmin = user.role === 'admin' || (user.email && user.email.toLowerCase() === 'admin@uwo24.com');
     const libKey = getUserKey('efv_digital_library');
     let library = directData || JSON.parse(localStorage.getItem(libKey)) || [];
 
@@ -2362,7 +2364,7 @@ function renderLibraryTab(directData = null, typeFilter = null) {
 
             // Deduplicate by Content Key (Name + Type) - most reliable
             const key = item.uniqueContentKey;
-            if (uniqueMap.has(key)) return false;
+            if (!isAdmin && uniqueMap.has(key)) return false;
             uniqueMap.set(key, true);
             return true;
         });
@@ -3754,7 +3756,8 @@ if (productForm) {
             if (res.ok) {
                 closeProductModal();
                 loadAdminProductsFull();
-                if (typeof renderLibraryTab === 'function') renderLibraryTab(); 
+                if (typeof window.syncLibraryWithBackend === 'function') window.syncLibraryWithBackend(); 
+                else if (typeof renderLibraryTab === 'function') renderLibraryTab(); 
                 updateAdminStats();
                 showToast(isEdit ? 'Product updated' : 'Product added', 'success');
             } else {
