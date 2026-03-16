@@ -370,6 +370,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Sync Store Config to Footer & Modals
+    const syncFooterConfig = () => {
+        try {
+            const savedConfig = JSON.parse(localStorage.getItem('efv_store_config'));
+            if (savedConfig && savedConfig.email) {
+                const supportEmail = savedConfig.email;
+                
+                // 1. Update Footer Gmail Link
+                const gmailLinks = document.querySelectorAll('a[aria-label="Gmail"]');
+                gmailLinks.forEach(link => {
+                    link.href = `mailto:${supportEmail}`;
+                });
+
+                // 2. Update Modal Contact Info (if found)
+                const modalContactElements = document.querySelectorAll('.modal-body, .tc-content');
+                modalContactElements.forEach(body => {
+                    // Look for the specific placeholder text and replace it
+                    if (body.innerHTML.includes('admin@uwo24.com')) {
+                        body.innerHTML = body.innerHTML.replace(/admin@uwo24\.com/g, supportEmail);
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Sync footer config failed:', e);
+        }
+    };
+
+    // Initial sync
+    syncFooterConfig();
+
+    // Export for admin dashboard to trigger immediate updates
+    window.syncFooterConfig = syncFooterConfig;
+
     // Dynamically inject Global I18n System
     const i18nScript = document.createElement('script');
     i18nScript.src = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'js/i18n.js';

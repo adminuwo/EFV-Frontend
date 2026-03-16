@@ -123,7 +123,7 @@
         .stat-card .value {
             font-size: 2.2rem;
             font-weight: 700;
-            color: white;
+            color: var(--gold);
             font-family: 'Cinzel', serif;
         }
 
@@ -169,15 +169,16 @@
         }
 
         .coupon-box {
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px dashed var(--gold);
+            background: var(--gold);
+            border: 2px solid var(--gold);
             padding: 10px 25px;
             border-radius: 10px;
             font-family: 'Cinzel', serif;
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: 900;
             letter-spacing: 3px;
-            color: white;
+            color: black;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
         }
 
         .coupon-details {
@@ -349,6 +350,9 @@
             </div>
 
             <div class="nav-actions">
+                <a href="../index.html" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to Website
+                </a>
                 <a href="partner-support.html" class="btn btn-outline" style="display: inline-flex; align-items: center;">
                     <i class="fas fa-headset" style="margin-right: 8px;"></i> Support
                     <span id="msg-badge" class="badge" style="display: none; background: #ff4d4d; color: white; border-radius: 50px; min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; align-items: center; justify-content: center; font-weight: 700; margin-left: 4px; position: relative; top: -8px;">0</span>
@@ -505,13 +509,13 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td style="opacity: 0.6;">${new Date(sale.date).toLocaleDateString('en-GB')}</td>
-                    <td style="font-weight: 600;">#${sale.orderId}</td>
+                    <td style="font-weight: 600; color: var(--gold);">#${sale.orderId}</td>
                     <td>
                         <div>${sale.customerName}</div>
-                        <div style="font-size: 0.75rem; opacity: 0.5;">${sale.customerEmail}</div>
+                        <div style="font-size: 0.75rem; color: var(--gold); opacity: 0.8;">${sale.customerEmail}</div>
                     </td>
                     <td>${sale.items}</td>
-                    <td>₹${sale.totalPaid}</td>
+                    <td style="color: var(--gold); font-weight: 600;">₹${sale.totalPaid}</td>
                     <td style="color: var(--gold); font-weight: 600;">₹${sale.commissionEarned}</td>
                     <td>
                         <span class="status-pill ${sale.isPaid ? 'status-paid' : 'status-pending'}">

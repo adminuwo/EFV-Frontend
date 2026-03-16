@@ -11,6 +11,12 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="../js/api-config.js"></script>
+    <script>
+        // Pre-emptive redirect for logged-in partners
+        if (localStorage.getItem('partnerToken')) {
+            window.location.href = 'partner-dashboard.html';
+        }
+    </script>
     <link rel="stylesheet" href="../css/toast.css">
     <script src="../js/toast.js"></script>
     <style>
@@ -264,6 +270,7 @@
 
     <script>
         const API_BASE = (typeof CONFIG !== 'undefined') ? CONFIG.API_BASE_URL : 'http://localhost:8080';
+
         let currentEmail = '';
         let activationToken = '';
 

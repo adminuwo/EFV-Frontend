@@ -166,6 +166,32 @@
                     transform: translateY(-2px);
                     box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
                 }
+
+                @media (max-width: 600px) {
+                    .marketplace-filters {
+                        display: flex !important;
+                        flex-direction: row !important;
+                        flex-wrap: nowrap !important;
+                        justify-content: flex-start !important;
+                        overflow-x: auto !important;
+                        gap: 12px !important;
+                        padding: 10px 15px !important;
+                        -webkit-overflow-scrolling: touch;
+                        scrollbar-width: none; /* Hide scrollbar Firefox */
+                        -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
+                        margin-left: -15px;
+                        margin-right: -15px;
+                    }
+                    .marketplace-filters::-webkit-scrollbar {
+                        display: none; /* Hide scrollbar Chrome/Safari */
+                    }
+                    .marketplace-filters .filter-btn {
+                        flex: 0 0 auto !important; /* Prevent shrinking */
+                        padding: 10px 20px !important;
+                        font-size: 0.85rem !important;
+                        white-space: nowrap !important;
+                    }
+                }
             </style>
 
             <div class="product-grid" id="product-grid">
@@ -176,7 +202,6 @@
                     <p>Loading EFV™ Catalog...</p>
                 </div>
             </div>
-        </div>
         </div>
     </section>
 

@@ -383,9 +383,9 @@
                     </div>
                     <div class="search-box" style="width: 250px; position: relative;">
                         <input type="text" id="order-search" placeholder="Search orders..."
-                            style="width: 100%; padding: 10px 15px 10px 40px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                            style="width: 100%; padding: 10px 15px 10px 40px; background: var(--gold-text); border: 1px solid var(--gold-text); border-radius: 8px; color: black; font-weight: 600;">
                         <i class="fas fa-search"
-                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5;"></i>
+                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.7; color: black;"></i>
                     </div>
                 </header>
 
@@ -423,13 +423,13 @@
                     <div style="display: flex; gap: 10px;">
                         <div class="search-box premium-search" style="width: 240px; position: relative;">
                             <input type="text" id="library-search" placeholder="Search your collection..."
-                                style="width: 100%; padding: 10px 15px 10px 40px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; font-size: 0.85rem; outline: none; transition: all 0.3s; backdrop-filter: blur(5px);">
+                                style="width: 100%; padding: 10px 15px 10px 40px; background: var(--gold-text); border: 1px solid var(--gold-text); border-radius: 12px; color: black; font-weight: 600; font-size: 0.85rem; outline: none; transition: all 0.3s; backdrop-filter: blur(5px);">
                             <i class="fas fa-search"
-                                style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.4; color: var(--gold-energy); font-size: 0.9rem;"></i>
+                                style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.7; color: black; font-size: 0.9rem;"></i>
                         </div>
-                        <button class="btn btn-outline small" onclick="syncLibraryWithBackend()"
-                            style="width: auto; padding: 0 15px;">
-                            <i class="fas fa-sync-alt"></i> Sync
+                        <button class="btn btn-gold small" onclick="syncLibraryWithBackend()"
+                            style="width: auto; padding: 0 15px; font-weight: 900; letter-spacing: 1px;">
+                            <i class="fas fa-sync-alt"></i> SYNC
                         </button>
                     </div>
                 </header>
@@ -530,8 +530,10 @@
                     <button class="settings-tab-btn" data-notif-filter="payments">Payments</button>
                     <button class="settings-tab-btn" data-notif-filter="offers">Offers</button>
 
-                    <button class="btn btn-outline small" onclick="markAllNotificationsRead()" id="mark-all-read-btn"
-                        style="margin-left: auto;">Mark all as read</button>
+                    <div style="margin-left: auto; display: flex; gap: 10px;">
+                        <button class="btn btn-outline small" id="mark-notifs-read-btn">Mark all as read</button>
+                        <button class="btn btn-danger small outline" id="clear-notifs-btn">Clear All</button>
+                    </div>
                 </div>
 
                 <div id="notifications-list" class="notifications-list">
@@ -791,24 +793,24 @@
                                 <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 15px;">
                                     <div class="form-group">
                                         <label>Current Password</label>
-                                        <input type="password" class="glass-input" placeholder="��������">
+                                        <input type="password" id="adm-current-pass" class="glass-input" placeholder="">
                                     </div>
                                     <div class="form-group">
                                         <label>New Administrative Password</label>
-                                        <input type="password" class="glass-input" placeholder="Secure characters">
+                                        <input type="password" id="adm-new-pass" class="glass-input" placeholder="Secure characters">
                                     </div>
-                                    <button class="btn btn-gold full-width">Update Password</button>
+                                    <button class="btn btn-gold full-width" id="update-admin-pass-btn">Update Password</button>
                                 </div>
                                 <div class="settings-divider" style="margin: 20px 0;"></div>
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <span>2-Factor Auth</span>
-                                    <button class="btn btn-outline small">Disabled</button>
+                                    <button class="btn btn-outline small" id="2fa-toggle-btn">Disabled</button>
                                 </div>
                             </div>
                             <div class="settings-card glass-panel">
                                 <div class="admin-card-header">
                                     <h3>Login Activity & History</h3>
-                                    <button class="btn btn-danger small outline">Kill All Sessions</button>
+                                    <button class="btn btn-danger small outline" id="kill-sessions-btn">Kill All Sessions</button>
                                 </div>
                                 <div class="activity-log-table">
                                     <div class="activity-log-header">
@@ -833,33 +835,33 @@
                                 style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 25px;">
                                 <div class="form-group">
                                     <label>Store Global Name</label>
-                                    <input type="text" value="EFV� Official Store" class="glass-input">
+                                    <input type="text" id="store-global-name" value="EFV™ Official Store" class="glass-input">
                                 </div>
                                 <div class="form-group">
                                     <label>Support Hotline</label>
-                                    <input type="text" value="+91 98765 43210" class="glass-input">
+                                    <input type="text" id="store-support-hotline" value="+91 98765 43210" class="glass-input">
                                 </div>
                                 <div class="form-group">
                                     <label>Support Email</label>
-                                    <input type="email" value="support@efv.com" class="glass-input">
+                                    <input type="email" id="store-support-email" value="support@efv.com" class="glass-input">
                                 </div>
                                 <div class="form-group">
                                     <label>Base Currency</label>
-                                    <select class="glass-input">
-                                        <option>INR (?)</option>
-                                        <option>USD ($)</option>
+                                    <select id="store-base-currency" class="glass-input">
+                                        <option value="INR">INR (₹)</option>
+                                        <option value="USD">USD ($)</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
                                     <label>Tax / GST (%)</label>
-                                    <input type="number" value="18" class="glass-input">
+                                    <input type="number" id="store-tax-rate" value="18" class="glass-input">
                                 </div>
                                 <div class="form-group">
                                     <label>Invoice Prefix</label>
-                                    <input type="text" value="EFV-2026-" class="glass-input">
+                                    <input type="text" id="store-invoice-prefix" value="EFV-2026-" class="glass-input">
                                 </div>
                             </div>
-                            <button class="btn btn-gold" style="margin-top: 25px;">Sync Store Settings</button>
+                            <button class="btn btn-gold" id="sync-store-settings-btn" style="margin-top: 25px;">Sync Store Settings</button>
                         </div>
                     </div>
 
@@ -873,23 +875,35 @@
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px;">
                                     <span>New Order Placed</span>
-                                    <div class="toggle-switch active"></div>
+                                    <div class="toggle-switch active" id="alert-new-order"></div>
                                 </div>
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px;">
                                     <span>Payment Failure / Dispute</span>
-                                    <div class="toggle-switch active"></div>
+                                    <div class="toggle-switch active" id="alert-payment-fail"></div>
                                 </div>
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px;">
                                     <span>New User Registration</span>
-                                    <div class="toggle-switch"></div>
+                                    <div class="toggle-switch" id="alert-new-user"></div>
                                 </div>
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px;">
                                     <span>Refund Request Received</span>
-                                    <div class="toggle-switch active"></div>
+                                    <div class="toggle-switch active" id="alert-refund"></div>
                                 </div>
+                            </div>
+                            <button class="btn btn-gold" id="save-alert-prefs-btn" style="margin-top: 25px; width: 100%;">Save Preferences</button>
+                        </div>
+                        
+                        <div class="settings-card glass-panel" style="max-width: 600px; margin-top: 25px;">
+                            <h3>Simulate System Activity</h3>
+                            <p class="fade-text" style="font-size: 0.8rem; margin-bottom: 15px;">Test how notifications behave when specific events occur.</p>
+                            <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <button class="btn btn-outline small" onclick="simulateAdminEvent('alert-new-order', 'New Order', 'Order #12345 has been placed by a guest.')">Simulate Order</button>
+                                <button class="btn btn-outline small" onclick="simulateAdminEvent('alert-payment-fail', 'Payment Error', 'External payment gateway timeout detected.')">Simulate Pay-Fail</button>
+                                <button class="btn btn-outline small" onclick="simulateAdminEvent('alert-new-user', 'Welcome', 'New account registration: testuser@efv.com')">Simulate New User</button>
+                                <button class="btn btn-outline small" onclick="simulateAdminEvent('alert-refund', 'Refund Req', 'Return request #REF-09' )">Simulate Refund</button>
                             </div>
                         </div>
                     </div>
@@ -1287,9 +1301,9 @@
                         <h2 style="font-family: 'Cinzel', serif; font-size: 1.2rem; margin: 0;">Partner Management</h2>
                         <div class="search-box" style="width: 100%; max-width: 300px; position: relative;">
                             <i class="fas fa-search"
-                                style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5;"></i>
+                                style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.7; color: black; z-index: 1;"></i>
                             <input type="text" id="partner-search" placeholder="Search partner..."
-                                style="width: 100%; padding: 10px 15px 10px 45px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white;">
+                                style="width: 100%; padding: 10px 15px 10px 45px; background: var(--gold-text); border: 1px solid var(--gold-text); border-radius: 8px; color: black; font-weight: 600;">
                         </div>
                     </div>
 
@@ -1325,9 +1339,9 @@
                     <p>Communication with marketing partners</p>
                 </header>
 
-                <div class="partner-support-layout" style="display: grid; grid-template-columns: 350px 1fr; gap: 25px; min-height: 600px;">
+                <div class="partner-support-layout" id="partner-support-layout">
                     <!-- Partner List Side -->
-                    <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column;">
+                    <div class="glass-panel partner-msg-panel">
                         <h3 style="font-family: 'Cinzel', serif; font-size: 1rem; margin-bottom: 20px; color: var(--gold-text);">Conversations</h3>
                         <div id="admin-partner-msg-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
                             <!-- Populated via JS -->
@@ -1336,7 +1350,7 @@
                     </div>
 
                     <!-- Chat Box Side -->
-                    <div class="glass-panel" id="admin-chat-box" style="padding: 0; display: flex; flex-direction: column; position: relative;">
+                    <div class="glass-panel partner-msg-panel" id="admin-chat-box" style="position: relative;">
                         <!-- Initial State -->
                         <div id="admin-chat-empty" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.3;">
                             <i class="fas fa-comments fa-4x" style="margin-bottom: 20px;"></i>
@@ -1344,26 +1358,40 @@
                         </div>
 
                         <!-- Active Chat Container (Hidden by default) -->
-                        <div id="admin-chat-active" style="display: none; height: 100%; flex-direction: column;">
-                            <div class="chat-header" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <h4 id="admin-chat-partner-name" style="margin: 0; color: var(--gold-text);">Partner Name</h4>
-                                    <p id="admin-chat-partner-email" style="margin: 0; font-size: 0.8rem; opacity: 0.6;">email@example.com</p>
+                        <div id="admin-chat-active" class="chat-app-container" style="display: none;">
+                            <div class="chat-app-header">
+                                <div class="chat-user-info">
+                                    <button class="chat-back-btn mobile-only" onclick="closeAdminChat()">
+                                        <i class="fas fa-arrow-left"></i>
+                                    </button>
+                                    <div class="chat-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="chat-text-info">
+                                        <h4 id="admin-chat-partner-name">Partner Name</h4>
+                                        <p id="admin-chat-partner-email">email@example.com</p>
+                                    </div>
                                 </div>
-                                <div style="display: flex; gap: 10px;">
-                                    <button class="btn btn-outline small" onclick="markPartnerResolved()">Mark Resolved</button>
-                                    <button class="btn btn-outline small" onclick="loadPartnerChat(selectedPartnerId)"><i class="fas fa-sync"></i></button>
+                                <div class="chat-header-actions">
+                                    <button class="chat-action-btn" onclick="markPartnerResolved()" title="Mark Resolved">
+                                        <i class="fas fa-check-circle"></i>
+                                    </button>
+                                    <button class="chat-action-btn" onclick="loadPartnerChat(selectedPartnerId)" title="Refresh">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
                                 </div>
                             </div>
 
-                            <div id="admin-chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                            <div id="admin-chat-messages" class="chat-messages-container">
                                 <!-- Messages injected here -->
                             </div>
 
-                            <div class="chat-footer" style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                                <form id="admin-reply-form" style="display: flex; gap: 10px;">
-                                    <input type="text" id="admin-reply-input" class="p-input" placeholder="Type your reply..." style="flex: 1; background: rgba(0,0,0,0.5); border-radius: 8px;" required>
-                                    <button type="submit" class="btn btn-gold small" style="height: 45px;">Send</button>
+                            <div class="chat-app-footer">
+                                <form id="admin-reply-form" class="chat-input-row">
+                                    <input type="text" id="admin-reply-input" placeholder="Type a message..." required>
+                                    <button type="submit" class="chat-send-btn">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -2206,7 +2234,7 @@
                 row.innerHTML = `
                     <td style="padding: 15px;">
                         <div style="font-weight: 700; color: var(--gold-text);">${p.name}</div>
-                        <div style="font-size: 0.75rem; opacity: 0.6;">${p.email}</div>
+                        <div style="font-size: 0.75rem; color: var(--gold-text); opacity: 0.8;">${p.email}</div>
                         ${p.stats?.hasCoupon ? `<div style="font-size: 0.75rem; color: var(--gold-text); margin-top: 4px; font-weight: 600;">Token: ${p.partner_token || 'N/A'}</div>` : ''}
                         <div style="font-size: 0.7rem; opacity: 0.4;">${p.company || 'Individual'}</div>
                     </td>
@@ -2221,8 +2249,8 @@
                             </span>
                         </div>
                     </td>
-                    <td style="padding: 15px; text-align: center; font-weight: 600;">${p.stats?.totalOrders || 0}</td>
-                    <td style="padding: 15px; font-weight: 600;">₹${(p.stats?.totalRevenue || 0).toLocaleString()}</td>
+                    <td style="padding: 15px; text-align: center; font-weight: 600; color: var(--gold-text);">${p.stats?.totalOrders || 0}</td>
+                    <td style="padding: 15px; font-weight: 600; color: var(--gold-text);">₹${(p.stats?.totalRevenue || 0).toLocaleString()}</td>
                     <td style="padding: 15px; color: #22c55e; font-weight: 700;">₹${(p.stats?.unpaidCommission || 0).toLocaleString()}</td>
                     <td style="padding: 15px;">
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -2461,6 +2489,9 @@
             document.getElementById('admin-chat-empty').style.display = 'none';
             document.getElementById('admin-chat-active').style.display = 'flex';
             
+            // Add responsive class
+            document.getElementById('partner-support-layout').classList.add('chat-active');
+            
             try {
                 const token = localStorage.getItem('authToken');
                 const res = await fetch(`${PARTNER_API_BASE}/api/partner-messages/admin/${partnerId}`, {
@@ -2480,28 +2511,13 @@
                 messages.forEach(msg => {
                     const isAdmin = msg.sender_type === 'admin';
                     const div = document.createElement('div');
-                    div.style.maxWidth = '80%';
-                    div.style.padding = '15px';
-                    div.style.borderRadius = '20px';
-                    div.style.marginBottom = '10px';
+                    div.className = `chat-bubble ${isAdmin ? 'bubble-admin' : 'bubble-partner'}`;
                     
-                    if (isAdmin) {
-                        div.style.alignSelf = 'flex-end';
-                        div.style.background = 'linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.1) 100%)';
-                        div.style.border = '1px solid var(--gold-text)';
-                        div.style.borderBottomRightRadius = '5px';
-                    } else {
-                        div.style.alignSelf = 'flex-start';
-                        div.style.background = 'rgba(255, 255, 255, 0.05)';
-                        div.style.border = '1px solid rgba(255, 255, 255, 0.1)';
-                        div.style.borderBottomLeftRadius = '5px';
-                    }
-
                     div.innerHTML = `
-                        <div style="font-size: 0.95rem; line-height: 1.5;">${msg.message_text}</div>
-                        <div style="font-size: 0.7rem; opacity: 0.5; margin-top: 8px; display: flex; justify-content: space-between;">
-                            <span style="font-weight: 700; color: var(--gold-text);">${isAdmin ? 'You' : msg.partnerName}</span>
-                            <span>${new Date(msg.createdAt).toLocaleString()}</span>
+                        <div class="bubble-content">${msg.message_text}</div>
+                        <div class="bubble-meta">
+                            <span class="bubble-time">${new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            ${isAdmin ? '<i class="fas fa-check-double bubble-status"></i>' : ''}
                         </div>
                     `;
                     container.appendChild(div);
@@ -2514,6 +2530,10 @@
                 console.error(error);
                 showToast('Failed to load chat history', 'error');
             }
+        };
+
+        window.closeAdminChat = function() {
+            document.getElementById('partner-support-layout').classList.remove('chat-active');
         };
 
         document.getElementById('admin-reply-form').onsubmit = async (e) => {

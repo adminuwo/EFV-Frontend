@@ -300,8 +300,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     }
 
+    function checkIsComingSoon(product) {
+        const rawType = (product.type || 'book').toLowerCase();
+        const isVol2 = product.volume === '2' || product.volume === 2 || (product._id || product.id || '').toLowerCase().includes('v2');
+        const isEnglish = (product.language || '').toLowerCase().includes('english') || (product._id || '').toLowerCase().includes('_en');
+
+        let isSoon = isVol2;
+        if (rawType === 'audiobook') {
+            isSoon = isEnglish || isVol2;
+        } else if (rawType === 'ebook' && !isVol2) {
+            isSoon = false;
+        }
+        return isSoon;
+    }
+
     function renderProducts(products, clearExisting = false) {
         if (!productGrid) return;
+
+        // Sort: Available (isComingSoon=false) first, then Coming Soon (isComingSoon=true)
+        const sortedProducts = [...products].sort((a, b) => {
+            const soonA = checkIsComingSoon(a);
+            const soonB = checkIsComingSoon(b);
+            if (soonA === soonB) return 0;
+            return soonA ? 1 : -1;
+        });
 
         if (clearExisting) {
             productGrid.innerHTML = ''; // Full refresh for backend updates
@@ -314,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const existingIds = new Set(Array.from(productGrid.children).map(c => c.getAttribute('data-id')));
 
-        products.forEach(product => {
+        sortedProducts.forEach(product => {
             const id = product._id || product.id;
             // If not clearing, only add new ones. If clearing, we add everything back.
             if (!existingIds.has(id) || clearExisting) {
@@ -367,20 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const isDigital = rawType === 'audiobook' || rawType === 'ebook';
-        const isVol2 = product.volume === '2' || product.volume === 2 || (product._id || product.id || '').toLowerCase().includes('v2');
-        const isEnglish = (product.language || '').toLowerCase().includes('english') || (product._id || '').toLowerCase().includes('_en');
-
-        // Only Vol 2 products are "Coming Soon" by default. 
-        let isComingSoon = isVol2;
-
-        // Specific rule for Audiobooks: English stays "Coming Soon", Hindi goes LIVE.
-        if (rawType === 'audiobook') {
-            isComingSoon = isEnglish || isVol2;
-        } else if (rawType === 'ebook' && !isVol2) {
-            // E-Books for Vol 1 are all LIVE
-            isComingSoon = false;
-        }
+        const isComingSoon = checkIsComingSoon(product);
         const buttonText = isComingSoon ? 'Coming Soon' : 'Add to Cart';
 
         const langBadge = product.language
@@ -414,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fas fa-info-circle" style="margin-right: 5px;"></i> INFO
                 </button>
                 <button class="btn btn-gold buy-now" ${isComingSoon ? 'disabled style="background: rgba(255, 211, 105, 0.1); color: rgba(255, 211, 105, 0.5); opacity: 0.7; padding: 6px 12px; font-size: 0.65rem;"' : 'style="padding: 6px 12px; font-size: 0.65rem; min-width: 95px;"'}>
-                    <i class="fas ${isComingSoon ? 'fa-clock' : 'fa-bolt'}" style="margin-right: 5px;"></i> ${isComingSoon ? 'SOON' : 'BUY'}
+                    <i class="fas ${isComingSoon ? 'fa-clock' : 'fa-bolt'}" style="margin-right: 5px;"></i> ${isComingSoon ? 'SOON' : 'BUY NOW'}
                 </button>
             </div>
         `;
@@ -432,7 +441,30 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (infoBtn) infoBtn.addEventListener('click', triggerModal);
-        if (buyBtn && !isComingSoon) buyBtn.addEventListener('click', triggerModal);
+        if (buyBtn && !isComingSoon) {
+            buyBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (typeof window.showTermsAndConditions === 'function' && typeof window.checkoutOrder === 'function') {
+                    window.showTermsAndConditions(() => {
+                        const item = {
+                            id: product._id || product.id,
+                            name: product.title,
+                            price: product.price,
+                            quantity: 1,
+                            language: product.language || '',
+                            subtitle: product.subtitle || '',
+                            type: (product.type || 'PHYSICAL').toUpperCase()
+                        };
+                        window.checkoutOrder([item]);
+                    });
+                } else {
+                    // Fallback to modal if functions are missing
+                    triggerModal(e);
+                }
+            });
+        }
 
         return card;
     }

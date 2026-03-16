@@ -295,7 +295,7 @@
     }
 
     /* Reset Flex Layouts - Safer selector */
-    section [style*="display: flex"]:not(.nav-actions):not(.footer-logo):not(.logo):not(.social-icons):not(.product-actions) {
+    section [style*="display: flex"]:not(.nav-actions):not(.footer-logo):not(.logo):not(.social-icons):not(.product-actions):not(.marketplace-filters) {
         flex-direction: column !important;
         align-items: center !important;
         text-align: center !important;
@@ -563,13 +563,20 @@
     }
 
     .product-card,
-    .book-card,
+    .book-card {
+        max-width: 280px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding: 12px !important;
+        height: auto !important;
+    }
+
     .testimonial-card {
         max-width: 280px !important;
         margin-left: auto !important;
         margin-right: auto !important;
         padding: 12px !important;
-        min-height: auto !important;
+        height: 160px !important; /* Shorter height */
     }
 
     .product-card .book-cover {
@@ -582,6 +589,35 @@
         margin-bottom: 8px !important;
         min-height: unset !important;
         line-height: 1.2 !important;
+    }
+
+    .horizontal-testimonial-track .testimonial-card {
+        height: 160px !important; /* Shorter height */
+        flex: 0 0 240px !important;
+        padding: 12px !important;
+    }
+
+    .horizontal-testimonial-track {
+        animation-duration: 18s !important; /* Even faster speed */
+        gap: 12px !important;
+    }
+
+    .testimonial-card p {
+        overflow-y: auto !important;
+        padding-right: 8px !important;
+        margin-bottom: 8px !important;
+        font-size: 0.8rem !important;
+        line-height: 1.3 !important;
+    }
+
+    /* Make scrollbar more prominent on mobile */
+    .testimonial-card p::-webkit-scrollbar {
+        width: 6px !important;
+        display: block !important;
+    }
+    .testimonial-card p::-webkit-scrollbar-thumb {
+        background: var(--gold-energy) !important;
+        border: 1px solid rgba(0,0,0,0.2) !important;
     }
 
     .product-card .price {
@@ -1015,5 +1051,111 @@
 
     .activity-log-table {
         margin-top: 15px !important;
+    }
+}
+
+/* Partner Support Layout Specific Overrides */
+@media (max-width: 768px) {
+    .partner-support-layout {
+        display: block !important;
+        position: relative !important;
+        height: 85vh !important;
+        min-height: 500px !important;
+    }
+
+    .chat-app-header {
+        padding: 10px 15px !important;
+    }
+
+    .chat-text-info {
+        text-align: left !important;
+    }
+
+    .partner-support-layout .glass-panel.partner-msg-panel {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        height: 100% !important;
+    }
+
+    /* Hide list when chat is active */
+    .partner-support-layout.chat-active > div:first-child {
+        display: none !important;
+    }
+
+    /* Full screen chat box when active */
+    .partner-support-layout #admin-chat-box {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 100 !important;
+        display: none !important;
+    }
+
+    .partner-support-layout.chat-active #admin-chat-box {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* FORCE FULL WIDTH AND SIDE ALIGNMENT */
+    body.dashboard-body .partner-support-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body.dashboard-body .partner-support-layout .partner-msg-panel {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+    }
+
+    body.dashboard-body .chat-messages-container {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        padding: 20px 15px !important;
+        width: 100% !important;
+        background: #0b141a !important;
+        text-align: left !important; /* Kill global centering */
+    }
+
+    body.dashboard-body .chat-bubble {
+        display: block !important;
+        width: fit-content !important;
+        max-width: 85% !important;
+        margin-top: 5px !important;
+        margin-bottom: 5px !important;
+        text-align: left !important;
+    }
+
+    body.dashboard-body .bubble-admin {
+        align-self: flex-end !important;
+        margin-left: auto !important;
+        margin-right: 0 !important;
+    }
+
+    body.dashboard-body .bubble-partner {
+        align-self: flex-start !important;
+        margin-left: 0 !important;
+        margin-right: auto !important;
+    }
+
+    /* Smaller tails for mobile */
+    .bubble-admin::before {
+        right: -5px !important;
+        border-width: 3px 0 3px 5px !important;
+    }
+
+    .bubble-partner::before {
+        left: -5px !important;
+        border-width: 3px 5px 3px 0 !important;
     }
 }

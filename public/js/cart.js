@@ -596,9 +596,22 @@ document.addEventListener('DOMContentLoaded', () => {
             addBtn.setAttribute('data-target-id', productId);
             buyBtn.setAttribute('data-target-id', productId);
 
-            const targetId = (productId || '').toLowerCase();
-            // Volume 1 is LIVE. Only Vol 2 is "Coming Soon".
-            let comingSoon = targetId.includes('v2') && !targetId.includes('v1');
+            // Consolidate Coming Soon Logic (Consistent with marketplace-dynamic.js)
+            const type = (data.type || card.getAttribute('data-type') || 'hardcover').toLowerCase();
+            const lang = (data.language || card.getAttribute('data-language') || '').toLowerCase();
+            const volumeStr = (data.volume || card.getAttribute('data-volume') || '').toString();
+            const productRefId = (productId || '').toLowerCase();
+            
+            const isVol2 = volumeStr === '2' || productRefId.includes('v2');
+            const isEnglish = lang.includes('english') || productRefId.includes('_en');
+            
+            let comingSoon = isVol2;
+            if (type === 'audiobook') {
+                comingSoon = isEnglish || isVol2;
+            } else if (type === 'ebook' && !isVol2) {
+                comingSoon = false;
+            }
+
             if (comingSoon) {
                 addBtn.innerHTML = '<i class="fas fa-clock"></i> COMING SOON';
                 addBtn.disabled = true;
@@ -756,7 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Terms & Conditions Logic ---
-    function showTermsAndConditions(onAccept) {
+    window.showTermsAndConditions = function showTermsAndConditions(onAccept) {
         let tcOverlay = document.getElementById('tc-modal');
         if (!tcOverlay) {
             const tcHTML = `
@@ -791,7 +804,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p>These terms are governed by the laws of India.</p>
 
                         <strong>8. Contact Information</strong>
-                        <p>For support or queries:<br>Email: admin@uwo24.com<br>Company Name: Unified Web Options and Services Private Limited<br>Project: EFV- Energy Frequency Vibration</p>
+                        <p>For support or queries:<br>
+                        Email: ${ (typeof localStorage !== 'undefined' && JSON.parse(localStorage.getItem('efv_store_config'))?.email) || 'admin@uwo24.com' }<br>
+                        Company Name: Unified Web Options and Services Private Limited<br>
+                        Project: EFV- Energy Frequency Vibration</p>
                     </div>
                     <div class="tc-footer">
                         <label class="tc-checkbox-container">
@@ -1881,9 +1897,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Event Listeners
-    async function checkoutOrder(itemsOverride = null) {
+    window.checkoutOrder = async function checkoutOrder(itemsOverride = null) {
         const user = JSON.parse(localStorage.getItem('efv_user'));
         if (!user) {
+            localStorage.setItem('checkoutPending', 'true');
             alert('Please login to proceed to checkout');
             openAuthModal('login');
             return;
@@ -1897,8 +1914,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('directCheckout');
         }
 
-        // Redirect to professional checkout flow
-        window.location.href = 'checkout.html';
+        // Redirect to profile page for address selection first
+        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html?checkout=true';
     }
 
     // Helper to simulate token check or basic validation
@@ -2159,10 +2176,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Redirect to dashboard based on role
                 setTimeout(() => {
                     const role = data.role || 'user';
+                    const checkoutPending = localStorage.getItem('checkoutPending') === 'true';
+                    localStorage.removeItem('checkoutPending');
+
                     if (role === 'admin' || data.email.toLowerCase() === 'admin@uwo24.com') {
                         window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/admin-dashboard.html';
                     } else {
-                        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
+                        window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html' + (checkoutPending ? '?checkout=true' : '');
                     }
                 }, 1000);
 
@@ -2256,7 +2276,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Auto-login flow: Redirect to profile for dashboard access
                 setTimeout(() => {
-                    window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html';
+                    const checkoutPending = localStorage.getItem('checkoutPending') === 'true';
+                    localStorage.removeItem('checkoutPending');
+                    window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/profile.html' + (checkoutPending ? '?checkout=true' : '');
                 }, 1500);
 
             } catch (error) {

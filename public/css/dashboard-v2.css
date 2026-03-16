@@ -75,7 +75,7 @@ html, body, .sidebar, .main-content {
 .user-profile-sm .user-info h4 {
     margin: 0;
     font-size: 0.95rem;
-    color: white;
+    color: var(--gold-text);
 }
 
 .user-profile-sm .membership-badge {

@@ -4,6 +4,7 @@ console.log("📂 profile.js: Loading Version 1.2 (Harden)...");
 const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : 'http://localhost:5000';
 
 // User Data Isolation Helpers
+// User Data Isolation Helpers
 function getUserKey(baseKey) {
     const user = JSON.parse(localStorage.getItem('efv_user'));
     if (!user || !user.email) return baseKey;
@@ -11,6 +12,104 @@ function getUserKey(baseKey) {
     const cleanEmail = user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
     return `${baseKey}_${cleanEmail}`;
 }
+
+// Helper to get user-specific address key
+function getAddressKey() {
+    return getUserKey('efv_user_addresses');
+}
+
+// --- GLOBAL MODAL CONTROLLERS (MOVED FOR RELIABILITY) ---
+window.openAddressModal = function (id = null) {
+    console.log("📍 Calling openAddressModal with ID:", id);
+    const modal = document.getElementById('address-modal');
+    const form = document.getElementById('address-form');
+    const title = document.getElementById('address-modal-title');
+
+    if (!modal) {
+        console.error("❌ Critical: #address-modal NOT found in DOM");
+        return;
+    }
+    if (!form) {
+        console.error("❌ Critical: #address-form NOT found in DOM");
+        return;
+    }
+
+    form.reset();
+    const addrIdEl = document.getElementById('address-id');
+    if (addrIdEl) addrIdEl.value = id || '';
+
+    // Load existing address if editing
+    if (id && id !== null) {
+        title.textContent = 'EDIT ADDRESS';
+        const addresses = JSON.parse(localStorage.getItem(getAddressKey())) || [];
+        const addr = addresses.find(a => (a.id === id || a._id === id));
+
+        if (addr) {
+            if (document.getElementById('addr-name')) document.getElementById('addr-name').value = addr.fullName || '';
+            if (document.getElementById('addr-phone')) document.getElementById('addr-phone').value = addr.phone || '';
+            if (document.getElementById('addr-pincode')) document.getElementById('addr-pincode').value = addr.pincode || '';
+            if (document.getElementById('addr-state')) document.getElementById('addr-state').value = addr.state || '';
+            if (document.getElementById('addr-city')) document.getElementById('addr-city').value = addr.city || '';
+            if (document.getElementById('addr-house')) document.getElementById('addr-house').value = addr.house || '';
+            if (document.getElementById('addr-area')) document.getElementById('addr-area').value = addr.area || '';
+            if (document.getElementById('addr-landmark')) document.getElementById('addr-landmark').value = addr.landmark || '';
+            if (document.getElementById('addr-default')) document.getElementById('addr-default').checked = !!addr.isDefault;
+
+            const typeRadio = document.querySelector(`input[name="addr-type"][value="${addr.type || 'Home'}"]`);
+            if (typeRadio) typeRadio.checked = true;
+        }
+    } else {
+        title.textContent = 'ADD NEW ADDRESS';
+        // Check if this is the first address, make it default
+        const addresses = JSON.parse(localStorage.getItem(getAddressKey())) || [];
+        if (addresses.length === 0) {
+            if (document.getElementById('addr-default')) document.getElementById('addr-default').checked = true;
+        }
+    }
+
+    // Force the modal as a fixed centered overlay overriding all CSS conflicts
+    modal.setAttribute('style', [
+        'display: flex !important',
+        'position: fixed !important',
+        'top: 0 !important',
+        'left: 0 !important',
+        'width: 100vw !important',
+        'height: 100vh !important',
+        'z-index: 2147483647 !important',
+        'justify-content: center !important',
+        'align-items: center !important',
+        'background: rgba(0,0,0,0.92) !important',
+        'backdrop-filter: blur(14px) !important',
+        '-webkit-backdrop-filter: blur(14px) !important',
+        'padding: 20px !important',
+        'box-sizing: border-box !important',
+        'opacity: 1 !important',
+        'pointer-events: auto !important',
+        'visibility: visible !important'
+    ].join('; '));
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    console.log("✅ Address modal should now be visible");
+};
+
+window.closeAddressModal = () => {
+    console.log("📍 Closing address modal...");
+    const modal = document.getElementById('address-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+        modal.removeAttribute('style');
+        modal.style.display = 'none';
+    }
+    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
+};
+
+window.skipAddressStep = () => {
+    window.location.href = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'pages/checkout.html?manual=true';
+};
 
 
 // --- MODAL & GLOBAL FUNCTIONS (TOP LEVEL FOR RELIABILITY) ---
@@ -138,7 +237,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 3. Initialize Dashboard & Filters
-    initializeDashboard(user);
+    initializeDashboard(user).then(() => {
+        // Auto-Open Checkout from Cart
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('checkout') === 'true') {
+            console.log("🛒 Auto-triggering checkout flow...");
+            const directCheckout = JSON.parse(localStorage.getItem('directCheckout'));
+            let items = [];
+            if (directCheckout) {
+                items = Array.isArray(directCheckout) ? directCheckout : [directCheckout];
+            } else {
+                const cartKey = getUserKey('efv_cart');
+                items = JSON.parse(localStorage.getItem(cartKey)) || [];
+            }
+
+            if (items.length > 0) {
+                setTimeout(() => {
+                    initiateDashboardCheckout(items);
+                }, 800);
+            }
+        }
+    });
     initializeNotificationFilters();
 
     // 4. Tab Logic
@@ -1785,7 +1904,7 @@ window.renderCheckoutAddresses = function () {
                 <i class="fas fa-map-marker-alt" style="font-size: 3rem; color: var(--gold-text); margin-bottom: 20px; opacity: 0.5;"></i>
                 <h3 style="margin-bottom: 10px; color: white;">No saved addresses</h3>
                 <p style="opacity:0.6; margin-bottom: 25px; color: #eee;">Please add a delivery address to proceed with your order.</p>
-                <button class="btn btn-gold" onclick="openAddressModal()">Add New Address</button>
+                <button class="btn btn-gold" onclick="window.openAddressModal()">Add New Address</button>
             </div>`;
 
         // Auto-popup for a smoother flow if no addresses exist
@@ -1799,7 +1918,7 @@ window.renderCheckoutAddresses = function () {
     }
 
     list.innerHTML = addresses.map(addr => {
-        const id = addr.id;
+        const id = addr._id || addr.id;
         const isSelected = window.checkoutState.selectedAddressId === id || (addr.isDefault && !window.checkoutState.selectedAddressId);
         if (isSelected && !window.checkoutState.selectedAddressId) window.checkoutState.selectedAddressId = id;
 
@@ -1833,28 +1952,18 @@ window.selectCheckoutAddress = (id) => {
 };
 
 window.continueToSummary = () => {
-    const step1 = document.getElementById('checkout-step-address');
-    const step2 = document.getElementById('checkout-step-summary');
-    const container = document.getElementById('checkout-container-v2');
-    const pricingCol = document.querySelector('.checkout-pricing-col');
-
-    if (step1 && step2) {
-        step1.style.display = 'none';
-        step1.classList.remove('active');
-
-        step2.style.opacity = '1';
-        step2.style.pointerEvents = 'all';
-        step2.style.display = 'block';
-        step2.classList.add('active');
-
-        if (container) {
-            container.classList.remove('step-1');
-            container.classList.add('step-2');
-        }
-        if (pricingCol) pricingCol.style.display = 'block';
-
-        renderCheckoutSummaryItems();
+    const addressId = window.checkoutState ? window.checkoutState.selectedAddressId : null;
+    if (!addressId) {
+        showToast("Please select a delivery address", "error");
+        return;
     }
+    
+    // Redirect to full checkout page with the selected address pre-filled
+    const basePath = (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '');
+    const isInsidePages = window.location.pathname.includes('/pages/');
+    const redirectUrl = (isInsidePages ? '' : 'pages/') + `checkout.html?addressId=${addressId}`;
+    
+    window.location.href = redirectUrl;
 };
 
 window.backToAddress = () => {
@@ -1953,8 +2062,18 @@ window.proceedToPayment = async function () {
 
     try {
         const token = localStorage.getItem('authToken');
-        // Create Order on Backend (Cashfree)
-        const cfRes = await fetch(`${API_BASE}/api/orders/cashfree`, {
+        
+        // 1. Get Razorpay Config
+        const configRes = await fetch(`${API_BASE}/api/orders/config`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const config = await configRes.json();
+        const rzpKey = config.razorpayKeyId;
+
+        if (!rzpKey) throw new Error("Razorpay configuration missing");
+
+        // 2. Create Razorpay Order
+        const rzpRes = await fetch(`${API_BASE}/api/orders/razorpay`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1967,24 +2086,82 @@ window.proceedToPayment = async function () {
                 customerPhone: user.phone || '0000000000'
             })
         });
-        const cfOrderData = await cfRes.json();
-        if (!cfRes.ok) {
-            console.error('Cashfree API Error Details:', cfOrderData.error);
-            throw new Error(cfOrderData.message || 'Cashfree init failed');
-        }
+        
+        const rzpOrderData = await rzpRes.json();
+        if (!rzpRes.ok) throw new Error(rzpOrderData.message || 'Razorpay initialization failed');
 
-        const cashfree = Cashfree({
-            mode: "sandbox" // Change to "production" in live
-        });
+        // 3. Open Razorpay Checkout
+        const selectedAddr = user.savedAddresses.find(a => (a._id || a.id) === addressId);
+        
+        const options = {
+            key: rzpKey,
+            amount: rzpOrderData.amount, // paise
+            currency: rzpOrderData.currency,
+            name: "EFV™",
+            description: "Premium Order Fulfillment",
+            image: "../assets/images/AISA.svg",
+            order_id: rzpOrderData.rzpOrderId,
+            handler: async function (response) {
+                try {
+                    showToast("Verifying payment...", "info");
+                    
+                    // 4. Verify Payment on Backend
+                    const verifyRes = await fetch(`${API_BASE}/api/orders/verify-razorpay`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            items: items,
+                            customer: {
+                                name: selectedAddr.fullName,
+                                email: user.email,
+                                phone: selectedAddr.phone,
+                                address: selectedAddr.house + ", " + selectedAddr.area,
+                                city: selectedAddr.city,
+                                state: selectedAddr.state,
+                                pincode: selectedAddr.pincode
+                            }
+                        })
+                    });
 
-        let checkoutOptions = {
-            paymentSessionId: cfOrderData.payment_session_id,
-            redirectTarget: "_self",
+                    const verifyResult = await verifyRes.json();
+                    if (verifyRes.ok) {
+                        showToast("Payment Successful! Order placed.", "success");
+                        if (typeof closeCheckout === 'function') closeCheckout();
+                        
+                        // Refresh UI
+                        setTimeout(() => {
+                            window.location.href = 'profile.html?tab=orders';
+                        }, 1500);
+                    } else {
+                        throw new Error(verifyResult.message || "Payment verification failed");
+                    }
+                } catch (err) {
+                    showToast(err.message, "error");
+                }
+            },
+            prefill: {
+                name: user.name,
+                email: user.email,
+                contact: user.phone || ''
+            },
+            theme: {
+                color: "#D4AF37"
+            },
+            modal: {
+                ondismiss: function() {
+                    showToast("Payment dismissed", "warning");
+                }
+            }
         };
 
-        // Note: For real environment, we'd need to handle verification after return.
-        // For now, let's trigger the checkout.
-        cashfree.checkout(checkoutOptions);
+        const rzp = new Razorpay(options);
+        rzp.open();
 
     } catch (e) {
         showToast('Checkout Failed: ' + e.message, 'error');
@@ -4167,86 +4344,9 @@ window.refreshTrackingData = async function (awb) {
 // Address Management
 // --- ADDRESS MANAGEMENT V2 (PROPER LOCAL STORAGE) ---
 
-// Helper to get user-specific address key
-function getAddressKey() {
-    return getUserKey('efv_user_addresses');
-}
+// Address key helper moved to top
 
-window.openAddressModal = function (id = null) {
-    const modal = document.getElementById('address-modal');
-    const form = document.getElementById('address-form');
-    const title = document.getElementById('address-modal-title');
-
-    if (!modal || !form) return;
-
-    form.reset();
-    const addrIdEl = document.getElementById('address-id');
-    if (addrIdEl) addrIdEl.value = id || '';
-
-    // Load existing address if editing
-    if (id) {
-        title.textContent = 'EDIT ADDRESS';
-        const addresses = JSON.parse(localStorage.getItem(getAddressKey())) || [];
-        const addr = addresses.find(a => a.id === id);
-
-        if (addr) {
-            document.getElementById('addr-name').value = addr.fullName || '';
-            document.getElementById('addr-phone').value = addr.phone || '';
-            document.getElementById('addr-pincode').value = addr.pincode || '';
-            document.getElementById('addr-state').value = addr.state || '';
-            document.getElementById('addr-city').value = addr.city || '';
-            document.getElementById('addr-house').value = addr.house || '';
-            document.getElementById('addr-area').value = addr.area || '';
-            document.getElementById('addr-landmark').value = addr.landmark || '';
-            document.getElementById('addr-default').checked = !!addr.isDefault;
-
-            const typeRadio = document.querySelector(`input[name="addr-type"][value="${addr.type || 'Home'}"]`);
-            if (typeRadio) typeRadio.checked = true;
-        }
-    } else {
-        title.textContent = 'ADD NEW ADDRESS';
-        // Check if this is the first address, make it default
-        const addresses = JSON.parse(localStorage.getItem(getAddressKey())) || [];
-        if (addresses.length === 0) {
-            document.getElementById('addr-default').checked = true;
-        }
-    }
-
-    // Lock background scroll to prevent page from scrolling behind modal
-    document.body.style.overflow = 'hidden';
-    document.body.classList.add('modal-open');
-
-    // Force the modal as a fixed centered overlay overriding all CSS conflicts
-    modal.setAttribute('style', [
-        'display: flex !important',
-        'position: fixed !important',
-        'top: 0 !important',
-        'left: 0 !important',
-        'width: 100vw !important',
-        'height: 100vh !important',
-        'z-index: 999999 !important',
-        'justify-content: center !important',
-        'align-items: center !important',
-        'background: rgba(0,0,0,0.88) !important',
-        'backdrop-filter: blur(14px) !important',
-        '-webkit-backdrop-filter: blur(14px) !important',
-        'padding: 20px !important',
-        'box-sizing: border-box !important',
-        'opacity: 1 !important',
-        'pointer-events: auto !important'
-    ].join('; '));
-    modal.classList.add('active');
-};
-
-window.closeAddressModal = () => {
-    const modal = document.getElementById('address-modal');
-    if (modal) {
-        modal.setAttribute('style', 'display: none !important');
-        modal.classList.remove('active');
-    }
-    document.body.style.overflow = '';
-    document.body.classList.remove('modal-open');
-};
+// End of Address Modal Controllers (New centralized versions at top)
 
 window.deleteAddress = function (id) {
     if (!confirm("Are you sure you want to delete this address?")) return;
@@ -4281,8 +4381,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const key = getAddressKey();
             let addresses = JSON.parse(localStorage.getItem(key)) || [];
 
+            const typeInput = document.querySelector('input[name="addr-type"]:checked');
             const data = {
-                id: id || Date.now().toString(),
+                id: id || 'addr_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
                 fullName: document.getElementById('addr-name').value,
                 phone: document.getElementById('addr-phone').value,
                 pincode: document.getElementById('addr-pincode').value,
@@ -4291,7 +4392,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 house: document.getElementById('addr-house').value,
                 area: document.getElementById('addr-area').value,
                 landmark: document.getElementById('addr-landmark').value,
-                type: document.querySelector('input[name="addr-type"]:checked').value,
+                type: typeInput ? typeInput.value : 'Home',
                 isDefault: document.getElementById('addr-default').checked,
                 createdAt: new Date().toISOString()
             };
@@ -4305,8 +4406,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (id) {
                 // Update existing
-                const index = addresses.findIndex(a => a.id === id);
-                if (index !== -1) addresses[index] = data;
+                const index = addresses.findIndex(a => (a.id === id || a._id === id));
+                if (index !== -1) addresses[index] = { ...addresses[index], ...data };
                 else addresses.push(data);
             } else {
                 // Add new
@@ -4328,14 +4429,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).catch(e => console.log("Sync error:", e));
             }
 
-            closeAddressModal();
+            if (typeof window.closeAddressModal === 'function') {
+                window.closeAddressModal();
+            } else {
+                closeAddressModal();
+            }
+
             renderSavedAddresses();
             showToast(id ? "Address updated" : "Address saved", "success");
 
             // Handle Checkout Integration if open
             const checkoutOverlay = document.getElementById('checkout-overlay');
-            if (checkoutOverlay && checkoutOverlay.style.display === 'flex') {
+            const isCheckoutOpen = checkoutOverlay && (checkoutOverlay.style.display === 'flex' || checkoutOverlay.classList.contains('active'));
+            
+            if (isCheckoutOpen) {
+                console.log("🛒 Checkout overlay detected, refreshing addresses...");
                 if (typeof window.renderCheckoutAddresses === 'function') {
+                    // If adding new, try to select it
+                    if (!id && data.id) {
+                        window.checkoutState.selectedAddressId = data.id;
+                    }
                     window.renderCheckoutAddresses();
                 }
             }
@@ -4385,10 +4498,10 @@ window.renderSavedAddresses = function () {
                 </p>
             </div>
             <div class="address-actions" style="margin-top: 20px; display: flex; gap: 12px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;">
-                <button class="btn-outline small" style="flex: 1; padding: 8px !important; font-size: 0.8rem;" onclick="openAddressModal('${addr.id}')">
+                <button class="btn-outline small" style="flex: 1; padding: 8px !important; font-size: 0.8rem;" onclick="openAddressModal('${addr._id || addr.id}')">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="btn-danger small" style="flex: 0 0 40px; border-radius: 8px; background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.2); color: #ff5252;" onclick="deleteAddress('${addr.id}')">
+                <button class="btn-danger small" style="flex: 0 0 40px; border-radius: 8px; background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.2); color: #ff5252;" onclick="deleteAddress('${addr._id || addr.id}')">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>

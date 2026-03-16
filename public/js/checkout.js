@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // AUTO-APPLY COUPON ONLY IF IN URL (Marketing Links)
     const urlParams = new URLSearchParams(window.location.search);
     const urlCoupon = urlParams.get('coupon') || urlParams.get('code');
+    const addressId = urlParams.get('addressId');
+    const isManual = urlParams.get('manual') === 'true';
+
     if (urlCoupon) {
         document.getElementById('coupon-input').value = urlCoupon;
         applyCoupon(urlCoupon, checkoutSubtotal);
@@ -74,6 +77,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupPaymentModeHandlers(checkoutItems);
     toggleAddressFields(checkoutItems);
+
+    // PRE-FILL ADDRESS FROM PROFILE SELECTION OR DEFAULT
+    try {
+        if (!isManual) {
+            const cleanEmail = user.email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            const addrKey = `efv_user_addresses_${cleanEmail}`;
+            const addresses = JSON.parse(localStorage.getItem(addrKey)) || [];
+            
+            let addr = null;
+            if (addressId) {
+                addr = addresses.find(a => (a.id === addressId || a._id === addressId));
+            }
+            
+            // If no specific address selected, or ID not found, try to find default
+            if (!addr) {
+                addr = addresses.find(a => a.isDefault === true) || addresses[0];
+            }
+            
+            if (addr) {
+            console.log("📍 Pre-filling address:", addr.isDefault ? "Default" : "First Available", addr);
+            if (document.getElementById('ship-name')) document.getElementById('ship-name').value = addr.fullName || '';
+            if (document.getElementById('ship-phone')) document.getElementById('ship-phone').value = addr.phone || '';
+            if (document.getElementById('ship-address')) document.getElementById('ship-address').value = addr.house || '';
+            if (document.getElementById('ship-area')) document.getElementById('ship-area').value = addr.area || '';
+            if (document.getElementById('ship-city')) document.getElementById('ship-city').value = addr.city || '';
+            if (document.getElementById('ship-state')) document.getElementById('ship-state').value = addr.state || '';
+            
+            const pinEl = document.getElementById('ship-pincode');
+            if (pinEl) {
+                pinEl.value = addr.pincode || '';
+                // Trigger serviceability check and shipping calc
+                pinEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            
+            if (document.getElementById('ship-country')) document.getElementById('ship-country').value = addr.country || 'India';
+            
+            // Final re-render to be safe
+            renderSummary(checkoutItems);
+        }
+        }
+    } catch (e) {
+        console.error("📍 Error pre-filling address:", e);
+    }
 });
 
 function toggleAddressFields(items) {
@@ -338,13 +384,15 @@ function setupPincodeCheck(items) {
             isServiceable = false;
 
             try {
+                const token = localStorage.getItem('authToken');
                 const response = await fetch(`${API_BASE}/api/nimbus/check-delivery`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        pickup_pincode: "482001", // Or your warehouse pincode
+                        pickup_pincode: "482008", // Main Warehouse
                         delivery_pincode: pincode,
                         weight: totalWeight,
                         order_amount: totalAmount
@@ -359,14 +407,21 @@ function setupPincodeCheck(items) {
                     isServiceable = true;
                     placeOrderBtn.disabled = false;
                 } else {
+                    console.warn("Shipping Serviceability Result:", result);
                     statusDiv.className = 'serviceability-info error';
-                    statusText.textContent = result.message || 'Sorry, shipping not available for this pincode.';
+                    // Show a cleaner message instead of raw API error if it's "Missing or invalid Token"
+                    if (result.message && (result.message.includes('Token') || result.message.includes('token'))) {
+                        statusText.textContent = 'Shipping server is re-authenticating. Please try again in 5 seconds.';
+                        // Proactive: backend already knows if it's using the new service I just added
+                    } else {
+                        statusText.textContent = result.message || 'Sorry, shipping not available for this pincode.';
+                    }
                     isServiceable = false;
                     placeOrderBtn.disabled = true;
                 }
             } catch (error) {
                 console.error('Serviceability check failed:', error);
-                statusDiv.className = 'serviceability-info success'; // Fallback to allow order if API fails
+                statusDiv.className = 'serviceability-info success'; // Fallback
                 statusText.textContent = 'Network error. We will verify delivery manually.';
                 isServiceable = true;
                 placeOrderBtn.disabled = false;

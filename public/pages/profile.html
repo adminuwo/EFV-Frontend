@@ -398,7 +398,7 @@
                             <div
                                 style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                                 <h3>Addresses</h3>
-                                <button class="btn btn-gold small" onclick="openAddressModal()">+ Add New</button>
+                                <button class="btn btn-gold small" onclick="window.openAddressModal()">+ Add New</button>
                             </div>
                             <div id="saved-addresses-grid-v2"></div>
                         </div>
@@ -513,39 +513,6 @@
         </div>
     </div>
 
-    <!-- Addresses Modal -->
-    <div id="address-modal" class="resume-modal-overlay" style="display: none;">
-        <div class="resume-modal glass-panel">
-            <h2 id="address-modal-title">ADD NEW ADDRESS</h2>
-            <form id="address-form">
-                <input type="hidden" id="address-id">
-                <div class="modal-form-row">
-                    <input type="text" id="addr-name" placeholder="Full Name" required class="glass-input">
-                    <input type="tel" id="addr-phone" placeholder="Mobile Number" required class="glass-input" pattern="[0-9]{10}">
-                </div>
-                <div class="modal-form-row three-col">
-                    <input type="text" id="addr-pincode" placeholder="Pincode" required class="glass-input" pattern="[0-9]{6}">
-                    <input type="text" id="addr-city" placeholder="City" required class="glass-input">
-                    <input type="text" id="addr-state" placeholder="State" required class="glass-input">
-                </div>
-                <input type="text" id="addr-house" placeholder="House No / Building Name" required class="glass-input">
-                <input type="text" id="addr-area" placeholder="Area / Street / Locality" required class="glass-input">
-                <input type="text" id="addr-landmark" placeholder="Landmark (Optional)" class="glass-input">
-                <div class="address-type-group">
-                    <label><input type="radio" name="addr-type" value="Home" checked> Home</label>
-                    <label><input type="radio" name="addr-type" value="Work"> Work</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="addr-default">
-                    <label for="addr-default">Set as default address</label>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit" class="btn btn-gold">Save Address</button>
-                    <button type="button" onclick="closeAddressModal()" class="btn btn-outline">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- CHECKOUT OVERLAY -->
     <div id="checkout-overlay" class="reader-overlay" style="display: none; z-index: 100000;">
@@ -559,7 +526,10 @@
                     <div id="checkout-step-address" class="checkout-step-card glass-panel active" style="padding: 20px; margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
                             <h3 style="margin: 0;"><span class="step-num">1</span> Select Delivery Address</h3>
-                            <button class="btn btn-gold small" onclick="openAddressModal()"><i class="fas fa-plus"></i> Add New</button>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-outline small" onclick="window.skipAddressStep()"><i class="fas fa-edit"></i> Fill Manually</button>
+                                <button class="btn btn-gold small" onclick="window.openAddressModal()"><i class="fas fa-plus"></i> Add New</button>
+                            </div>
                         </div>
                         <div id="checkout-address-list" class="checkout-address-grid"></div>
                         <div style="margin-top: 30px; text-align: right;">
@@ -602,6 +572,49 @@
         </div>
     </div>
 
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="../js/api-config.js"></script>
+    <script src="../js/profile.js"></script>
+    <script src="../js/security.js"></script>
+    <script src="../js/i18n.js"></script>
+    <!-- Addresses Modal -->
+    <div id="address-modal" class="resume-modal-overlay" style="display: none;">
+        <div class="resume-modal glass-panel">
+            <h2 id="address-modal-title">ADD NEW ADDRESS</h2>
+            <form id="address-form">
+                <input type="hidden" id="address-id">
+                <div class="modal-form-row">
+                    <input type="text" id="addr-name" placeholder="Full Name" required class="glass-input">
+                    <input type="tel" id="addr-phone" placeholder="Mobile Number" required class="glass-input" pattern="[0-9]{10}">
+                </div>
+                <div class="modal-form-row three-col">
+                    <input type="text" id="addr-pincode" placeholder="Pincode" required class="glass-input" pattern="[0-9]{6}">
+                    <input type="text" id="addr-city" placeholder="City" required class="glass-input">
+                    <input type="text" id="addr-state" placeholder="State" required class="glass-input">
+                </div>
+                <input type="text" id="addr-house" placeholder="House No / Building Name" required class="glass-input">
+                <input type="text" id="addr-area" placeholder="Area / Street / Locality" required class="glass-input">
+                <input type="text" id="addr-landmark" placeholder="Landmark (Optional)" class="glass-input">
+                <div class="address-type-group">
+                    <label><input type="radio" name="addr-type" value="Home" checked> Home</label>
+                    <label><input type="radio" name="addr-type" value="Work"> Work</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="addr-default">
+                    <label for="addr-default">Set as default address</label>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-gold">Save Address</button>
+                    <button type="button" onclick="closeAddressModal()" class="btn btn-outline">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- RETURN MODAL -->
     <div id="return-modal" class="resume-modal-overlay" style="display: none;">
         <div class="resume-modal glass-panel" style="max-width: 500px;">
@@ -629,14 +642,6 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <script src="../js/api-config.js"></script>
-    <script src="../js/profile.js"></script>
-    <script src="../js/security.js"></script>
-    <script src="../js/i18n.js"></script>
 </body>
 
 </html>

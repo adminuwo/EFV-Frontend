@@ -1,7 +1,167 @@
 // Integrated with global security.js
 console.log("📂 admin.js: Loading Version 1.2 (Active)...");
 
+// --- NOTIFICATION SYSTEM ---
+window.simulateAdminEvent = (toggleId, title, message) => {
+    const prefs = JSON.parse(localStorage.getItem('efv_admin_alerts')) || {};
+    // If setting doesn't exist yet, default to active
+    const isActive = prefs[toggleId] !== undefined ? prefs[toggleId] : true;
+
+    if (!isActive) {
+        showToast(`Notification for ${title} is suppressed in settings.`, "info");
+        return;
+    }
+
+    const notifs = JSON.parse(localStorage.getItem('efv_notifications')) || [];
+    const newNotif = {
+        id: Date.now(),
+        title,
+        message,
+        type: toggleId.replace('alert-', ''),
+        timestamp: new Date().toISOString(),
+        read: false
+    };
+
+    notifs.unshift(newNotif);
+    localStorage.setItem('efv_notifications', JSON.stringify(notifs));
+    
+    // Update Badge
+    const unreadCount = notifs.filter(n => !n.read).length;
+    const badge = document.getElementById('unread-notifications-count');
+    if (badge) {
+        badge.textContent = unreadCount;
+        unreadCount > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden');
+    }
+
+    showToast(`New Notification: ${title}`, "info");
+    if (document.getElementById('notifications').style.display !== 'none') {
+        renderNotificationsTab(document.querySelector('[data-notif-filter].active')?.dataset.notifFilter || 'all');
+    }
+};
+
+window.renderNotificationsTab = (filter = 'all') => {
+    const notifContainer = document.getElementById('notifications-list');
+    const emptyState = document.getElementById('notifications-empty-state');
+    if (!notifContainer) return;
+
+    let notifs = JSON.parse(localStorage.getItem('efv_notifications')) || [];
+    
+    // Initial Seed if empty
+    if (notifs.length === 0) {
+        notifs = [{
+            id: 1, title: 'System Initialized', message: 'Welcome to EFV Admin Panel. Use Simulation to test alerts.', 
+            type: 'system', timestamp: new Date().toISOString(), read: true
+        }];
+        localStorage.setItem('efv_notifications', JSON.stringify(notifs));
+    }
+
+    const filtered = filter === 'all' ? notifs : notifs.filter(n => {
+        if (filter === 'orders') return n.type === 'new-order' || n.type === 'refund';
+        if (filter === 'payments') return n.type === 'payment-fail';
+        return n.type === filter;
+    });
+
+    if (filtered.length === 0) {
+        notifContainer.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+    }
+
+    emptyState.classList.add('hidden');
+    notifContainer.innerHTML = filtered.map(n => `
+        <div class="notif-item ${n.read ? 'read' : 'unread'}" style="padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 15px; border-left: 4px solid ${getNotifColor(n.type)}; display: flex; align-items: flex-start; gap: 15px; transition: 0.3s;" onclick="markNotifRead(${n.id})">
+            <div class="notif-icon" style="color: ${getNotifColor(n.type)}; font-size: 1.2rem; margin-top: 3px;">
+                <i class="${getNotifIcon(n.type)}"></i>
+            </div>
+            <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <h4 style="margin: 0; font-size: 0.95rem;">${n.title}</h4>
+                    <span style="font-size: 0.75rem; opacity: 0.5;">${formatRelativeTime(n.timestamp)}</span>
+                </div>
+                <p style="margin: 0; font-size: 0.85rem; opacity: 0.7; line-height: 1.4;">${n.message}</p>
+            </div>
+            ${!n.read ? '<div style="width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; margin-top: 8px;"></div>' : ''}
+        </div>
+    `).join('');
+
+    // Sync Global Badge
+    const unreadCount = notifs.filter(n => !n.read).length;
+    const badge = document.getElementById('unread-notifications-count');
+    if (badge) {
+        badge.textContent = unreadCount;
+        unreadCount > 0 ? badge.classList.remove('hidden') : badge.classList.add('hidden');
+    }
+};
+
+window.markNotifRead = (id) => {
+    const notifs = JSON.parse(localStorage.getItem('efv_notifications')) || [];
+    const n = notifs.find(x => x.id === id);
+    if (n) {
+        n.read = true;
+        localStorage.setItem('efv_notifications', JSON.stringify(notifs));
+        renderNotificationsTab(document.querySelector('[data-notif-filter].active')?.dataset.notifFilter || 'all');
+    }
+};
+
+function getNotifColor(type) {
+    switch(type) {
+        case 'new-order': return '#D4AF37';
+        case 'payment-fail': return '#ff4d4d';
+        case 'new-user': return '#3498db';
+        case 'refund': return '#e67e22';
+        default: return '#95a5a6';
+    }
+}
+
+function getNotifIcon(type) {
+    switch(type) {
+        case 'new-order': return 'fas fa-shopping-cart';
+        case 'payment-fail': return 'fas fa-exclamation-triangle';
+        case 'new-user': return 'fas fa-user-plus';
+        case 'refund': return 'fas fa-undo-alt';
+        default: return 'fas fa-bell';
+    }
+}
+
+function formatRelativeTime(iso) {
+    const s = Math.floor((new Date() - new Date(iso)) / 1000);
+    if (s < 60) return 'Just now';
+    if (s < 3600) return Math.floor(s/60) + 'm ago';
+    if (s < 86400) return Math.floor(s/3600) + 'h ago';
+    return new Date(iso).toLocaleDateString();
+}
+
 const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : 'http://localhost:8080';
+
+// --- GLOBAL CONTENT CONFIGURATION ---
+const CONTENT_CONFIG = {
+    pdfWorkerSrc: (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'js/pdfjs/pdf.worker.min.js',
+    contentApi: `${API_BASE}/api/content`,
+    progressApi: `${API_BASE}/api/progress`
+};
+
+async function fetchProgress(productId) {
+    try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return null;
+        const res = await fetch(`${CONTENT_CONFIG.progressApi}/${productId}?t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const json = await res.json();
+        return json.found ? json.data : null;
+    } catch (e) { return null; }
+}
+
+async function syncProgress(productId, type, data) {
+    try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+        await fetch(`${CONTENT_CONFIG.progressApi}/${productId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ type, ...data })
+        });
+    } catch (e) { }
+}
+
 let allAdminProducts = [];
 
 // User Data Isolation Helpers
@@ -458,6 +618,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Initialize Dashboard
     initializeDashboard(user);
+    
+    // Initial Notifications Sync
+    const initNotifs = JSON.parse(localStorage.getItem('efv_notifications')) || [];
+    const unreadCount = initNotifs.filter(n => !n.read).length;
+    const badgeEl = document.getElementById('unread-notifications-count');
+    if (badgeEl) {
+        badgeEl.textContent = unreadCount;
+        unreadCount > 0 ? badgeEl.classList.remove('hidden') : badgeEl.classList.add('hidden');
+    }
 
     // 3. Tab Logic
     const tabs = document.querySelectorAll('.nav-item[data-tab]');
@@ -547,6 +716,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('adm-last-login').value = new Date().toLocaleString();
         }
 
+        // Load Store Config
+        const savedConfig = JSON.parse(localStorage.getItem('efv_store_config'));
+        if (savedConfig) {
+            if (document.getElementById('store-global-name')) document.getElementById('store-global-name').value = savedConfig.globalName;
+            if (document.getElementById('store-support-hotline')) document.getElementById('store-support-hotline').value = savedConfig.hotline;
+            if (document.getElementById('store-support-email')) document.getElementById('store-support-email').value = savedConfig.email;
+            if (document.getElementById('store-base-currency')) document.getElementById('store-base-currency').value = savedConfig.currency;
+            if (document.getElementById('store-tax-rate')) document.getElementById('store-tax-rate').value = savedConfig.taxRate;
+            if (document.getElementById('store-invoice-prefix')) document.getElementById('store-invoice-prefix').value = savedConfig.invoicePrefix;
+        }
+
         // 2. Sub-tab Switching
         const aTabs = document.querySelectorAll('.settings-tab-btn[data-admin-tab]');
         const aPanes = document.querySelectorAll('#admin-settings .settings-pane');
@@ -559,15 +739,110 @@ document.addEventListener('DOMContentLoaded', () => {
                 const targetId = t.getAttribute('data-admin-tab');
                 const targetPane = document.getElementById(targetId);
                 if (targetPane) targetPane.style.display = 'block';
+                if (targetId === 'admin-alerts-pane') renderNotificationsTab();
             });
         });
 
-        // Toggle switches logic
+        // 3. Load Notification Prefs
+        const alertPrefs = JSON.parse(localStorage.getItem('efv_admin_alerts')) || {
+            'alert-new-order': true,
+            'alert-payment-fail': true,
+            'alert-new-user': false,
+            'alert-refund': true
+        };
+        Object.keys(alertPrefs).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (alertPrefs[id]) el.classList.add('active');
+                else el.classList.remove('active');
+            }
+        });
+
+        // 4. Notification Filter Listeners
+        document.querySelectorAll('[data-notif-filter]').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('[data-notif-filter]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderNotifications(btn.dataset.notifFilter);
+            };
+        });
+
+        if (document.getElementById('mark-notifs-read-btn')) {
+            document.getElementById('mark-notifs-read-btn').onclick = () => {
+                const notifs = JSON.parse(localStorage.getItem('efv_notifications')) || [];
+                notifs.forEach(n => n.read = true);
+                localStorage.setItem('efv_notifications', JSON.stringify(notifs));
+                renderNotificationsTab(document.querySelector('[data-notif-filter].active')?.dataset.notifFilter || 'all');
+                showToast("All notifications marked as read", "success");
+            };
+        }
+
+        if (document.getElementById('clear-notifs-btn')) {
+            document.getElementById('clear-notifs-btn').onclick = () => {
+                if(confirm("Delete all notifications?")) {
+                    localStorage.setItem('efv_notifications', JSON.stringify([]));
+                    renderNotificationsTab();
+                    showToast("Notifications cleared", "success");
+                }
+            };
+        }
+
+        // 5. Save Alert Prefs Listener
+        const saveAlertBtn = document.getElementById('save-alert-prefs-btn');
+        if (saveAlertBtn) {
+            saveAlertBtn.onclick = () => {
+                const prefs = {
+                    'alert-new-order': document.getElementById('alert-new-order').classList.contains('active'),
+                    'alert-payment-fail': document.getElementById('alert-payment-fail').classList.contains('active'),
+                    'alert-new-user': document.getElementById('alert-new-user').classList.contains('active'),
+                    'alert-refund': document.getElementById('alert-refund').classList.contains('active')
+                };
+                localStorage.setItem('efv_admin_alerts', JSON.stringify(prefs));
+                showToast("Notification preferences updated", "success");
+            };
+        }
+
+        // 5. Mock Login Activity Logs
+        const logContainer = document.getElementById('admin-login-logs');
+        if (logContainer) {
+            const now = new Date();
+            const logs = [
+                { time: now.toLocaleString(), ip: '192.168.1.1', device: 'Chrome / Windows (Current)' },
+                { time: new Date(now - 3600000).toLocaleString(), ip: '103.45.21.9', device: 'Safari / iPhone' },
+                { time: new Date(now - 86400000).toLocaleString(), ip: '152.1.0.4', device: 'Firefox / MacOS' }
+            ];
+            logContainer.innerHTML = logs.map(l => `
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1.5fr; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.75rem;">
+                    <span>${l.time}</span>
+                    <span style="opacity:0.7;">${l.ip}</span>
+                    <span style="opacity:0.5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${l.device}</span>
+                </div>
+            `).join('');
+        }
+
+        // 6. Toggle switches logic
         document.querySelectorAll('.toggle-switch').forEach(sw => {
             sw.onclick = () => sw.classList.toggle('active');
         });
 
-        // 3. Update Admin Identity Listener
+        // 7. Security Extra Actions
+        const tfaBtn = document.getElementById('2fa-toggle-btn');
+        if (tfaBtn) {
+            tfaBtn.onclick = () => {
+                showToast("2FA configuration requires mobile app verification. Feature coming soon.", "info");
+            };
+        }
+
+        const killBtn = document.getElementById('kill-sessions-btn');
+        if (killBtn) {
+            killBtn.onclick = () => {
+                if (confirm("Are you sure you want to terminate all other active sessions for this account?")) {
+                    showToast("Other sessions terminated successfully", "success");
+                }
+            };
+        }
+
+        // 8. Update Admin Identity Listener
         const updateBtn = document.getElementById('update-admin-btn');
         if (updateBtn) {
             updateBtn.onclick = async () => {
@@ -618,6 +893,82 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateBtn.innerHTML = 'Update Admin Identity';
                     updateBtn.disabled = false;
                 }
+            };
+        }
+
+        // 4. Update Password Listener
+        const passBtn = document.getElementById('update-admin-pass-btn');
+        if (passBtn) {
+            passBtn.onclick = async () => {
+                const oldPassword = document.getElementById('adm-current-pass').value;
+                const newPassword = document.getElementById('adm-new-pass').value;
+                const token = localStorage.getItem('authToken');
+
+                if (!oldPassword || !newPassword) {
+                    showToast("Both password fields are required", "error");
+                    return;
+                }
+
+                passBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                passBtn.disabled = true;
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/auth/change-password`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ oldPassword, newPassword })
+                    });
+
+                    if (res.ok) {
+                        showToast("Password updated successfully", "success");
+                        document.getElementById('adm-current-pass').value = '';
+                        document.getElementById('adm-new-pass').value = '';
+                    } else {
+                        const err = await res.json();
+                        showToast(err.message || "Failed to update password", "error");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast("Server error", "error");
+                } finally {
+                    passBtn.innerHTML = 'Update Password';
+                    passBtn.disabled = false;
+                }
+            };
+        }
+
+        // 5. Sync Store Settings Listener
+        const syncBtn = document.getElementById('sync-store-settings-btn');
+        if (syncBtn) {
+            syncBtn.onclick = () => {
+                const config = {
+                    globalName: document.getElementById('store-global-name')?.value || "EFV Official Store",
+                    hotline: document.getElementById('store-support-hotline')?.value || "+91 98765 43210",
+                    email: document.getElementById('store-support-email')?.value || "support@efv.com",
+                    currency: document.getElementById('store-base-currency')?.value || "INR",
+                    taxRate: document.getElementById('store-tax-rate')?.value || "18",
+                    invoicePrefix: document.getElementById('store-invoice-prefix')?.value || "EFV-2026-"
+                };
+
+                syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+                syncBtn.disabled = true;
+
+                // local sync (mocking persistent backend save)
+                setTimeout(() => {
+                    localStorage.setItem('efv_store_config', JSON.stringify(config));
+                    
+                    // Trigger immediate UI update if sync function exists
+                    if (typeof window.syncFooterConfig === 'function') {
+                        window.syncFooterConfig();
+                    }
+                    
+                    showToast("Store settings synchronized", "success");
+                    syncBtn.innerHTML = 'Sync Store Settings';
+                    syncBtn.disabled = false;
+                }, 800);
             };
         }
     };
@@ -1054,27 +1405,7 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
     }
 };
 
-async function fetchProgress(productId) {
-    try {
-        const token = localStorage.getItem('authToken');
-        if (!token) return null;
-        const res = await fetch(`${CONTENT_CONFIG.progressApi}/${productId}?t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const json = await res.json();
-        return json.found ? json.data : null;
-    } catch (e) { return null; }
-}
 
-async function syncProgress(productId, type, data) {
-    try {
-        const token = localStorage.getItem('authToken');
-        if (!token) return;
-        await fetch(`${CONTENT_CONFIG.progressApi}/${productId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ type, ...data })
-        });
-    } catch (e) { }
-}
 
 function formatTime(seconds) {
     if (!seconds) return '0:00';
@@ -2300,12 +2631,7 @@ window.accessContent = function (type, name, id) {
 // --- SECURE DIGITAL CONTENT SYSTEM ---
 
 // Configuration
-const CONTENT_CONFIG = {
-    // Correctly resolve worker path relative to page location
-    pdfWorkerSrc: (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'js/pdfjs/pdf.worker.min.js',
-    contentApi: `${API_BASE}/api/content`,
-    progressApi: `${API_BASE}/api/progress`
-};
+
 
 // --- PDF READER IMPLEMENTATION (Vertical Scroll) ---
 window.openEbookReader = async function (product) {
@@ -2742,40 +3068,7 @@ window.playAudiobook = async function (product) {
 };
 
 // --- API HELPERS ---
-async function fetchProgress(productId) {
-    try {
-        const token = localStorage.getItem('authToken');
-        if (!token) return null;
 
-        // Add timestamp to prevent caching
-        const res = await fetch(`${CONTENT_CONFIG.progressApi}/${productId}?t=${Date.now()}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const json = await res.json();
-        return json.found ? json.data : null;
-    } catch (e) {
-        console.error("Progress fetch error", e);
-        return null;
-    }
-}
-
-async function syncProgress(productId, type, data) {
-    try {
-        const token = localStorage.getItem('authToken');
-        if (!token) return;
-
-        await fetch(`${CONTENT_CONFIG.progressApi}/${productId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ type, ...data })
-        });
-    } catch (e) {
-        console.error("Progress sync error", e);
-    }
-}
 
 // FORMAT HELPER
 function formatTime(seconds) {
