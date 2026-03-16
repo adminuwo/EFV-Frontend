@@ -31,7 +31,7 @@ window.simulateAdminEvent = (toggleId, title, message) => {
 
     notifs.unshift(newNotif);
     localStorage.setItem('efv_notifications', JSON.stringify(notifs));
-    
+
     // Update Badge
     const unreadCount = notifs.filter(n => !n.read).length;
     const badge = document.getElementById('unread-notifications-count');
@@ -52,11 +52,11 @@ window.renderNotificationsTab = (filter = 'all') => {
     if (!notifContainer) return;
 
     let notifs = JSON.parse(localStorage.getItem('efv_notifications')) || [];
-    
+
     // Initial Seed if empty
     if (notifs.length === 0) {
         notifs = [{
-            id: 1, title: 'System Initialized', message: 'Welcome to EFV Admin Panel. Use Simulation to test alerts.', 
+            id: 1, title: 'System Initialized', message: 'Welcome to EFV Admin Panel. Use Simulation to test alerts.',
             type: 'system', timestamp: new Date().toISOString(), read: true
         }];
         localStorage.setItem('efv_notifications', JSON.stringify(notifs));
@@ -111,7 +111,7 @@ window.markNotifRead = (id) => {
 };
 
 function getNotifColor(type) {
-    switch(type) {
+    switch (type) {
         case 'new-order': return '#D4AF37';
         case 'payment-fail': return '#ff4d4d';
         case 'new-user': return '#3498db';
@@ -121,7 +121,7 @@ function getNotifColor(type) {
 }
 
 function getNotifIcon(type) {
-    switch(type) {
+    switch (type) {
         case 'new-order': return 'fas fa-shopping-cart';
         case 'payment-fail': return 'fas fa-exclamation-triangle';
         case 'new-user': return 'fas fa-user-plus';
@@ -133,8 +133,8 @@ function getNotifIcon(type) {
 function formatRelativeTime(iso) {
     const s = Math.floor((new Date() - new Date(iso)) / 1000);
     if (s < 60) return 'Just now';
-    if (s < 3600) return Math.floor(s/60) + 'm ago';
-    if (s < 86400) return Math.floor(s/3600) + 'h ago';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    if (s < 86400) return Math.floor(s / 3600) + 'h ago';
     return new Date(iso).toLocaleDateString();
 }
 
@@ -254,7 +254,7 @@ window.editProduct = async function (productId) {
 
         if (product.thumbnail) document.getElementById('admin-current-cover').innerHTML = `<i class="fas fa-file-image"></i> Current: ${product.thumbnail.split('/').pop()}`;
         if (product.filePath && product.type === 'EBOOK') document.getElementById('admin-current-ebook').innerHTML = `<i class="fas fa-file-pdf"></i> Current: ${product.filePath.split('/').pop()}`;
-        
+
         // Load Gallery
         if (product.gallery && product.gallery.length > 0) {
             document.getElementById('admin-current-gallery').innerHTML = `<i class="fas fa-images"></i> ${product.gallery.length} images saved`;
@@ -450,7 +450,7 @@ window.updateAdminStats = async function () {
     try {
         const token = localStorage.getItem('authToken');
         console.log(`📊 Updating Admin Stats (URL: ${API_BASE}, Token Present: ${!!token})`);
-        
+
         const fetchWithAuth = (url) => fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
 
         const [productsRes, ordersRes, usersRes] = await Promise.all([
@@ -643,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Initialize Dashboard
     initializeDashboard(user);
-    
+
     // Initial Notifications Sync
     const initNotifs = JSON.parse(localStorage.getItem('efv_notifications')) || [];
     const unreadCount = initNotifs.filter(n => !n.read).length;
@@ -811,7 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (document.getElementById('clear-notifs-btn')) {
             document.getElementById('clear-notifs-btn').onclick = () => {
-                if(confirm("Delete all notifications?")) {
+                if (confirm("Delete all notifications?")) {
                     localStorage.setItem('efv_notifications', JSON.stringify([]));
                     renderNotificationsTab();
                     showToast("Notifications cleared", "success");
@@ -991,12 +991,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // local sync (mocking persistent backend save)
                 setTimeout(() => {
                     localStorage.setItem('efv_store_config', JSON.stringify(config));
-                    
+
                     // Trigger immediate UI update if sync function exists
                     if (typeof window.syncFooterConfig === 'function') {
                         window.syncFooterConfig();
                     }
-                    
+
                     showToast("Store settings synchronized", "success");
                     syncBtn.innerHTML = 'Sync Store Settings';
                     syncBtn.disabled = false;
@@ -1006,93 +1006,93 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     window.initializeAdminSettings = initializeAdminSettings; // Make it global
 
-// ─── AUDIOBOOK PLAYER IMPLEMENTATION (Resume Support) ───
-window.filterLibraryView = function (mode) {
-    document.querySelectorAll('.library-sub-tab').forEach(b => b.classList.remove('active'));
-    document.querySelector(`.library-sub-tab[data-library-tab="${mode}"]`)?.classList.add('active');
+    // ─── AUDIOBOOK PLAYER IMPLEMENTATION (Resume Support) ───
+    window.filterLibraryView = function (mode) {
+        document.querySelectorAll('.library-sub-tab').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.library-sub-tab[data-library-tab="${mode}"]`)?.classList.add('active');
 
-    const allGrid = document.getElementById('dashboard-library-list');
-    const audioGrid = document.getElementById('dashboard-audiobooks-list');
+        const allGrid = document.getElementById('dashboard-library-list');
+        const audioGrid = document.getElementById('dashboard-audiobooks-list');
 
-    if (mode === 'all') {
-        allGrid.style.display = ''; audioGrid.style.display = 'none';
-        renderLibraryTab();
-    } else if (mode === 'ebooks') {
-        allGrid.style.display = ''; audioGrid.style.display = 'none';
-        renderLibraryTab(null, 'ebook');
-    } else if (mode === 'audiobooks') {
-        allGrid.style.display = 'none'; audioGrid.style.display = '';
-        renderAudiobooksGrid();
-    }
-};
-
-async function renderAudiobooksGrid() {
-    const libKey = getUserKey('efv_digital_library');
-    const library = JSON.parse(localStorage.getItem(libKey)) || [];
-    const audiobooks = library.filter(i => (i.type || '').toLowerCase().includes('audio'));
-    const container = document.getElementById('dashboard-audiobooks-list');
-    const emptyState = document.getElementById('library-empty-state');
-
-    if (audiobooks.length === 0) {
-        container.innerHTML = '';
-        emptyState.classList.remove('hidden');
-        return;
-    }
-    emptyState.classList.add('hidden');
-
-    const token = localStorage.getItem('authToken');
-
-    const cards = await Promise.all(audiobooks.map(async (item) => {
-        const prodId = item.productId || item.id || item._id;
-        let totalChapters = 0, completedChapters = 0, remainingChapters = 0;
-        let lastChapterIdx = 0, lastChapterTime = 0;
-
-        // Fetch product for chapter info
-        let productData = null;
-        let itemPrice = 'Purchased';
-        try {
-            const pRes = await fetch(`${API_BASE}/api/products/${prodId}`);
-            if (pRes.ok) productData = await pRes.json();
-        } catch (e) { }
-
-        if (productData) {
-            totalChapters = (productData.chapters || []).filter(c => c.filePath).length || productData.totalChapters || 0;
-            itemPrice = productData.discountPrice ? `₹${productData.discountPrice}` : (productData.price ? `₹${productData.price}` : 'Purchased');
+        if (mode === 'all') {
+            allGrid.style.display = ''; audioGrid.style.display = 'none';
+            renderLibraryTab();
+        } else if (mode === 'ebooks') {
+            allGrid.style.display = ''; audioGrid.style.display = 'none';
+            renderLibraryTab(null, 'ebook');
+        } else if (mode === 'audiobooks') {
+            allGrid.style.display = 'none'; audioGrid.style.display = '';
+            renderAudiobooksGrid();
         }
+    };
 
-        // Fetch chapter-level progress
-        let abProgress = null;
-        try {
-            const apRes = await fetch(`${API_BASE}/api/audiobook-progress/${prodId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (apRes.ok) abProgress = await apRes.json();
-        } catch (e) { }
+    async function renderAudiobooksGrid() {
+        const libKey = getUserKey('efv_digital_library');
+        const library = JSON.parse(localStorage.getItem(libKey)) || [];
+        const audiobooks = library.filter(i => (i.type || '').toLowerCase().includes('audio'));
+        const container = document.getElementById('dashboard-audiobooks-list');
+        const emptyState = document.getElementById('library-empty-state');
 
-        if (abProgress && abProgress.chapters) {
-            completedChapters = abProgress.totalCompletedChapters || abProgress.chapters.filter(c => c.completed).length;
-            lastChapterIdx = abProgress.currentChapterIndex || 0;
-            lastChapterTime = abProgress.currentChapterTime || 0;
+        if (audiobooks.length === 0) {
+            container.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            return;
         }
-        remainingChapters = Math.max(0, totalChapters - completedChapters);
-        const progressPercent = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
+        emptyState.classList.add('hidden');
 
-        // Thumbnail resolution - same logic as marketplace.html
-        let thumbUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
-        if (item.thumbnail) {
-            if (item.thumbnail.startsWith('http') || item.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
-                thumbUrl = item.thumbnail;
-            } else if (item.thumbnail.startsWith('img/')) {
-                thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + item.thumbnail.replace('img/', '');
-            } else {
-                thumbUrl = `${API_BASE}/${item.thumbnail}`;
+        const token = localStorage.getItem('authToken');
+
+        const cards = await Promise.all(audiobooks.map(async (item) => {
+            const prodId = item.productId || item.id || item._id;
+            let totalChapters = 0, completedChapters = 0, remainingChapters = 0;
+            let lastChapterIdx = 0, lastChapterTime = 0;
+
+            // Fetch product for chapter info
+            let productData = null;
+            let itemPrice = 'Purchased';
+            try {
+                const pRes = await fetch(`${API_BASE}/api/products/${prodId}`);
+                if (pRes.ok) productData = await pRes.json();
+            } catch (e) { }
+
+            if (productData) {
+                totalChapters = (productData.chapters || []).filter(c => c.filePath).length || productData.totalChapters || 0;
+                itemPrice = productData.discountPrice ? `₹${productData.discountPrice}` : (productData.price ? `₹${productData.price}` : 'Purchased');
             }
-        }
 
-        const hasProgress = lastChapterTime > 0 || completedChapters > 0;
-        const continueLabel = hasProgress ? `<i class="fas fa-play"></i> Continue Listening` : `<i class="fas fa-headphones"></i> Start Listening`;
+            // Fetch chapter-level progress
+            let abProgress = null;
+            try {
+                const apRes = await fetch(`${API_BASE}/api/audiobook-progress/${prodId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (apRes.ok) abProgress = await apRes.json();
+            } catch (e) { }
 
-        return `
+            if (abProgress && abProgress.chapters) {
+                completedChapters = abProgress.totalCompletedChapters || abProgress.chapters.filter(c => c.completed).length;
+                lastChapterIdx = abProgress.currentChapterIndex || 0;
+                lastChapterTime = abProgress.currentChapterTime || 0;
+            }
+            remainingChapters = Math.max(0, totalChapters - completedChapters);
+            const progressPercent = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
+
+            // Thumbnail resolution - same logic as marketplace.html
+            let thumbUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+            if (item.thumbnail) {
+                if (item.thumbnail.startsWith('http') || item.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+                    thumbUrl = item.thumbnail;
+                } else if (item.thumbnail.startsWith('img/')) {
+                    thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + item.thumbnail.replace('img/', '');
+                } else {
+                    thumbUrl = `${API_BASE}/${item.thumbnail}`;
+                }
+            }
+
+            const hasProgress = lastChapterTime > 0 || completedChapters > 0;
+            const continueLabel = hasProgress ? `<i class="fas fa-play"></i> Continue Listening` : `<i class="fas fa-headphones"></i> Start Listening`;
+
+            return `
             <div class="audiobook-card fade-in">
                 <div class="audiobook-card-inner">
                     <button onclick="event.stopPropagation(); removeFromLibrary('${prodId}')" 
@@ -1132,57 +1132,57 @@ async function renderAudiobooksGrid() {
                 </div>
             </div>
         `;
-    }));
+        }));
 
-    container.innerHTML = cards.join('');
-}
-
-window.openAudiobookDetail = async function (productId, scrollToChapters = false) {
-    const existing = document.getElementById('audiobook-detail-overlay');
-    if (existing) existing.remove();
-
-    const token = localStorage.getItem('authToken');
-    let product = null;
-
-    try {
-        const res = await fetch(`${API_BASE}/api/products/${productId}`);
-        if (res.ok) product = await res.json();
-    } catch (e) { }
-
-    if (!product) { alert('Failed to load audiobook details.'); return; }
-
-    const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
-    const totalChapters = chapters.length;
-
-    let abProgress = null;
-    try {
-        const apRes = await fetch(`${API_BASE}/api/audiobook-progress/${productId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (apRes.ok) abProgress = await apRes.json();
-    } catch (e) { }
-
-    const completedChapters = abProgress?.totalCompletedChapters || (abProgress?.chapters || []).filter(c => c.completed).length || 0;
-    const progressPercent = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
-
-    // Thumbnail resolution - same logic as marketplace.html
-    let thumbUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
-    if (product.thumbnail) {
-        if (product.thumbnail.startsWith('http') || product.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
-            thumbUrl = product.thumbnail;
-        } else if (product.thumbnail.startsWith('img/')) {
-            thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + product.thumbnail.replace('img/', '');
-        } else {
-            thumbUrl = `${API_BASE}/${product.thumbnail}`;
-        }
+        container.innerHTML = cards.join('');
     }
 
-    const chapterCards = chapters.map((ch, idx) => {
-        const chProgress = abProgress?.chapters?.find(c => c.chapterIndex === idx);
-        const isCompleted = chProgress?.completed || false;
-        const chDuration = ch.duration || '--:--';
+    window.openAudiobookDetail = async function (productId, scrollToChapters = false) {
+        const existing = document.getElementById('audiobook-detail-overlay');
+        if (existing) existing.remove();
 
-        return `
+        const token = localStorage.getItem('authToken');
+        let product = null;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/products/${productId}`);
+            if (res.ok) product = await res.json();
+        } catch (e) { }
+
+        if (!product) { alert('Failed to load audiobook details.'); return; }
+
+        const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+        const totalChapters = chapters.length;
+
+        let abProgress = null;
+        try {
+            const apRes = await fetch(`${API_BASE}/api/audiobook-progress/${productId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (apRes.ok) abProgress = await apRes.json();
+        } catch (e) { }
+
+        const completedChapters = abProgress?.totalCompletedChapters || (abProgress?.chapters || []).filter(c => c.completed).length || 0;
+        const progressPercent = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
+
+        // Thumbnail resolution - same logic as marketplace.html
+        let thumbUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+        if (product.thumbnail) {
+            if (product.thumbnail.startsWith('http') || product.thumbnail.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+                thumbUrl = product.thumbnail;
+            } else if (product.thumbnail.startsWith('img/')) {
+                thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + product.thumbnail.replace('img/', '');
+            } else {
+                thumbUrl = `${API_BASE}/${product.thumbnail}`;
+            }
+        }
+
+        const chapterCards = chapters.map((ch, idx) => {
+            const chProgress = abProgress?.chapters?.find(c => c.chapterIndex === idx);
+            const isCompleted = chProgress?.completed || false;
+            const chDuration = ch.duration || '--:--';
+
+            return `
             <div class="chapter-card ${isCompleted ? 'completed' : ''}" onclick="launchEFVPlayer('${productId}', ${idx})" id="chapter-card-${idx}">
                 <div class="chapter-num">${idx + 1}</div>
                 <div class="chapter-info">
@@ -1194,9 +1194,9 @@ window.openAudiobookDetail = async function (productId, scrollToChapters = false
                 </button>
             </div>
         `;
-    }).join('');
+        }).join('');
 
-    const overlayHTML = `
+        const overlayHTML = `
         <div id="audiobook-detail-overlay" class="audiobook-detail-overlay">
             <div class="ab-detail-header">
                 <div class="ab-detail-header-title">
@@ -1233,60 +1233,60 @@ window.openAudiobookDetail = async function (productId, scrollToChapters = false
         </div>
     `;
 
-    document.body.insertAdjacentHTML('beforeend', overlayHTML);
-    if (scrollToChapters) {
-        setTimeout(() => { document.getElementById('chapters-section-anchor')?.scrollIntoView({ behavior: 'smooth' }); }, 500);
-    }
-};
-
-window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
-    const existingPlayer = document.getElementById('efv-premium-player');
-    if (existingPlayer) existingPlayer.remove();
-
-    const token = localStorage.getItem('authToken');
-    let product = null;
-    try {
-        const res = await fetch(`${API_BASE}/api/products/${productId}`);
-        if (res.ok) product = await res.json();
-    } catch (e) { }
-
-    if (!product) { alert('Failed to load audiobook.'); return; }
-
-    const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
-    if (chapters.length === 0) { alert('No chapters available.'); return; }
-
-    let abProgress = null;
-    try {
-        const apRes = await fetch(`${API_BASE}/api/audiobook-progress/${productId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (apRes.ok) abProgress = await apRes.json();
-    } catch (e) { }
-
-    let initialChapter = chapterIndex;
-    let initialTime = 0;
-
-    if (abProgress && abProgress.chapters) {
-        const chProg = abProgress.chapters.find(c => c.chapterIndex === chapterIndex);
-        if (chProg && chProg.currentTime > 1) initialTime = chProg.currentTime;
-    }
-
-    if (chapterIndex === 0 && abProgress && abProgress.currentChapterIndex !== undefined) {
-        if (abProgress.currentChapterIndex > 0 || (abProgress.currentChapterTime && abProgress.currentChapterTime > 1)) {
-            initialChapter = abProgress.currentChapterIndex || 0;
-            initialTime = abProgress.currentChapterTime || 0;
+        document.body.insertAdjacentHTML('beforeend', overlayHTML);
+        if (scrollToChapters) {
+            setTimeout(() => { document.getElementById('chapters-section-anchor')?.scrollIntoView({ behavior: 'smooth' }); }, 500);
         }
-    }
+    };
 
-    let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
-    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
-        thumbUrl = `${API_BASE}/${thumbUrl}`;
-    }
+    window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
+        const existingPlayer = document.getElementById('efv-premium-player');
+        if (existingPlayer) existingPlayer.remove();
 
-    const currentChapter = chapters[initialChapter] || chapters[0];
-    const chTitle = currentChapter.title || `Chapter ${initialChapter + 1}`;
+        const token = localStorage.getItem('authToken');
+        let product = null;
+        try {
+            const res = await fetch(`${API_BASE}/api/products/${productId}`);
+            if (res.ok) product = await res.json();
+        } catch (e) { }
 
-    const playerHTML = `
+        if (!product) { alert('Failed to load audiobook.'); return; }
+
+        const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+        if (chapters.length === 0) { alert('No chapters available.'); return; }
+
+        let abProgress = null;
+        try {
+            const apRes = await fetch(`${API_BASE}/api/audiobook-progress/${productId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (apRes.ok) abProgress = await apRes.json();
+        } catch (e) { }
+
+        let initialChapter = chapterIndex;
+        let initialTime = 0;
+
+        if (abProgress && abProgress.chapters) {
+            const chProg = abProgress.chapters.find(c => c.chapterIndex === chapterIndex);
+            if (chProg && chProg.currentTime > 1) initialTime = chProg.currentTime;
+        }
+
+        if (chapterIndex === 0 && abProgress && abProgress.currentChapterIndex !== undefined) {
+            if (abProgress.currentChapterIndex > 0 || (abProgress.currentChapterTime && abProgress.currentChapterTime > 1)) {
+                initialChapter = abProgress.currentChapterIndex || 0;
+                initialTime = abProgress.currentChapterTime || 0;
+            }
+        }
+
+        let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
+        if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+            thumbUrl = `${API_BASE}/${thumbUrl}`;
+        }
+
+        const currentChapter = chapters[initialChapter] || chapters[0];
+        const chTitle = currentChapter.title || `Chapter ${initialChapter + 1}`;
+
+        const playerHTML = `
         <div id="efv-premium-player" class="efv-audio-player-overlay" oncontextmenu="return false;">
             <div class="efv-player-toolbar">
                 <div class="efv-player-toolbar-left"><i class="fas fa-headphones"></i> <span>EFV™ AUDIO PLAYER</span></div>
@@ -1331,150 +1331,150 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
         </div>
     `;
 
-    document.body.insertAdjacentHTML('beforeend', playerHTML);
-    document.body.classList.add('modal-open');
-    if (window.efvSecurity) window.efvSecurity.enable();
+        document.body.insertAdjacentHTML('beforeend', playerHTML);
+        document.body.classList.add('modal-open');
+        if (window.efvSecurity) window.efvSecurity.enable();
 
-    let currentChIdx = initialChapter;
-    let audioEl = new Audio();
-    audioEl.crossOrigin = 'anonymous';
+        let currentChIdx = initialChapter;
+        let audioEl = new Audio();
+        audioEl.crossOrigin = 'anonymous';
 
-    const playIcon = document.getElementById('efv-play-icon');
-    const playBtn = document.getElementById('efv-btn-play');
-    const seekBar = document.getElementById('efv-seek-bar');
-    const timeCurrent = document.getElementById('efv-time-current');
-    const timeTotal = document.getElementById('efv-time-total');
-    const playerCover = document.getElementById('efv-player-cover');
-    const chTitleEl = document.getElementById('efv-player-ch-title');
-    const chIndicator = document.getElementById('efv-ch-indicator');
-    const resumeOverlay = document.getElementById('efv-resume-overlay');
+        const playIcon = document.getElementById('efv-play-icon');
+        const playBtn = document.getElementById('efv-btn-play');
+        const seekBar = document.getElementById('efv-seek-bar');
+        const timeCurrent = document.getElementById('efv-time-current');
+        const timeTotal = document.getElementById('efv-time-total');
+        const playerCover = document.getElementById('efv-player-cover');
+        const chTitleEl = document.getElementById('efv-player-ch-title');
+        const chIndicator = document.getElementById('efv-ch-indicator');
+        const resumeOverlay = document.getElementById('efv-resume-overlay');
 
-    function loadChapter(idx, startTime = 0, autoPlay = true) {
-        if (idx < 0 || idx >= chapters.length) return;
-        currentChIdx = idx;
-        const chapterSrc = `${CONTENT_CONFIG.contentApi}/chapter/${productId}/${idx}?token=${token}&t=${Date.now()}`;
-        audioEl.src = chapterSrc;
-        audioEl.load();
-        const ch = chapters[idx];
-        chTitleEl.textContent = ch.title || `Chapter ${idx + 1}`;
-        chIndicator.textContent = `Chapter ${idx + 1} of ${chapters.length}`;
-        document.getElementById('efv-btn-prev').disabled = idx === 0;
-        document.getElementById('efv-btn-next').disabled = idx === chapters.length - 1;
+        function loadChapter(idx, startTime = 0, autoPlay = true) {
+            if (idx < 0 || idx >= chapters.length) return;
+            currentChIdx = idx;
+            const chapterSrc = `${CONTENT_CONFIG.contentApi}/chapter/${productId}/${idx}?token=${token}&t=${Date.now()}`;
+            audioEl.src = chapterSrc;
+            audioEl.load();
+            const ch = chapters[idx];
+            chTitleEl.textContent = ch.title || `Chapter ${idx + 1}`;
+            chIndicator.textContent = `Chapter ${idx + 1} of ${chapters.length}`;
+            document.getElementById('efv-btn-prev').disabled = idx === 0;
+            document.getElementById('efv-btn-next').disabled = idx === chapters.length - 1;
 
-        audioEl.addEventListener('loadedmetadata', function onMeta() {
-            audioEl.removeEventListener('loadedmetadata', onMeta);
-            timeTotal.textContent = formatTime(audioEl.duration);
-            if (startTime > 0) audioEl.currentTime = startTime;
-            if (autoPlay) audioEl.play().catch(() => { });
-        });
-    }
-
-    function saveChapterProgress(forceComplete = false) {
-        if (!audioEl.src || audioEl.currentTime < 0.5) return;
-        const completed = forceComplete || (audioEl.duration > 0 && (audioEl.currentTime / audioEl.duration) > 0.95);
-        const data = { chapterIndex: currentChIdx, currentTime: audioEl.currentTime, duration: audioEl.duration || 0, completed };
-
-        fetch(`${API_BASE}/api/audiobook-progress/${productId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(data)
-        }).catch(e => console.error('Save chapter progress error:', e));
-
-        const totalChapters = chapters.length;
-        const overallProgress = totalChapters > 0 ? ((currentChIdx + (audioEl.currentTime / (audioEl.duration || 1))) / totalChapters) * 100 : 0;
-        syncProgress(productId, 'AUDIOBOOK', { currentTime: audioEl.currentTime, totalDuration: audioEl.duration || 0, progress: Math.min(overallProgress, 100) });
-    }
-
-    audioEl.addEventListener('timeupdate', () => {
-        timeCurrent.textContent = formatTime(audioEl.currentTime);
-        if (audioEl.duration) {
-            const percentage = (audioEl.currentTime / audioEl.duration) * 100;
-            seekBar.value = percentage;
-            seekBar.style.background = `linear-gradient(to right, #FFD700 0%, #FFD700 ${percentage}%, rgba(255, 255, 255, 0.1) ${percentage}%, rgba(255, 255, 255, 0.1) 100%)`;
+            audioEl.addEventListener('loadedmetadata', function onMeta() {
+                audioEl.removeEventListener('loadedmetadata', onMeta);
+                timeTotal.textContent = formatTime(audioEl.duration);
+                if (startTime > 0) audioEl.currentTime = startTime;
+                if (autoPlay) audioEl.play().catch(() => { });
+            });
         }
-    });
 
-    audioEl.addEventListener('play', () => { playIcon.className = 'fas fa-pause'; playerCover.classList.add('is-playing'); });
-    audioEl.addEventListener('pause', () => { playIcon.className = 'fas fa-play'; playerCover.classList.remove('is-playing'); saveChapterProgress(); });
-    audioEl.addEventListener('ended', () => { 
-        saveChapterProgress(true);
-        if (currentChIdx < chapters.length - 1) loadChapter(currentChIdx + 1, 0, true);
-    });
+        function saveChapterProgress(forceComplete = false) {
+            if (!audioEl.src || audioEl.currentTime < 0.5) return;
+            const completed = forceComplete || (audioEl.duration > 0 && (audioEl.currentTime / audioEl.duration) > 0.95);
+            const data = { chapterIndex: currentChIdx, currentTime: audioEl.currentTime, duration: audioEl.duration || 0, completed };
 
-    seekBar.addEventListener('change', () => { audioEl.currentTime = (seekBar.value / 100) * (audioEl.duration || 0); });
-    playBtn.addEventListener('click', () => { audioEl.paused ? audioEl.play().catch(() => { }) : audioEl.pause(); });
-    document.getElementById('efv-btn-rwd').addEventListener('click', () => { audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); });
-    document.getElementById('efv-btn-fwd').addEventListener('click', () => { audioEl.currentTime = Math.min(audioEl.duration || 0, audioEl.currentTime + 10); });
-    document.getElementById('efv-btn-prev').addEventListener('click', () => { if (currentChIdx > 0) { saveChapterProgress(); loadChapter(currentChIdx - 1, 0, true); } });
-    document.getElementById('efv-btn-next').addEventListener('click', () => { if (currentChIdx < chapters.length - 1) { saveChapterProgress(); loadChapter(currentChIdx + 1, 0, true); } });
+            fetch(`${API_BASE}/api/audiobook-progress/${productId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(data)
+            }).catch(e => console.error('Save chapter progress error:', e));
 
-    document.querySelectorAll('.efv-speed-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.efv-speed-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            audioEl.playbackRate = parseFloat(btn.dataset.speed);
-        });
-    });
+            const totalChapters = chapters.length;
+            const overallProgress = totalChapters > 0 ? ((currentChIdx + (audioEl.currentTime / (audioEl.duration || 1))) / totalChapters) * 100 : 0;
+            syncProgress(productId, 'AUDIOBOOK', { currentTime: audioEl.currentTime, totalDuration: audioEl.duration || 0, progress: Math.min(overallProgress, 100) });
+        }
 
-    document.getElementById('efv-player-close-btn').addEventListener('click', () => {
-        saveChapterProgress();
-        audioEl.pause(); audioEl.src = '';
-        document.getElementById('efv-premium-player').remove();
-        document.body.classList.remove('modal-open');
-        if (window.efvSecurity) window.efvSecurity.disable();
-        renderLibraryTab();
-        if (document.querySelector('.library-sub-tab[data-library-tab="audiobooks"].active')) renderAudiobooksGrid();
-    });
-
-    if (initialTime > 1) {
-        document.getElementById('efv-resume-time').textContent = formatTime(initialTime);
-        document.getElementById('efv-resume-btn-time').textContent = formatTime(initialTime);
-        resumeOverlay.classList.add('active');
-        document.getElementById('efv-btn-resume').addEventListener('click', () => { resumeOverlay.classList.remove('active'); loadChapter(initialChapter, initialTime, true); });
-        document.getElementById('efv-btn-restart').addEventListener('click', () => { resumeOverlay.classList.remove('active'); loadChapter(initialChapter, 0, true); });
-    } else {
-        loadChapter(initialChapter, 0, true);
-    }
-};
-
-
-
-function formatTime(seconds) {
-    if (!seconds) return '0:00';
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${min}:${sec < 10 ? '0' + sec : sec}`;
-}
-
-// ─── LEGACY FALLBACK: playAudiobook ───
-window.playAudiobook = async function (product) {
-    const bookId = product._id || product.id;
-    const token = localStorage.getItem('authToken');
-
-    try {
-        const res = await fetch(`${API_BASE}/api/products/${bookId}`);
-        if (res.ok) {
-            const fullProduct = await res.json();
-            const hasChapters = (fullProduct.chapters || []).filter(c => c.filePath).length > 0;
-            if (hasChapters) {
-                openAudiobookDetail(bookId);
-                return;
+        audioEl.addEventListener('timeupdate', () => {
+            timeCurrent.textContent = formatTime(audioEl.currentTime);
+            if (audioEl.duration) {
+                const percentage = (audioEl.currentTime / audioEl.duration) * 100;
+                seekBar.value = percentage;
+                seekBar.style.background = `linear-gradient(to right, #FFD700 0%, #FFD700 ${percentage}%, rgba(255, 255, 255, 0.1) ${percentage}%, rgba(255, 255, 255, 0.1) 100%)`;
             }
+        });
+
+        audioEl.addEventListener('play', () => { playIcon.className = 'fas fa-pause'; playerCover.classList.add('is-playing'); });
+        audioEl.addEventListener('pause', () => { playIcon.className = 'fas fa-play'; playerCover.classList.remove('is-playing'); saveChapterProgress(); });
+        audioEl.addEventListener('ended', () => {
+            saveChapterProgress(true);
+            if (currentChIdx < chapters.length - 1) loadChapter(currentChIdx + 1, 0, true);
+        });
+
+        seekBar.addEventListener('change', () => { audioEl.currentTime = (seekBar.value / 100) * (audioEl.duration || 0); });
+        playBtn.addEventListener('click', () => { audioEl.paused ? audioEl.play().catch(() => { }) : audioEl.pause(); });
+        document.getElementById('efv-btn-rwd').addEventListener('click', () => { audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); });
+        document.getElementById('efv-btn-fwd').addEventListener('click', () => { audioEl.currentTime = Math.min(audioEl.duration || 0, audioEl.currentTime + 10); });
+        document.getElementById('efv-btn-prev').addEventListener('click', () => { if (currentChIdx > 0) { saveChapterProgress(); loadChapter(currentChIdx - 1, 0, true); } });
+        document.getElementById('efv-btn-next').addEventListener('click', () => { if (currentChIdx < chapters.length - 1) { saveChapterProgress(); loadChapter(currentChIdx + 1, 0, true); } });
+
+        document.querySelectorAll('.efv-speed-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.efv-speed-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                audioEl.playbackRate = parseFloat(btn.dataset.speed);
+            });
+        });
+
+        document.getElementById('efv-player-close-btn').addEventListener('click', () => {
+            saveChapterProgress();
+            audioEl.pause(); audioEl.src = '';
+            document.getElementById('efv-premium-player').remove();
+            document.body.classList.remove('modal-open');
+            if (window.efvSecurity) window.efvSecurity.disable();
+            renderLibraryTab();
+            if (document.querySelector('.library-sub-tab[data-library-tab="audiobooks"].active')) renderAudiobooksGrid();
+        });
+
+        if (initialTime > 1) {
+            document.getElementById('efv-resume-time').textContent = formatTime(initialTime);
+            document.getElementById('efv-resume-btn-time').textContent = formatTime(initialTime);
+            resumeOverlay.classList.add('active');
+            document.getElementById('efv-btn-resume').addEventListener('click', () => { resumeOverlay.classList.remove('active'); loadChapter(initialChapter, initialTime, true); });
+            document.getElementById('efv-btn-restart').addEventListener('click', () => { resumeOverlay.classList.remove('active'); loadChapter(initialChapter, 0, true); });
+        } else {
+            loadChapter(initialChapter, 0, true);
         }
-    } catch (e) { }
+    };
 
-    // Fallback for legacy single-file audiobooks
-    const playerModalId = 'audio-player-modal';
-    if (document.getElementById(playerModalId)) document.getElementById(playerModalId).remove();
 
-    let savedState = await fetchProgress(bookId);
 
-    let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
-    if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
-        thumbUrl = `${API_BASE}/${thumbUrl}`;
+    function formatTime(seconds) {
+        if (!seconds) return '0:00';
+        const min = Math.floor(seconds / 60);
+        const sec = Math.floor(seconds % 60);
+        return `${min}:${sec < 10 ? '0' + sec : sec}`;
     }
 
-    const audioHtml = `
+    // ─── LEGACY FALLBACK: playAudiobook ───
+    window.playAudiobook = async function (product) {
+        const bookId = product._id || product.id;
+        const token = localStorage.getItem('authToken');
+
+        try {
+            const res = await fetch(`${API_BASE}/api/products/${bookId}`);
+            if (res.ok) {
+                const fullProduct = await res.json();
+                const hasChapters = (fullProduct.chapters || []).filter(c => c.filePath).length > 0;
+                if (hasChapters) {
+                    openAudiobookDetail(bookId);
+                    return;
+                }
+            }
+        } catch (e) { }
+
+        // Fallback for legacy single-file audiobooks
+        const playerModalId = 'audio-player-modal';
+        if (document.getElementById(playerModalId)) document.getElementById(playerModalId).remove();
+
+        let savedState = await fetchProgress(bookId);
+
+        let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
+        if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
+            thumbUrl = `${API_BASE}/${thumbUrl}`;
+        }
+
+        const audioHtml = `
         <div id="${playerModalId}" class="efv-audio-player-overlay" oncontextmenu="return false;">
             <div class="efv-player-toolbar">
                 <div class="efv-player-toolbar-left"><i class="fas fa-headphones"></i> <span>${product.name}</span></div>
@@ -1495,43 +1495,43 @@ window.playAudiobook = async function (product) {
             </div>
         </div>
     `;
-    document.body.insertAdjacentHTML('beforeend', audioHtml);
-    document.body.classList.add('modal-open');
+        document.body.insertAdjacentHTML('beforeend', audioHtml);
+        document.body.classList.add('modal-open');
 
-    const audio = new Audio(`${CONTENT_CONFIG.contentApi}/audio/${bookId}?token=${token || ''}&t=${Date.now()}`);
-    const playIcon = document.getElementById('legacy-play-icon');
-    const seek = document.getElementById('legacy-seek');
-    let legacySeeking = false;
+        const audio = new Audio(`${CONTENT_CONFIG.contentApi}/audio/${bookId}?token=${token || ''}&t=${Date.now()}`);
+        const playIcon = document.getElementById('legacy-play-icon');
+        const seek = document.getElementById('legacy-seek');
+        let legacySeeking = false;
 
-    audio.addEventListener('loadedmetadata', () => {
-        document.getElementById('legacy-time-total').textContent = formatTime(audio.duration);
-        audio.play().catch(() => { });
-    });
-    audio.addEventListener('timeupdate', () => { 
-        if (!legacySeeking) { 
-            document.getElementById('legacy-time-cur').textContent = formatTime(audio.currentTime); 
-            seek.value = (audio.currentTime / (audio.duration || 1)) * 100; 
-        } 
-    });
-    audio.addEventListener('play', () => { playIcon.className = 'fas fa-pause'; });
-    audio.addEventListener('pause', () => { playIcon.className = 'fas fa-play'; });
+        audio.addEventListener('loadedmetadata', () => {
+            document.getElementById('legacy-time-total').textContent = formatTime(audio.duration);
+            audio.play().catch(() => { });
+        });
+        audio.addEventListener('timeupdate', () => {
+            if (!legacySeeking) {
+                document.getElementById('legacy-time-cur').textContent = formatTime(audio.currentTime);
+                seek.value = (audio.currentTime / (audio.duration || 1)) * 100;
+            }
+        });
+        audio.addEventListener('play', () => { playIcon.className = 'fas fa-pause'; });
+        audio.addEventListener('pause', () => { playIcon.className = 'fas fa-play'; });
 
-    document.getElementById('legacy-play').addEventListener('click', () => { audio.paused ? audio.play().catch(() => { }) : audio.pause(); });
-    document.getElementById('legacy-rwd').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
-    document.getElementById('legacy-fwd').addEventListener('click', () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
-    seek.addEventListener('input', () => { legacySeeking = true; });
-    seek.addEventListener('change', () => { audio.currentTime = (seek.value / 100) * (audio.duration || 0); legacySeeking = false; });
-};
+        document.getElementById('legacy-play').addEventListener('click', () => { audio.paused ? audio.play().catch(() => { }) : audio.pause(); });
+        document.getElementById('legacy-rwd').addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
+        document.getElementById('legacy-fwd').addEventListener('click', () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 10); });
+        seek.addEventListener('input', () => { legacySeeking = true; });
+        seek.addEventListener('change', () => { audio.currentTime = (seek.value / 100) * (audio.duration || 0); legacySeeking = false; });
+    };
 
-window.accessContent = function (type, name, id) {
-    const isAudio = (type || '').toLowerCase().includes('audio');
-    const product = { _id: id, name: name, id: id, type: isAudio ? 'AUDIOBOOK' : 'EBOOK' };
-    if (isAudio) {
-        window.playAudiobook(product);
-    } else {
-        window.openEbookReader(product);
-    }
-};
+    window.accessContent = function (type, name, id) {
+        const isAudio = (type || '').toLowerCase().includes('audio');
+        const product = { _id: id, name: name, id: id, type: isAudio ? 'AUDIOBOOK' : 'EBOOK' };
+        if (isAudio) {
+            window.playAudiobook(product);
+        } else {
+            window.openEbookReader(product);
+        }
+    };
 
     // 3.2 Order Filters
     document.querySelectorAll('[data-order-filter]').forEach(btn => {
@@ -2015,7 +2015,7 @@ async function initializeDashboard(user) {
     // Load initial data
     try {
         await fetchProfileData();
-        
+
         // Re-check Admin status after profile load to ensure sidebar is correct
         const profile = window.currentUserProfile;
         if (profile) {
@@ -2023,18 +2023,18 @@ async function initializeDashboard(user) {
             const pRole = (profile.role || '').toLowerCase().trim();
             const pIsAdmin = pRole === 'admin' || pEmail === 'admin@uwo24.com';
             console.log("🔄 Re-checking Admin status after profile fetch:", pIsAdmin, "Role:", pRole);
-            
+
             if (pIsAdmin) {
                 // Show admin items
                 document.querySelectorAll('.admin-nav').forEach(btn => btn.classList.remove('hidden'));
-                
+
                 // Hide customer-only items
                 const customerTabs = ['cart', 'orders', 'wishlist', 'notifications', 'support'];
                 customerTabs.forEach(tab => {
                     const btn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
                     if (btn) btn.classList.add('hidden');
                 });
-                
+
                 const settingsBtn = document.querySelector('button[data-tab="settings"]');
                 if (settingsBtn) {
                     const span = settingsBtn.querySelector('span');
@@ -2056,7 +2056,7 @@ async function initializeDashboard(user) {
 
     updateDashboardOverview();
     if (typeof updateAdminStats === 'function') updateAdminStats();
-    
+
     loadRecommendations();
     loadRecentlyViewed();
 
@@ -2238,8 +2238,8 @@ window.syncLibraryWithBackend = async function () {
         } else {
             console.error('Library Sync Failed:', data.message);
         }
-    } catch (error) { 
-        console.error('Library sync error:', error); 
+    } catch (error) {
+        console.error('Library sync error:', error);
     }
 }
 
@@ -2754,7 +2754,7 @@ window.openEbookReader = async function (product) {
 
     if (window.efvSecurity) {
         window.efvSecurity.isTampered = false;
-        window.efvSecurity.enable(); 
+        window.efvSecurity.enable();
         window.efvSecurity.applyWatermark(modal);
     }
     modal.classList.add('no-select');
@@ -2784,7 +2784,7 @@ window.openEbookReader = async function (product) {
         const loadingTask = pdfjsLib.getDocument({
             url: url,
             httpHeaders: { 'Authorization': `Bearer ${token}` },
-            disableAutoFetch: true, 
+            disableAutoFetch: true,
             disableStream: false,
             rangeChunkSize: 1024 * 128
         });
@@ -2798,11 +2798,11 @@ window.openEbookReader = async function (product) {
         }, 10000);
 
         pdfDoc = await loadingTask.promise;
-        clearTimeout(loaderTimeout); 
+        clearTimeout(loaderTimeout);
         totalPages = pdfDoc.numPages;
-        
+
         console.log(`📖 Ebook Meta Loaded: ${totalPages} pages. Creating wrappers...`);
-        
+
         // 4. Create Page Wrappers (CRITICAL: Must exist before any rendering)
         for (let i = 1; i <= totalPages; i++) {
             const pageWrapper = document.createElement('div');
@@ -2817,7 +2817,7 @@ window.openEbookReader = async function (product) {
 
         // SPEED OPTIMIZATION: Render page 1 FIRST
         if (loading) loading.style.display = 'none';
-        await renderPageToCanvas(1); 
+        await renderPageToCanvas(1);
         console.log("✅ Page 1 Rendered.");
 
         // 5. Intersection Observer for Lazy Rendering & Progress tracking
@@ -2943,7 +2943,7 @@ window.openEbookReader = async function (product) {
         console.log("🛑 Global Force Close Triggered");
         const modal = document.getElementById(readerId);
         if (modal) modal.remove();
-        if (window.efvSecurity) window.efvSecurity.disable(); 
+        if (window.efvSecurity) window.efvSecurity.disable();
         if (typeof renderLibraryTab === 'function') renderLibraryTab();
         delete window.forceCloseEbookReader;
     };
@@ -3835,8 +3835,8 @@ if (productForm) {
             if (res.ok) {
                 closeProductModal();
                 loadAdminProductsFull();
-                if (typeof window.syncLibraryWithBackend === 'function') window.syncLibraryWithBackend(); 
-                else if (typeof renderLibraryTab === 'function') renderLibraryTab(); 
+                if (typeof window.syncLibraryWithBackend === 'function') window.syncLibraryWithBackend();
+                else if (typeof renderLibraryTab === 'function') renderLibraryTab();
                 updateAdminStats();
                 showToast(isEdit ? 'Product updated' : 'Product added', 'success');
             } else {
@@ -4092,7 +4092,7 @@ window.viewCustomerDetail = (userId) => {
     // Order History
     const orderHistory = document.getElementById('cust-modal-order-history');
     orderHistory.innerHTML = userOrders.length > 0
-        ? userOrders.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).map(o => `
+        ? userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(o => `
             <div class="glass-panel" style="padding: 10px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <div>
                     <div style="font-weight: 700;">#${(o._id || o.id).slice(-6).toUpperCase()}</div>

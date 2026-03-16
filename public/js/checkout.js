@@ -597,7 +597,8 @@ function setupPlaceOrder(items, user) {
         const shipping = calculateShipping(items);
         const checkedRadio = document.querySelector('input[name="payment-mode"]:checked');
         const mode = checkedRadio ? checkedRadio.value : 'Online';
-        const cod = calculateCOD(subtotal, mode);
+        const isCOD = mode === 'COD';
+        const cod = isCOD ? calculateCOD(subtotal) : 0;
         let discount = 0;
         if (appliedCoupon) {
             if (appliedCoupon.type === 'Percentage') {
@@ -606,8 +607,6 @@ function setupPlaceOrder(items, user) {
                 discount = appliedCoupon.value;
             }
         }
-
-        const isCOD = mode === 'COD';
 
         if (isCOD && isDigitalOrder) {
             alert('Digital items (E-book/Audiobook) cannot be purchased via COD. Please select Online Payment.');
@@ -768,7 +767,9 @@ async function initRazorpay(order, couponCode = null) {
                             razorpay_signature : rzpResponse.razorpay_signature,
                             customer           : order.shippingAddress,
                             items              : order.products,
-                            couponCode         : couponCode
+                            couponCode         : couponCode,
+                            shippingCharge     : order.shippingCharge,
+                            codCharge          : order.codCharge
                         })
                     });
 
