@@ -2728,11 +2728,19 @@
                         }
                     }
                     
-                    // Only prefix with API_BASE if it's a real thumbnail from backend
+                    // Only prefix with API_BASE if it's a real thumbnail from backend (e.g. uploads/...)
+                    // Skip if it's a local asset path
                     if (!isFallback && typeof fullThumb === 'string') {
-                        let cleanPath = fullThumb.replace(/^(\.\.\/|\.\/|\/)/, '');
-                        if (!fullThumb.startsWith('http') && !fullThumb.startsWith(API_BASE)) {
-                            fullThumb = API_BASE + '/' + cleanPath;
+                        const isLocalAsset = fullThumb.startsWith('assets/') || fullThumb.startsWith('../assets/') || fullThumb.includes('/assets/images/');
+                        
+                        if (!isLocalAsset) {
+                            let cleanPath = fullThumb.replace(/^(\.\.\/|\.\/|\/)/, '');
+                            if (!fullThumb.startsWith('http') && !fullThumb.startsWith(API_BASE)) {
+                                fullThumb = API_BASE + '/' + cleanPath;
+                            }
+                        } else if (fullThumb.startsWith('assets/')) {
+                            // Convert to relative for the current page if needed
+                            fullThumb = '../' + fullThumb;
                         }
                     }
                     
