@@ -2477,9 +2477,9 @@ function renderLibraryTab(directData = null, typeFilter = null) {
         const actionLabel = isAudio ? 'Listen Now' : 'Read Now';
         const icon = isAudio ? 'fa-headphones' : 'fa-book-open';
 
-        // Thumbnail resolution - same logic as marketplace.html
-        let imageUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
-        if (item.thumbnail) {
+        // Thumbnail resolution - use volume-aware helper as fallback
+        let imageUrl = (typeof getImageForProduct === 'function') ? getImageForProduct(item.name || item.title) : (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
+        if (item.thumbnail && !item.thumbnail.includes('vol1-cover')) {
             const thumb = item.thumbnail.replace(/^\/+/, '');
             if (thumb.startsWith('http')) {
                 imageUrl = thumb;
@@ -3192,11 +3192,40 @@ window.accessDigitalContent = function (name, id, type) {
     }
 };
 
-// Helper for images
+// Helper for images — maps product name to volume-specific cover images
 function getImageForProduct(name) {
-    if (name.includes('VOL 1')) return CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
-    if (name.includes('VOL 2')) return CONFIG.BASE_PATH + 'assets/images/vol 2.png';
-    return CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
+    if (!name) return CONFIG.BASE_PATH + 'assets/images/english_v1.jpeg';
+    const upperName = name.toUpperCase().replace(/\s+/g, ' '); // Normalize spaces
+    
+    // Explicit mappings based on actual file existence
+    if (upperName.includes('VOL 1') || upperName.includes('VOL1') || upperName.includes('VOLUME 1')) 
+        return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
+        
+    if (upperName.includes('VOL 2') || upperName.includes('VOL2') || upperName.includes('VOLUME 2')) 
+        return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 2.png');
+        
+    if (upperName.includes('VOL 3') || upperName.includes('VOL3') || upperName.includes('VOLUME 3')) 
+        return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 3.png');
+        
+    if (upperName.includes('VOL 4') || upperName.includes('VOL4') || upperName.includes('VOLUME 4')) 
+        return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 4.png');
+        
+    if (upperName.includes('VOL 5') || upperName.includes('VOL5') || upperName.includes('VOLUME 5')) 
+        return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 5.png');
+        
+    if (upperName.includes('VOL 6') || upperName.includes('VOL6') || upperName.includes('VOLUME 6')) 
+        return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 6.png');
+        
+    if (upperName.includes('VOL 7') || upperName.includes('VOL7') || upperName.includes('VOLUME 7')) 
+        return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 7.jpeg');
+        
+    if (upperName.includes('VOL 8') || upperName.includes('VOL8') || upperName.includes('VOLUME 8')) 
+        return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 8.png');
+        
+    if (upperName.includes('VOL 9') || upperName.includes('VOL9') || upperName.includes('VOLUME 9')) 
+        return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 9.png');
+        
+    return encodeURI(CONFIG.BASE_PATH + 'assets/images/english_v1.jpeg');
 }
 
 
