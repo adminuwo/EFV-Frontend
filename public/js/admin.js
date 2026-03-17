@@ -141,6 +141,13 @@ function formatRelativeTime(iso) {
 // API_BASE is resolved at the top of the file
 
 // --- GLOBAL CONTENT CONFIGURATION ---
+window.getImageForProduct = function (name) {
+    if (!name) return (CONFIG.BASE_PATH || '../') + 'assets/images/vol1-cover.png';
+    const n = name.toUpperCase();
+    if (n.includes('VOL 2') || n.includes('MINDOS')) return (CONFIG.BASE_PATH || '../') + 'assets/images/vol%202.png';
+    if (n.includes('VOL 1') || n.includes('ORIGIN')) return (CONFIG.BASE_PATH || '../') + 'assets/images/vol1-cover.png';
+    return (CONFIG.BASE_PATH || '../') + 'assets/images/vol1-cover.png';
+};
 const CONTENT_CONFIG = {
     pdfWorkerSrc: (typeof CONFIG !== 'undefined' ? CONFIG.BASE_PATH : '') + 'js/pdfjs/pdf.worker.min.js',
     contentApi: `${API_BASE}/api/content`,
