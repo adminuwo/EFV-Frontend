@@ -733,6 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const section = document.getElementById(effectiveTabId);
             if (section) section.classList.add('active');
             if (effectiveTabId === 'admin-settings') initializeAdminSettings();
+            if (effectiveTabId === 'admin-rag') window.loadRagFiles();
         }
 
         if (subTab) {
@@ -4948,4 +4949,94 @@ window.adminCancelOrder = async function (orderId) {
     }
 };
 
-// --- CORE UI HELPERS ---
+window.loadRagFiles = async function () {
+    const tbody = document.getElementById('admin-rag-table-body');
+    if (!tbody) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${API_BASE}/api/rag/files`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch RAG files');
+        const files = await res.json();
+
+        if (files.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 50px; opacity: 0.5;">No documents in Knowledge Base. Upload a PDF to start training.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = files.map(file => `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 12px; color: white; font-weight: 500;">
+                    <i class="fas fa-file-pdf" style="color: #ff4d4d; margin-right: 8px;"></i> ${file.name}
+                </td>
+                <td style="padding: 12px; opacity: 0.7;">${(file.size / 1024 / 1024).toFixed(2)} MB</td>
+                <td style="padding: 12px; opacity: 0.7;">${new Date(file.updated).toLocaleDateString()}</td>
+                <td style="padding: 12px; text-align: right;">
+                    <button class="btn btn-danger small outline" onclick="window.deleteRagFile('${file.name}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 50px; color: #ff4d4d;">Error loading files. Check backend connection.</td></tr>';
+    }
+};
+
+window.handleRagUpload = async function (event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    showToast('Uploading document...', 'info');
+    const formData = new FormData();
+    formData.append('document', file);
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${API_BASE}/api/rag/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        if (res.ok) {
+            showToast('Knowledge added!', 'success');
+            window.loadRagFiles();
+        } else {
+            const err = await res.json();
+            alert('Upload failed: ' + (err.error || 'Unknown error'));
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Upload Error');
+    } finally {
+        event.target.value = ''; // Reset input
+    }
+};
+
+window.deleteRagFile = async function (name) {
+    if (!confirm(`Remove "${name}" from Knowledge Base? AI will no longer use this for answers.`)) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${API_BASE}/api/rag/files/${encodeURIComponent(name)}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            showToast('Document removed', 'info');
+            window.loadRagFiles();
+        } else {
+            alert('Delete failed');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Delete Error');
+    }
+};

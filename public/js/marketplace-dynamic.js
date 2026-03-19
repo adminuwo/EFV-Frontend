@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applyFilter() {
         if (!productGrid) return;
-        
+
         let filtered = allProducts;
         if (activeFilter !== 'all') {
             filtered = allProducts.filter(p => p.type === activeFilter);
@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add a small fade-out effect for smooth transition
         productGrid.style.opacity = '0.3';
-        
+
         setTimeout(() => {
             renderProducts(filtered, true);
             productGrid.style.opacity = '1';
@@ -447,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buyBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 if (typeof window.showTermsAndConditions === 'function' && typeof window.checkoutOrder === 'function') {
                     window.showTermsAndConditions(() => {
                         const item = {
