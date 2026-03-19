@@ -29,6 +29,7 @@ class EFVSecurity {
         const user = JSON.parse(localStorage.getItem('efv_user') || '{}');
         this.userId = user._id || user.id || 'N/A';
         this.userEmail = user.email || 'N/A';
+        this.userName = user.name || 'Anonymous User';
     }
 
     async fetchIP() {
@@ -97,48 +98,65 @@ class EFVSecurity {
                     ];
 
                     const isSystemSS = (e.key === 'PrintScreen') || (e.keyCode === 44);
-                    const isWinSS = (e.metaKey && e.shiftKey && (e.key === 'S' || e.key === 'R' || e.key === '3' || e.key === '4' || e.key === '5'));
+                    const isWinSS = (e.metaKey && e.shiftKey && (e.key === 'S' || e.key === 's' || e.key === 'R' || e.key === 'r' || e.key === '3' || e.key === '4' || e.key === '5'));
                     const isMacSS = (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(e.key));
                     const isInspect = (e.key === 'F12') || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase()));
-                    const isSave = (e.ctrlKey && (e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U'));
+                    const isSave = (e.ctrlKey && (e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U' || e.key === 'p' || e.key === 'P'));
+                    const isWinKey = (e.key === 'Meta' || e.keyCode === 91 || e.keyCode === 92);
 
-                    if (isSystemSS || isWinSS || isMacSS || isInspect || isSave) {
+                    if (isSystemSS || isWinSS || isMacSS || isInspect || isSave || isWinKey) {
                         e.preventDefault();
                         e.stopPropagation();
+                        // Immediate blackout for any suspicious key combo
                         this.blackout(true);
-                        this.triggerViolation(`Action Blocked: ${e.key}`);
+                        this.triggerViolation(`Security Policy: ${e.key || 'Shortcut'} Blocked`);
+                        return false;
                     }
                 } else if (!['keydown', 'keyup'].includes(evt)) {
                     e.preventDefault();
+                    return false;
                 }
             }, true);
         });
 
-        // Fast Visibility
+        // Fast Visibility & Focus Loss Protection
+        // Snipping tools often steal focus or cause a blur event
+        const handleSecurityThreat = (reason) => {
+            if (this.isProtected && !this.isTampered) {
+                console.warn(`🛡️ Security Threat Detected: ${reason}`);
+                this.blackout(true);
+                this.triggerViolation(reason);
+            }
+        };
+
         document.addEventListener('visibilitychange', () => {
-            if (this.isProtected) {
-                if (document.hidden || document.visibilityState === 'hidden') {
-                    this.blackout(true);
-                    this.triggerViolation("Visibility Lost");
-                }
+            if (document.hidden || document.visibilityState === 'hidden') {
+                handleSecurityThreat("Screen Privacy Protection (Visibility)");
             }
         });
 
         window.addEventListener('blur', () => {
-            if (this.isProtected) this.blackout(true);
+            // Slight delay to check if it's just a regular click or a real blur (like Alt-Tab or Snip)
+            setTimeout(() => {
+                if (!document.hasFocus()) {
+                    handleSecurityThreat("Capture Tool Detection (Focus Loss)");
+                }
+            }, 100);
         });
 
-        window.addEventListener('focus', () => {
-            if (this.isProtected && !this.isTampered) this.blackout(false);
+        window.addEventListener('resize', () => {
+             // Rapid resizing is often used by screen recorders to snap to windows
+             if (this.isProtected) {
+                 this.blackout(true);
+             }
         });
 
-        // Mouse exit (Snipping Tool trigger)
-        document.addEventListener('mouseleave', () => {
-            if (this.isProtected) this.blackout(true);
-        });
-
-        document.addEventListener('mouseenter', () => {
-            if (this.isProtected && !this.isTampered) this.blackout(false);
+        // Mouse exit (Snipping Tool trigger / Screen Capture overlay)
+        document.addEventListener('mouseleave', (e) => {
+            // If the mouse leaves toward the top or side, it might be the Snipping Tool toolbar
+            if (this.isProtected) {
+                 handleSecurityThreat("Cursor Tracking Violation");
+            }
         });
     }
 
@@ -235,12 +253,12 @@ class EFVSecurity {
         if (!wmLayer) return;
 
         wmLayer.innerHTML = '';
-        const timestamp = new Date().toLocaleTimeString();
-        const text = `${this.userEmail} | ${this.userId} | ${timestamp} | IP: ${this.userIP}`;
+        const timestamp = new Date().toLocaleString([], { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const text = `${this.userName} (${this.userEmail}) | ID: ${this.userId} | ${timestamp} | IP: ${this.userIP} | EFV PROTECTED`;
 
         const isMobile = window.innerWidth < 768;
-        const rows = isMobile ? 12 : 14;
-        const cols = isMobile ? 3 : 6;
+        const rows = isMobile ? 15 : 20;
+        const cols = isMobile ? 4 : 8;
 
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < cols; j++) {
@@ -248,9 +266,14 @@ class EFVSecurity {
                 item.className = 'security-watermark-item';
                 item.textContent = text;
                 item.style.position = 'absolute';
-                item.style.pointerEvents = 'none';
                 item.style.top = `${(i * (100 / rows))}%`;
                 item.style.left = `${(j * (100 / cols))}%`;
+                item.style.transform = 'translate(-50%, -50%) rotate(-30deg)';
+                item.style.opacity = '0.08';
+                item.style.fontSize = isMobile ? '8px' : '10px';
+                item.style.whiteSpace = 'nowrap';
+                item.style.color = '#fff';
+                item.style.fontWeight = 'bold';
                 wmLayer.appendChild(item);
             }
         }

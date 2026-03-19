@@ -6,7 +6,7 @@
     width: 100%;
     height: 100%;
     background: #000; /* Solid black to hide everything behind */
-    z-index: 2147483647 !important; /* Absolute top - must be higher than watermarks/shields */
+    z-index: 2100000000 !important; /* Extremely high, but BELOW security layers (2.1B < 2.14B) */
     display: flex;
     flex-direction: column;
     animation: readerFadeIn 0.3s ease;
