@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
     // Determine the API URL from the environment variable or fallback to production
-    const envApiUrl = process.env.NEXT_PUBLIC_API_URL;
-    const apiUrl = envApiUrl || 'https://efvbackend-743928421487.asia-south1.run.app';
-    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '743928421487-tgh59ajhsmuk5ltomsooj46lials3hpt.apps.googleusercontent.com';
+    // Determine the API URL from the environment variable (check both naming conventions)
+    const envApiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.efv_backend_api;
+    const apiUrl = envApiUrl || ''; // Default to empty string instead of hardcoded
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
     
     if (!envApiUrl) {
-        console.warn('⚠️ NEXT_PUBLIC_API_URL is not set. Falling back to production URL.');
+        console.warn('⚠️ Both NEXT_PUBLIC_API_URL and efv_backend_api are missing in .env!');
     } else {
-        console.log('✅ NEXT_PUBLIC_API_URL is set to:', envApiUrl);
+        console.log('✅ API Config dynamic URL detected:', envApiUrl);
     }
     
     // Create the plain JavaScript content that matches the old api-config.js
