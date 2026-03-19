@@ -395,7 +395,7 @@ window.createChapterCard = function (index, data = null) {
     // Add hover effect for the card and the delete button
     div.onmouseenter = () => div.style.borderColor = 'rgba(212,175,55,0.3)';
     div.onmouseleave = () => div.style.borderColor = 'rgba(255,255,255,0.05)';
-    
+
     const delBtn = div.querySelector('.chapter-delete-btn');
     if (delBtn) {
         delBtn.onmouseenter = () => { delBtn.style.opacity = '1'; delBtn.style.transform = 'scale(1.2)'; };
@@ -407,53 +407,53 @@ window.createChapterCard = function (index, data = null) {
 
 window.removeChapter = function (index) {
     if (!confirm(`Are you sure you want to remove Chapter ${index + 1}?`)) return;
-    
+
     const container = document.getElementById('admin-chapters-container');
     const cards = Array.from(container.querySelectorAll('.chapter-card'));
-    
+
     // Find and remove the card
     const cardToRemove = cards.find(c => parseInt(c.dataset.index) === index);
     if (cardToRemove) {
         cardToRemove.classList.add('fade-out');
         setTimeout(() => {
             cardToRemove.remove();
-            
+
             // Re-index remaining cards
             const remainingCards = Array.from(container.querySelectorAll('.chapter-card'));
             remainingCards.forEach((card, i) => {
                 card.dataset.index = i;
-                
+
                 // Update CHAPTER label
                 const span = card.querySelector('span[style*="font-weight:700"]');
                 if (span) span.textContent = `CHAPTER ${i + 1}`;
-                
+
                 // Update IDs and attributes
                 const status = card.querySelector('.chapter-status');
                 if (status) status.id = `chapter-status-${i}`;
-                
+
                 const titleInput = card.querySelector('input[id^="chapter-title-"]');
                 if (titleInput) titleInput.id = `chapter-title-${i}`;
-                
+
                 const fileInput = card.querySelector('input[id^="chapter-audio-"]');
                 if (fileInput) {
                     fileInput.id = `chapter-audio-${i}`;
                     fileInput.setAttribute('onchange', `window.updateChapterFileStatus(${i})`);
                 }
-                
+
                 const currentFile = card.querySelector('div[id^="chapter-current-"]');
                 if (currentFile) currentFile.id = `chapter-current-${i}`;
-                
+
                 const deleteBtn = card.querySelector('.chapter-delete-btn');
                 if (deleteBtn) {
                     deleteBtn.setAttribute('onclick', `window.removeChapter(${i})`);
                     deleteBtn.parentElement.parentElement.querySelector('span[style*="font-weight:700"]').textContent = `CHAPTER ${i + 1}`;
                 }
             });
-            
+
             // Update total chapters input
             const totalInput = document.getElementById('admin-prod-total-chapters');
             if (totalInput) totalInput.value = remainingCards.length;
-            
+
             showToast("Chapter slot removed", "info");
         }, 300);
     }
@@ -478,7 +478,7 @@ window.deleteCurrentProduct = function () {
         showToast("No product to delete", "info");
         return;
     }
-    
+
     if (confirm('Are you sure you want to PERMANENTLY delete this product? This cannot be undone.')) {
         window.deleteProduct(productId).then(() => {
             closeProductModal();
@@ -3329,35 +3329,35 @@ window.accessDigitalContent = function (name, id, type) {
 function getImageForProduct(name) {
     if (!name) return CONFIG.BASE_PATH + 'assets/images/english_v1.jpeg';
     const upperName = name.toUpperCase().replace(/\s+/g, ' '); // Normalize spaces
-    
+
     // Explicit mappings based on actual file existence
-    if (upperName.includes('VOL 1') || upperName.includes('VOL1') || upperName.includes('VOLUME 1')) 
+    if (upperName.includes('VOL 1') || upperName.includes('VOL1') || upperName.includes('VOLUME 1'))
         return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
-        
-    if (upperName.includes('VOL 2') || upperName.includes('VOL2') || upperName.includes('VOLUME 2')) 
+
+    if (upperName.includes('VOL 2') || upperName.includes('VOL2') || upperName.includes('VOLUME 2'))
         return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 2.png');
-        
-    if (upperName.includes('VOL 3') || upperName.includes('VOL3') || upperName.includes('VOLUME 3')) 
+
+    if (upperName.includes('VOL 3') || upperName.includes('VOL3') || upperName.includes('VOLUME 3'))
         return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 3.png');
-        
-    if (upperName.includes('VOL 4') || upperName.includes('VOL4') || upperName.includes('VOLUME 4')) 
+
+    if (upperName.includes('VOL 4') || upperName.includes('VOL4') || upperName.includes('VOLUME 4'))
         return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 4.png');
-        
-    if (upperName.includes('VOL 5') || upperName.includes('VOL5') || upperName.includes('VOLUME 5')) 
+
+    if (upperName.includes('VOL 5') || upperName.includes('VOL5') || upperName.includes('VOLUME 5'))
         return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 5.png');
-        
-    if (upperName.includes('VOL 6') || upperName.includes('VOL6') || upperName.includes('VOLUME 6')) 
+
+    if (upperName.includes('VOL 6') || upperName.includes('VOL6') || upperName.includes('VOLUME 6'))
         return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 6.png');
-        
-    if (upperName.includes('VOL 7') || upperName.includes('VOL7') || upperName.includes('VOLUME 7')) 
+
+    if (upperName.includes('VOL 7') || upperName.includes('VOL7') || upperName.includes('VOLUME 7'))
         return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 7.jpeg');
-        
-    if (upperName.includes('VOL 8') || upperName.includes('VOL8') || upperName.includes('VOLUME 8')) 
+
+    if (upperName.includes('VOL 8') || upperName.includes('VOL8') || upperName.includes('VOLUME 8'))
         return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 8.png');
-        
-    if (upperName.includes('VOL 9') || upperName.includes('VOL9') || upperName.includes('VOLUME 9')) 
+
+    if (upperName.includes('VOL 9') || upperName.includes('VOL9') || upperName.includes('VOLUME 9'))
         return encodeURI(CONFIG.BASE_PATH + 'assets/images/vol 9.png');
-        
+
     return encodeURI(CONFIG.BASE_PATH + 'assets/images/english_v1.jpeg');
 }
 
@@ -3572,8 +3572,11 @@ window.renderAdminProducts = function (products) {
             } else if (p.thumbnail.startsWith('img/')) {
                 // Shared frontend images - transform to new assets path
                 thumbUrl = CONFIG.BASE_PATH + 'assets/images/' + p.thumbnail.replace('img/', '');
+            } else if (p.thumbnail.startsWith('assets/images/')) {
+                // Static assets in frontend
+                thumbUrl = CONFIG.BASE_PATH + p.thumbnail;
             } else {
-                // Backend uploads
+                // Backend uploads (usually uploads/...)
                 thumbUrl = `${API_BASE}/${p.thumbnail}`;
             }
         }
@@ -4946,56 +4949,3 @@ window.adminCancelOrder = async function (orderId) {
 };
 
 // --- CORE UI HELPERS ---
-window.importCatalog = async function () {
-    if (!confirm('This will import all products from the default EFV Catalog into the database. Existing books won\'t be duplicated. Proceed?')) return;
-
-    try {
-        const token = localStorage.getItem('authToken');
-        const res = await fetch(`${API_BASE}/api/products/bulk-create`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(window.STATIC_CATALOG || [])
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-            showToast(`Catalog Imported! Created: ${data.stats.created}, Skipped: ${data.stats.skipped}`, 'success');
-            loadAdminProductsFull();
-        } else {
-            alert('Import failed: ' + data.message);
-        }
-    } catch (e) {
-        console.error(e);
-        alert('Error importing catalog');
-    }
-};
-
-window.bulkDeleteProducts = async function () {
-    if (!confirm('CRITICAL: This will PERMANENTLY delete ALL products from the database. This cannot be undone. Are you absolutely sure?')) return;
-    if (!confirm('PROMPT 2/2: Last warning - delete everything?')) return;
-
-    try {
-        const token = localStorage.getItem('authToken');
-        // We'll need a backend endpoint for this or just loop through all IDs.
-        // Let's assume we have a bulk-delete endpoint or we just use a special flag.
-        // For now, let's use a single request if possible.
-        // I'll add a bulk-delete route to products.js as well.
-        const res = await fetch(`${API_BASE}/api/products/bulk-delete-all`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (res.ok) {
-            showToast('All products deleted', 'info');
-            loadAdminProductsFull();
-        } else {
-            alert('Bulk delete failed');
-        }
-    } catch (e) {
-        console.error(e);
-        alert('Error during bulk delete');
-    }
-};

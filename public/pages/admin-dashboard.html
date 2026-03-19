@@ -1084,14 +1084,6 @@
                         <p>Manage your inventory of books</p>
                     </div>
                     <button class="btn btn-gold" onclick="window.openAddProductModal()">+ Add New Product</button>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-danger small outline" onclick="window.bulkDeleteProducts()" style="padding: 8px 15px;">
-                            <i class="fas fa-trash-alt"></i> Bulk Delete
-                        </button>
-                        <button class="btn btn-gold small outline" onclick="window.importCatalog()" style="padding: 8px 15px;">
-                            <i class="fas fa-file-import"></i> Import Catalog
-                        </button>
-                    </div>
                 </header>
                 <div class="admin-controls glass-panel"
                     style="margin-bottom: 20px; padding: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
@@ -1777,7 +1769,8 @@
                                     onclick="document.getElementById('admin-audio-bulk').click()">
                                     <i class="fas fa-plus"></i> SELECT MULTIPLE FILES
                                 </button>
-                                <button type="button" class="btn btn-outline small" onclick="window.removeAllChapters()" style="border-color: rgba(255, 77, 77, 0.3); color: #ff6b6b;">
+                                <button type="button" class="btn btn-outline small" onclick="window.removeAllChapters()"
+                                    style="border-color: rgba(255, 77, 77, 0.3); color: #ff6b6b;">
                                     <i class="fas fa-trash-alt"></i> BULK DELETE CHAPTERS
                                 </button>
                             </div>
@@ -1793,7 +1786,8 @@
             </div>
 
             <div class="modal-footer-premium">
-                <button type="button" onclick="window.deleteCurrentProduct()" class="p-btn" style="background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.3); color: #ff6b6b; margin-right: auto; padding: 10px 20px;">
+                <button type="button" onclick="window.deleteCurrentProduct()" class="p-btn"
+                    style="background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.3); color: #ff6b6b; margin-right: auto; padding: 10px 20px;">
                     <i class="fas fa-trash-alt"></i> DELETE PRODUCT
                 </button>
                 <div style="display:flex; gap:10px;">
@@ -2279,7 +2273,6 @@
     </div>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="../js/api-config.js"></script>
-    <script src="../js/productsData.js"></script>
     <script src="../js/admin.js"></script>
     <script src="../js/security.js"></script>
 
@@ -2736,7 +2729,7 @@
                     const isAdded = ownedIds.has(p._id.toString());
                     let fullThumb = p.thumbnail || '';
                     let isFallback = false;
-                    
+
                     if (!fullThumb || (typeof fullThumb === 'string' && (fullThumb.includes('vol1-cover.png') || fullThumb.includes('english_v1.jpeg')))) {
                         isFallback = true;
                         const title = (p.title || '').toUpperCase();
@@ -2750,12 +2743,12 @@
                             fullThumb = '../assets/images/english_v1.jpeg';
                         }
                     }
-                    
+
                     // Only prefix with API_BASE if it's a real thumbnail from backend (e.g. uploads/...)
                     // Skip if it's a local asset path
                     if (!isFallback && typeof fullThumb === 'string') {
                         const isLocalAsset = fullThumb.startsWith('assets/') || fullThumb.startsWith('../assets/') || fullThumb.includes('/assets/images/');
-                        
+
                         if (!isLocalAsset) {
                             let cleanPath = fullThumb.replace(/^(\.\.\/|\.\/|\/)/, '');
                             if (!fullThumb.startsWith('http') && !fullThumb.startsWith(API_BASE)) {
@@ -2766,12 +2759,12 @@
                             fullThumb = '../' + fullThumb;
                         }
                     }
-                    
+
                     // Final encoding to handle spaces in filenames safely
                     if (typeof fullThumb === 'string') {
-                        fullThumb = encodeURI(fullThumb).replace(/%25/g, '%'); 
+                        fullThumb = encodeURI(fullThumb).replace(/%25/g, '%');
                     }
-                    
+
                     return `
                         <div class="glass-panel" style="display: flex; gap: 15px; padding: 12px; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
                             <img src="${fullThumb}" 

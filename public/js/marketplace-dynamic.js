@@ -384,6 +384,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 imageUrl = product.thumbnail;
             } else if (product.thumbnail.startsWith('img/')) {
                 imageUrl = CONFIG.BASE_PATH + 'assets/images/' + product.thumbnail.replace('img/', '');
+            } else if (product.thumbnail.startsWith('assets/images/')) {
+                imageUrl = CONFIG.BASE_PATH + product.thumbnail;
             } else {
                 imageUrl = `${API_BASE}/${product.thumbnail}`;
             }
