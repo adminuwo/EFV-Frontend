@@ -4946,3 +4946,56 @@ window.adminCancelOrder = async function (orderId) {
 };
 
 // --- CORE UI HELPERS ---
+window.importCatalog = async function () {
+    if (!confirm('This will import all products from the default EFV Catalog into the database. Existing books won\'t be duplicated. Proceed?')) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${API_BASE}/api/products/bulk-create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(window.STATIC_CATALOG || [])
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            showToast(`Catalog Imported! Created: ${data.stats.created}, Skipped: ${data.stats.skipped}`, 'success');
+            loadAdminProductsFull();
+        } else {
+            alert('Import failed: ' + data.message);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error importing catalog');
+    }
+};
+
+window.bulkDeleteProducts = async function () {
+    if (!confirm('CRITICAL: This will PERMANENTLY delete ALL products from the database. This cannot be undone. Are you absolutely sure?')) return;
+    if (!confirm('PROMPT 2/2: Last warning - delete everything?')) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        // We'll need a backend endpoint for this or just loop through all IDs.
+        // Let's assume we have a bulk-delete endpoint or we just use a special flag.
+        // For now, let's use a single request if possible.
+        // I'll add a bulk-delete route to products.js as well.
+        const res = await fetch(`${API_BASE}/api/products/bulk-delete-all`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            showToast('All products deleted', 'info');
+            loadAdminProductsFull();
+        } else {
+            alert('Bulk delete failed');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error during bulk delete');
+    }
+};

@@ -1084,6 +1084,14 @@
                         <p>Manage your inventory of books</p>
                     </div>
                     <button class="btn btn-gold" onclick="window.openAddProductModal()">+ Add New Product</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-danger small outline" onclick="window.bulkDeleteProducts()" style="padding: 8px 15px;">
+                            <i class="fas fa-trash-alt"></i> Bulk Delete
+                        </button>
+                        <button class="btn btn-gold small outline" onclick="window.importCatalog()" style="padding: 8px 15px;">
+                            <i class="fas fa-file-import"></i> Import Catalog
+                        </button>
+                    </div>
                 </header>
                 <div class="admin-controls glass-panel"
                     style="margin-bottom: 20px; padding: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
@@ -2271,6 +2279,7 @@
     </div>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="../js/api-config.js"></script>
+    <script src="../js/productsData.js"></script>
     <script src="../js/admin.js"></script>
     <script src="../js/security.js"></script>
 
