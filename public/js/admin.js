@@ -4967,11 +4967,18 @@ window.loadRagFiles = async function () {
             return;
         }
 
-        tbody.innerHTML = files.map(file => `
+        tbody.innerHTML = files.map(file => {
+            let statusHtml = '';
+            if (file.source === 'synced') statusHtml = '<span style="background: rgba(39, 174, 96, 0.1); color: #2ecc71; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;"><i class="fas fa-check-circle"></i> Synced</span>';
+            else if (file.source === 'cloud') statusHtml = '<span style="background: rgba(52, 152, 219, 0.1); color: #3498db; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;"><i class="fas fa-cloud"></i> Live Only</span>';
+            else statusHtml = '<span style="background: rgba(230, 126, 34, 0.1); color: #e67e22; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;"><i class="fas fa-laptop"></i> Local Only</span>';
+
+            return `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                 <td style="padding: 12px; color: white; font-weight: 500;">
                     <i class="fas fa-file-pdf" style="color: #ff4d4d; margin-right: 8px;"></i> ${file.name}
                 </td>
+                <td style="padding: 12px; opacity: 0.7;">${statusHtml}</td>
                 <td style="padding: 12px; opacity: 0.7;">${(file.size / 1024 / 1024).toFixed(2)} MB</td>
                 <td style="padding: 12px; opacity: 0.7;">${new Date(file.updated).toLocaleDateString()}</td>
                 <td style="padding: 12px; text-align: right;">
@@ -4980,7 +4987,8 @@ window.loadRagFiles = async function () {
                     </button>
                 </td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
 
     } catch (e) {
         console.error(e);
