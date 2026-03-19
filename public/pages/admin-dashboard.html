@@ -423,6 +423,10 @@
                         <p>Your digital collection (Full Access for Admin)</p>
                     </div>
                     <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-danger small admin-only-btn" onclick="deleteAllLibraryItems()"
+                            style="width: auto; padding: 0 15px; font-weight: 700; background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.4); color: #ff6b6b;">
+                            <i class="fas fa-trash-alt"></i> DELETE ALL
+                        </button>
                         <button class="btn btn-outline small admin-only-btn" onclick="openAddLibraryModal()"
                             style="width: auto; padding: 0 15px; font-weight: 700; border-color: var(--gold-text); color: var(--gold-text);">
                             <i class="fas fa-plus-circle"></i> ADD PRODUCTS
@@ -1760,10 +1764,15 @@
                                 here. They will be auto-assigned to chapters in order.</p>
                             <input type="file" id="admin-audio-bulk" multiple accept="audio/*" style="display: none;"
                                 onchange="handleBulkChapterUpload(this)">
-                            <button type="button" class="btn btn-outline small"
-                                onclick="document.getElementById('admin-audio-bulk').click()">
-                                <i class="fas fa-plus"></i> SELECT MULTIPLE FILES
-                            </button>
+                            <div style="display:flex; gap:10px; justify-content:center;">
+                                <button type="button" class="btn btn-outline small"
+                                    onclick="document.getElementById('admin-audio-bulk').click()">
+                                    <i class="fas fa-plus"></i> SELECT MULTIPLE FILES
+                                </button>
+                                <button type="button" class="btn btn-outline small" onclick="window.removeAllChapters()" style="border-color: rgba(255, 77, 77, 0.3); color: #ff6b6b;">
+                                    <i class="fas fa-trash-alt"></i> BULK DELETE CHAPTERS
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Chapters Container -->
@@ -1776,10 +1785,15 @@
             </div>
 
             <div class="modal-footer-premium">
-                <button type="button" onclick="closeProductModal()" class="p-btn p-btn-secondary">Cancel</button>
-                <button type="submit" form="admin-product-form" class="p-btn p-btn-primary" id="admin-save-btn">
-                    <i class="fas fa-save"></i> UPLOAD & SAVE PRODUCT
+                <button type="button" onclick="window.deleteCurrentProduct()" class="p-btn" style="background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.3); color: #ff6b6b; margin-right: auto; padding: 10px 20px;">
+                    <i class="fas fa-trash-alt"></i> DELETE PRODUCT
                 </button>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" onclick="closeProductModal()" class="p-btn p-btn-secondary">Cancel</button>
+                    <button type="submit" form="admin-product-form" class="p-btn p-btn-primary" id="admin-save-btn">
+                        <i class="fas fa-save"></i> UPDATE PRODUCT
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -221,12 +221,12 @@ window.openProductModal = function (productId = null) {
     toggleAdminFileFields('HARDCOVER');
 
     if (productId) {
-        if (title) title.textContent = 'Edit Product';
-        if (saveBtn) saveBtn.textContent = 'Update Product';
+        if (title) title.textContent = 'EDIT PRODUCT';
+        if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save"></i> UPDATE PRODUCT';
         window.editProduct(productId);
     } else {
-        if (title) title.textContent = 'Add New Product';
-        if (saveBtn) saveBtn.textContent = 'Add Product';
+        if (title) title.textContent = 'ADD NEW PRODUCT';
+        if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-plus-circle"></i> ADD PRODUCT';
     }
 
     modal.style.display = 'flex';
@@ -368,29 +368,124 @@ window.createChapterCard = function (index, data = null) {
     div.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,211,105,0.1); padding-bottom:8px;">
             <span style="font-weight:700; color:var(--gold-text); font-size: 0.75rem; letter-spacing:1px;">CHAPTER ${index + 1}</span>
-            <span class="chapter-status" id="chapter-status-${index}" style="font-size: 0.65rem; opacity: 0.6; color: ${currentFileHtml ? '#2ecc71' : 'inherit'}">
-                ${currentFileHtml ? '✓ Uploaded' : 'Waiting...'}
-            </span>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="chapter-status" id="chapter-status-${index}" style="font-size: 0.65rem; opacity: 0.6; color: ${currentFileHtml ? '#2ecc71' : 'inherit'}">
+                    ${currentFileHtml ? '✓ Uploaded' : 'Waiting...'}
+                </span>
+                <button type="button" onclick="window.removeChapter(${index})" class="chapter-delete-btn" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:0.8rem; opacity:0.6; transition:0.3s;" title="Remove Chapter">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         </div>
         <div class="p-form-group" style="margin-bottom:12px;">
             <input type="text" id="chapter-title-${index}" class="p-input" value="${title}" placeholder=" " style="font-size:0.85rem; height:35px;">
             <label class="p-label" style="font-size:0.7rem;">Chapter Title</label>
         </div>
         <div class="chapter-file-area" style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
-            <input type="file" id="chapter-audio-${index}" accept="audio/*" onchange="window.updateChapterFileStatus(${index})" 
-                style="width:100%; font-size:0.7rem; color:rgba(255,255,255,0.4); cursor:pointer;">
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="file" id="chapter-audio-${index}" accept="audio/*" onchange="window.updateChapterFileStatus(${index})" 
+                    style="width:100%; font-size:0.7rem; color:rgba(255,255,255,0.4); cursor:pointer;">
+            </div>
             <div id="chapter-current-${index}" style="font-size: 0.65rem; color: var(--gold-text); margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 ${currentFileHtml}
             </div>
         </div>
     `;
 
-    // Add hover effect
+    // Add hover effect for the card and the delete button
     div.onmouseenter = () => div.style.borderColor = 'rgba(212,175,55,0.3)';
     div.onmouseleave = () => div.style.borderColor = 'rgba(255,255,255,0.05)';
+    
+    const delBtn = div.querySelector('.chapter-delete-btn');
+    if (delBtn) {
+        delBtn.onmouseenter = () => { delBtn.style.opacity = '1'; delBtn.style.transform = 'scale(1.2)'; };
+        delBtn.onmouseleave = () => { delBtn.style.opacity = '0.6'; delBtn.style.transform = 'scale(1)'; };
+    }
 
     return div;
 };
+
+window.removeChapter = function (index) {
+    if (!confirm(`Are you sure you want to remove Chapter ${index + 1}?`)) return;
+    
+    const container = document.getElementById('admin-chapters-container');
+    const cards = Array.from(container.querySelectorAll('.chapter-card'));
+    
+    // Find and remove the card
+    const cardToRemove = cards.find(c => parseInt(c.dataset.index) === index);
+    if (cardToRemove) {
+        cardToRemove.classList.add('fade-out');
+        setTimeout(() => {
+            cardToRemove.remove();
+            
+            // Re-index remaining cards
+            const remainingCards = Array.from(container.querySelectorAll('.chapter-card'));
+            remainingCards.forEach((card, i) => {
+                card.dataset.index = i;
+                
+                // Update CHAPTER label
+                const span = card.querySelector('span[style*="font-weight:700"]');
+                if (span) span.textContent = `CHAPTER ${i + 1}`;
+                
+                // Update IDs and attributes
+                const status = card.querySelector('.chapter-status');
+                if (status) status.id = `chapter-status-${i}`;
+                
+                const titleInput = card.querySelector('input[id^="chapter-title-"]');
+                if (titleInput) titleInput.id = `chapter-title-${i}`;
+                
+                const fileInput = card.querySelector('input[id^="chapter-audio-"]');
+                if (fileInput) {
+                    fileInput.id = `chapter-audio-${i}`;
+                    fileInput.setAttribute('onchange', `window.updateChapterFileStatus(${i})`);
+                }
+                
+                const currentFile = card.querySelector('div[id^="chapter-current-"]');
+                if (currentFile) currentFile.id = `chapter-current-${i}`;
+                
+                const deleteBtn = card.querySelector('.chapter-delete-btn');
+                if (deleteBtn) {
+                    deleteBtn.setAttribute('onclick', `window.removeChapter(${i})`);
+                    deleteBtn.parentElement.parentElement.querySelector('span[style*="font-weight:700"]').textContent = `CHAPTER ${i + 1}`;
+                }
+            });
+            
+            // Update total chapters input
+            const totalInput = document.getElementById('admin-prod-total-chapters');
+            if (totalInput) totalInput.value = remainingCards.length;
+            
+            showToast("Chapter slot removed", "info");
+        }, 300);
+    }
+};
+
+window.removeAllChapters = function () {
+    const container = document.getElementById('admin-chapters-container');
+    const cards = container.querySelectorAll('.chapter-card');
+    if (cards.length === 0) return;
+
+    if (confirm(`Are you sure you want to remove all ${cards.length} chapters? This will clear all chapter names and file links.`)) {
+        container.innerHTML = '';
+        const totalInput = document.getElementById('admin-prod-total-chapters');
+        if (totalInput) totalInput.value = 0;
+        showToast("All chapters removed", "info");
+    }
+};
+
+window.deleteCurrentProduct = function () {
+    const productId = document.getElementById('admin-prod-id').value;
+    if (!productId) {
+        showToast("No product to delete", "info");
+        return;
+    }
+    
+    if (confirm('Are you sure you want to PERMANENTLY delete this product? This cannot be undone.')) {
+        window.deleteProduct(productId).then(() => {
+            closeProductModal();
+        });
+    }
+};
+
 
 window.updateChapterFileStatus = function (index) {
     const input = document.getElementById(`chapter-audio-${index}`);
@@ -2571,6 +2666,37 @@ window.removeFromLibrary = async function (prodId) {
     });
     localStorage.setItem(libKey, JSON.stringify(library));
     renderLibraryTab();
+    if (typeof updateStats === 'function') updateStats();
+};
+
+window.deleteAllLibraryItems = async function () {
+    if (!confirm('Are you sure you want to delete ALL items from your library? This action cannot be undone.')) return;
+
+    const token = localStorage.getItem('authToken');
+    try {
+        if (token) {
+            const res = await fetch(`${API_BASE}/api/library/my-library/all`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                console.log('✅ All items removed from library backend');
+                if (typeof showToast === 'function') showToast('Library cleared successfully', 'success');
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                console.warn('Backend delete all failed:', errData.message);
+                if (typeof showToast === 'function') showToast(errData.message || 'Failed to clear library', 'error');
+            }
+        }
+    } catch (e) {
+        console.warn('Backend delete all error:', e);
+        if (typeof showToast === 'function') showToast('Error connecting to server', 'error');
+    }
+
+    const libKey = getUserKey('efv_digital_library');
+    localStorage.removeItem(libKey);
+    localStorage.setItem(libKey, JSON.stringify([]));
+    renderLibraryTab([]);
     if (typeof updateStats === 'function') updateStats();
 };
 

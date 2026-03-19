@@ -280,8 +280,14 @@
                         <h1>My <span class="gold-text">Library</span></h1>
                         <p>Your digital collection</p>
                     </div>
-                    <button class="btn btn-outline small" onclick="syncLibraryWithBackend()"><i
-                            class="fas fa-sync-alt"></i> Sync</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-danger small" onclick="deleteAllLibraryItems()"
+                            style="width: auto; padding: 0 15px; font-weight: 700; background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.4); color: #ff6b6b;">
+                            <i class="fas fa-trash-alt"></i> DELETE ALL
+                        </button>
+                        <button class="btn btn-outline small" onclick="syncLibraryWithBackend()"><i
+                                class="fas fa-sync-alt"></i> Sync</button>
+                    </div>
                 </header>
 
                 <!-- Library Sub-Tabs -->

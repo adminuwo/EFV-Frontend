@@ -1800,6 +1800,37 @@ window.removeFromLibrary = async function (prodId) {
     if (backendSuccess) showToast('Item permanently removed from library', 'success');
 };
 
+window.deleteAllLibraryItems = async function () {
+    if (!confirm('Are you sure you want to delete ALL items from your library? This action cannot be undone.')) return;
+
+    const token = localStorage.getItem('authToken');
+    try {
+        if (token) {
+            const res = await fetch(`${API_BASE}/api/library/my-library/all`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                console.log('✅ All items removed from library backend');
+                if (typeof showToast === 'function') showToast('Library cleared successfully', 'success');
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                console.warn('Backend delete all failed:', errData.message);
+                if (typeof showToast === 'function') showToast(errData.message || 'Failed to clear library', 'error');
+            }
+        }
+    } catch (e) {
+        console.warn('Backend delete all error:', e);
+        if (typeof showToast === 'function') showToast('Error connecting to server', 'error');
+    }
+
+    const libKey = getUserKey('efv_digital_library');
+    localStorage.removeItem(libKey);
+    localStorage.setItem(libKey, JSON.stringify([]));
+    renderLibraryTab([]);
+    if (typeof updateStats === 'function') updateStats();
+};
+
 function updateStats() {
     const profile = window.currentUserProfile;
     if (!profile) return;
