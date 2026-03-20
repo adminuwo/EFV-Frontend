@@ -3900,13 +3900,18 @@ if (productForm) {
             // Handle Chapter Uploads
             if (productType === 'AUDIOBOOK') {
                 const chapterCards = document.querySelectorAll('.chapter-card');
-                chapterCards.forEach(card => {
-                    const index = card.dataset.index;
-                    const fileInput = document.getElementById(`chapter-audio-${index}`);
-                    if (fileInput && fileInput.files[0]) {
-                        formData.append(`chapter_${index}`, fileInput.files[0]);
-                    }
-                });
+                if (chapterCards.length > 0) {
+                    chapterCards.forEach(card => {
+                        const index = card.dataset.index;
+                        const fileInput = document.getElementById(`chapter-audio-${index}`);
+                        if (fileInput && fileInput.files[0]) {
+                            formData.append(`chapter_${index}`, fileInput.files[0]);
+                        }
+                    });
+                } else {
+                    const audio = document.getElementById('admin-file-audio') ? document.getElementById('admin-file-audio').files[0] : null;
+                    if (audio) formData.append('audio', audio);
+                }
             } else {
                 const audio = document.getElementById('admin-file-audio') ? document.getElementById('admin-file-audio').files[0] : null;
                 if (audio) formData.append('audio', audio);
@@ -3917,11 +3922,16 @@ if (productForm) {
             let hasFiles = !!(cover || ebook || (galleryFiles && galleryFiles.length > 0));
             if (productType === 'AUDIOBOOK') {
                 const chapterFiles = document.querySelectorAll('.chapter-card input[type="file"]');
-                for (let input of chapterFiles) {
-                    if (input.files.length > 0) {
-                        hasFiles = true;
-                        break;
+                if (chapterFiles.length > 0) {
+                    for (let input of chapterFiles) {
+                        if (input.files.length > 0) {
+                            hasFiles = true;
+                            break;
+                        }
                     }
+                } else {
+                    const audioInput = document.getElementById('admin-file-audio');
+                    if (audioInput && audioInput.files.length > 0) hasFiles = true;
                 }
             } else {
                 const audioInput = document.getElementById('admin-file-audio');
