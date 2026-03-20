@@ -3904,8 +3904,8 @@ if (productForm) {
 
                 const result = await uploadRes.json();
                 if (!uploadRes.ok) {
-                    if (version !== '2.1') {
-                        throw new Error(`Outdated Server (Version: ${version || 'OLD'}). Please restart your backend terminal!`);
+                    if (!version) {
+                        throw new Error(`Outdated Server (No Version Found). Please restart your backend terminal!`);
                     }
                     throw new Error(result.message || 'File upload failed');
                 }
