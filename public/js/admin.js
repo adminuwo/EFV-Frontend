@@ -261,6 +261,10 @@ window.editProduct = async function (productId) {
 
         if (product.thumbnail) document.getElementById('admin-current-cover').innerHTML = `<i class="fas fa-file-image"></i> Current: ${product.thumbnail.split('/').pop()}`;
         if (product.filePath && product.type === 'EBOOK') document.getElementById('admin-current-ebook').innerHTML = `<i class="fas fa-file-pdf"></i> Current: ${product.filePath.split('/').pop()}`;
+        if (product.filePath && product.type === 'AUDIOBOOK') {
+            const audioPreview = document.getElementById('admin-current-audio');
+            if (audioPreview) audioPreview.innerHTML = `<i class="fas fa-file-audio"></i> Current: ${product.filePath.split('/').pop()}`;
+        }
 
         // Load Gallery
         if (product.gallery && product.gallery.length > 0) {
@@ -1255,7 +1259,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!product) { alert('Failed to load audiobook details.'); return; }
 
-        const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+        let chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+
+        // Fallback: If no chapters but we have a single filePath, treat it as a virtual Chapter 1
+        if (chapters.length === 0 && product.filePath) {
+            chapters = [{
+                chapterNumber: 1,
+                title: product.title || 'Full Product',
+                filePath: product.filePath
+            }];
+        }
+
         const totalChapters = chapters.length;
 
         let abProgress = null;
@@ -1356,7 +1370,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!product) { alert('Failed to load audiobook.'); return; }
 
-        const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+        let chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+
+        // Fallback: If no chapters but we have a single filePath, treat it as a virtual Chapter 1
+        if (chapters.length === 0 && product.filePath) {
+            chapters = [{
+                chapterNumber: 1,
+                title: product.title || 'Full Product',
+                filePath: product.filePath
+            }];
+        }
+
         if (chapters.length === 0) { alert('No chapters available.'); return; }
 
         let abProgress = null;
@@ -1380,6 +1404,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 initialChapter = abProgress.currentChapterIndex || 0;
                 initialTime = abProgress.currentChapterTime || 0;
             }
+        }
+
+        // --- SAFETY CHECK: Ensure initialChapter is within bounds ---
+        if (initialChapter >= chapters.length) {
+            initialChapter = 0;
+            initialTime = 0;
         }
 
         let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');

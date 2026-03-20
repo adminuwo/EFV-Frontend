@@ -3035,6 +3035,12 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
         }
     }
 
+    // --- SAFETY CHECK: Ensure initialChapter is within bounds ---
+    if (initialChapter >= chapters.length) {
+        initialChapter = 0;
+        initialTime = 0;
+    }
+
     // Thumbnail
     let thumbUrl = product.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
     if (thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith(CONFIG.BASE_PATH + 'assets/images/')) {
