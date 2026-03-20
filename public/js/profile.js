@@ -2284,9 +2284,31 @@ window.openEbookReader = async function (product) {
         if (!token) throw new Error("Please re-login");
 
         const effectiveId = product._id || product.id;
-        // Optimization: Use token in both URL and Headers for maximum compatibility with Range requests
         let url = `${CONTENT_CONFIG.contentApi}/ebook/${effectiveId}?token=${encodeURIComponent(token)}&t=${Date.now()}`;
         console.log(`📂 Reader: Requesting PDF stream from: ${url}`);
+
+        // ✅ PRE-FLIGHT CHECK: Get actual server error before PDF.js swallows it
+        try {
+            const checkRes = await fetch(`${CONTENT_CONFIG.contentApi}/ebook/${effectiveId}`, {
+                method: 'HEAD',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!checkRes.ok) {
+                const errRes = await fetch(`${CONTENT_CONFIG.contentApi}/ebook/${effectiveId}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Range': 'bytes=0-0' }
+                });
+                let errMsg = '';
+                try { const j = await errRes.json(); errMsg = j.message; } catch(e) {}
+                if (checkRes.status === 404) throw new Error(`404: ${errMsg || 'E-Book file not found on server'}`);
+                else if (checkRes.status === 403) throw new Error('403: Access Denied');
+                else if (checkRes.status === 401) throw new Error('401: Session expired');
+                else throw new Error(`${checkRes.status}: ${errMsg || 'Server error'}`);
+            }
+        } catch (preFlightErr) {
+            if (preFlightErr.message.startsWith('4') || preFlightErr.message.startsWith('5')) throw preFlightErr;
+            console.warn('Pre-flight check failed (network?):', preFlightErr.message);
+        }
 
         const loadingTask = pdfjsLib.getDocument({
             url: url,
@@ -2404,11 +2426,15 @@ window.openEbookReader = async function (product) {
     } catch (error) {
         console.error("Reader Error:", error);
         let errorMsg = `Failed to load PDF (${error.message || 'Unknown Error'}). Please ensure you are logged in.`;
-        if (error.name === 'MissingPDFException' || (error.message && error.message.includes('404'))) {
-            errorMsg = "PDF file not found on server. Please ensure the file was uploaded correctly.";
-        } else if (error.message && error.message.includes('401')) {
+        const errStr = (error.message || '');
+        if (errStr.includes('404') || error.name === 'MissingPDFException') {
+            const serverMsg = errStr.replace(/^404:\s*/, '');
+            errorMsg = serverMsg && serverMsg !== errStr
+                ? `File Error: ${serverMsg}`
+                : "E-Book file not found on server. Please contact support.";
+        } else if (errStr.includes('401')) {
             errorMsg = "Your session has expired. Please log in again.";
-        } else if (error.message && error.message.includes('403')) {
+        } else if (errStr.includes('403')) {
             errorMsg = "Access Denied: You do not have permission to view this content.";
         }
         alert(errorMsg);
