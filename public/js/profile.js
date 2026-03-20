@@ -2862,7 +2862,17 @@ window.openAudiobookDetail = async function (productId, scrollToChapters = false
         return;
     }
 
-    const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+    let chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+
+    // Fallback: If no chapters but we have a single filePath, treat it as a virtual Chapter 1
+    if (chapters.length === 0 && product.filePath) {
+        chapters = [{
+            chapterNumber: 1,
+            title: product.title || 'Full Product',
+            filePath: product.filePath
+        }];
+    }
+    
     const totalChapters = chapters.length;
 
     // Fetch progress
@@ -2977,7 +2987,17 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
     } catch (e) { }
     if (!product) { alert('Failed to load audiobook.'); return; }
 
-    const chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+    let chapters = (product.chapters || []).filter(c => c.filePath).sort((a, b) => a.chapterNumber - b.chapterNumber);
+    
+    // Fallback: If no chapters but we have a single filePath, treat it as a virtual Chapter 1
+    if (chapters.length === 0 && product.filePath) {
+        chapters = [{
+            chapterNumber: 1,
+            title: product.title || 'Full Product',
+            filePath: product.filePath
+        }];
+    }
+    
     if (chapters.length === 0) { alert('No chapters available.'); return; }
 
     // Fetch chapter progress

@@ -4004,6 +4004,13 @@ if (productForm) {
             } else if (productData.type === 'AUDIOBOOK') {
                 productData.totalChapters = Number(document.getElementById('admin-prod-total-chapters').value) || 0;
 
+                // Handle single audio file upload vs chapters
+                if (uploadData.audioPath) {
+                    productData.filePath = uploadData.audioPath;
+                } else if (window._currentEditingProduct?.filePath) {
+                    productData.filePath = window._currentEditingProduct.filePath;
+                }
+
                 // Collect chapter metadata
                 const chapterCards = document.querySelectorAll('.chapter-card');
                 const chapters = [];
@@ -4011,12 +4018,10 @@ if (productForm) {
                     const index = card.dataset.index;
                     const title = document.getElementById(`chapter-title-${index}`).value || `Chapter ${Number(index) + 1}`;
 
-                    // If we have a new upload path from the server
                     let filePath = '';
                     if (uploadData.chapterPaths && uploadData.chapterPaths[index]) {
                         filePath = uploadData.chapterPaths[index];
-                    } else if (window._currentEditingProduct && window._currentEditingProduct.chapters && window._currentEditingProduct.chapters[index]) {
-                        // Persist old path if not replaced
+                    } else if (window._currentEditingProduct?.chapters?.[index]) {
                         filePath = window._currentEditingProduct.chapters[index].filePath;
                     }
 
@@ -4026,9 +4031,10 @@ if (productForm) {
                         filePath: filePath
                     });
                 });
+
                 productData.chapters = chapters;
 
-                // For backward compatibility or single file view if needed
+                // If chapters exist, prefer the first chapter's path for single-track fallback
                 if (chapters.length > 0 && chapters[0].filePath) {
                     productData.filePath = chapters[0].filePath;
                 }
