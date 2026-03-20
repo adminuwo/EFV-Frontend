@@ -2725,7 +2725,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const clientId = (typeof CONFIG !== 'undefined' && CONFIG.GOOGLE_CLIENT_ID) 
             ? CONFIG.GOOGLE_CLIENT_ID 
-            : "743928421487-tgh59ajhsmuk5ltomsooj46lials3hpt.apps.googleusercontent.com";
+            : "246449377479-favi4q5sskhc1hnljs53aik69ftnr6bf.apps.googleusercontent.com";
 
         google.accounts.id.initialize({
             client_id: clientId,

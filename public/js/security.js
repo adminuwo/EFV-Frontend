@@ -238,7 +238,7 @@ class EFVSecurity {
     }
 
     _drawWatermark(target) {
-        if (!target || !this.isActive) return;
+        return; // Watermark disabled as per user request
 
         // Ensure we have a dedicated watermark layer so we don't wipe the reader
         let wmLayer = target.id === 'security-watermark-container' ? target : target.querySelector('.efv-internal-watermark');

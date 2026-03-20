@@ -2286,6 +2286,7 @@ window.openEbookReader = async function (product) {
         const effectiveId = product._id || product.id;
         // Optimization: Use token in both URL and Headers for maximum compatibility with Range requests
         let url = `${CONTENT_CONFIG.contentApi}/ebook/${effectiveId}?token=${encodeURIComponent(token)}&t=${Date.now()}`;
+        console.log(`📂 Reader: Requesting PDF stream from: ${url}`);
 
         const loadingTask = pdfjsLib.getDocument({
             url: url,
@@ -3104,6 +3105,7 @@ window.launchEFVPlayer = async function (productId, chapterIndex = 0) {
         currentChIdx = idx;
 
         const chapterSrc = `${CONTENT_CONFIG.contentApi}/chapter/${productId}/${idx}?token=${token}&t=${Date.now()}`;
+        console.log(`🎵 Player: Requesting Chapter Stream from: ${chapterSrc}`);
         audioEl.src = chapterSrc;
         audioEl.load();
 

@@ -2872,6 +2872,8 @@
                         if (typeof fetchPartnerMessages === 'function') fetchPartnerMessages();
                     } else if (tabId === 'library') {
                         if (typeof renderLibraryTab === 'function') renderLibraryTab();
+                    } else if (tabId === 'admin-rag') {
+                        if (typeof window.loadRagFiles === 'function') window.loadRagFiles();
                     }
                 };
             }, 600);

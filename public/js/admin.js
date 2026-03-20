@@ -793,6 +793,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'admin-support') loadAdminSupport();
             if (targetId === 'admin-contacts') loadAdminContacts();
             if (targetId === 'admin-returns') loadAdminReturns();
+            if (targetId === 'admin-rag') window.loadRagFiles();
 
             // ROLE BASED SETTINGS REDIRECTION
             if (targetId === 'settings') {
@@ -4963,7 +4964,7 @@ window.loadRagFiles = async function () {
         const files = await res.json();
 
         if (files.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 50px; opacity: 0.5;">No documents in Knowledge Base. Upload a PDF to start training.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 50px; opacity: 0.5;">No documents in Knowledge Base. Upload a PDF to start training.</td></tr>';
             return;
         }
 
@@ -4992,7 +4993,7 @@ window.loadRagFiles = async function () {
 
     } catch (e) {
         console.error(e);
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 50px; color: #ff4d4d;">Error loading files. Check backend connection.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 50px; color: #ff4d4d;">Error loading files. Check backend connection.</td></tr>';
     }
 };
 
