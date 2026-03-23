@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Track Order | EFV™ — Live Shipment Tracking</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
     <meta name="description"
         content="Track your EFV book order in real-time. Get live shipment updates, current location, and delivery timeline powered by NimbusPost.">
     <link rel="stylesheet" href="../css/style.css">
@@ -1204,7 +1206,8 @@
             document.getElementById('pill-amount').textContent = `₹${(data.totalAmount || 0).toLocaleString('en-IN')}`;
 
             // MILESTONE PROGRESS
-            renderMilestones(data.status);
+            const initialHist = (data.liveTracking && data.liveTracking.data) ? (data.liveTracking.data.history || data.liveTracking.data.tracking_events || data.liveTracking.data.events || []) : [];
+            renderMilestones(data.status, initialHist.length > 0);
 
             // LIVE TRACKING
             if (data.awbNumber) {
@@ -1242,26 +1245,42 @@
         }
 
         // ── Render Milestones ──
-        function renderMilestones(status) {
+        function renderMilestones(status, hasHistory = false) {
             const statusMap = {
                 'Pending': 0,
                 'Processing': 0,
                 'Paid': 0,
                 'Packed': 1,
+                'Booked': 1,
+                'Manifested': 1,
                 'Shipped': 2,
                 'In Transit': 2,
+                'Dispatched': 2,
+                'Dispatched to Hub': 2,
+                'Reached at Hub': 2,
                 'Out for Delivery': 3,
                 'Delivered': 4,
             };
 
-            let activeIdx = statusMap[status] !== undefined ? statusMap[status] : 0;
-
-            // Also check partial matches for live Nimbus statuses
+            let activeIdx = 0;
             const s = (status || '').toLowerCase();
-            if (s.includes('delivered') && !s.includes('out')) activeIdx = 4;
-            else if (s.includes('out') || s.includes('delivery agent')) activeIdx = 3;
-            else if (s.includes('transit') || s.includes('shipped') || s.includes('in-transit')) activeIdx = 2;
-            else if (s.includes('picked') || s.includes('packed') || s.includes('manifested')) activeIdx = 1;
+
+            // 1. Direct map lookup
+            if (statusMap[status] !== undefined) {
+                activeIdx = statusMap[status];
+            } else {
+                // 2. Fallback to keyword matching
+                if (s.includes('delivered') && !s.includes('out')) activeIdx = 4;
+                else if (s.includes('out') || s.includes('delivery agent') || s.includes('ofp')) activeIdx = 3;
+                else if (s.includes('transit') || s.includes('shipped') || s.includes('hub') || s.includes('dispatched') || s.includes('in-transit')) activeIdx = 2;
+                else if (s.includes('picked') || s.includes('packed') || s.includes('manifested') || s.includes('booked')) activeIdx = 1;
+                else activeIdx = 0;
+            }
+
+            // 3. Fallback: If status is unknown/generic but we HAVE history, it must be at least Picked Up
+            if (activeIdx === 0 && hasHistory) {
+                activeIdx = 2; // Usually history only appears once it's in transit or at hub
+            }
 
             const total = 4; // 0..4
             for (let i = 0; i <= total; i++) {
@@ -1272,7 +1291,7 @@
                 else if (i === activeIdx) el.classList.add('active');
             }
 
-            // Progress bar width
+            // Progress bar width (span is 80% because it starts at 10% and ends at 90%)
             const pct = activeIdx === 0 ? 0 : ((activeIdx / total) * 80);
             document.getElementById('progress-bar').style.width = `${pct}%`;
         }
@@ -1297,14 +1316,15 @@
             if (latestLoc) document.getElementById('pill-location').textContent = latestLoc;
             else document.getElementById('pill-location').textContent = 'In Transit';
 
+            // Render history events
+            const history = trackingData.history || trackingData.tracking_events || trackingData.events || [];
+            const hasHistory = history.length > 0;
+
             // Update current status from live data
             if (trackingData.status_name) {
                 renderStatusBadge(trackingData.status_name);
-                renderMilestones(trackingData.status_name);
+                renderMilestones(trackingData.status_name, hasHistory);
             }
-
-            // Render history events
-            const history = trackingData.history || trackingData.tracking_events || trackingData.events || [];
 
             if (history.length === 0) {
                 container.innerHTML = `
@@ -1361,7 +1381,8 @@
                     renderLiveLog(json.data);
                     if (json.data.status_name) {
                         renderStatusBadge(json.data.status_name);
-                        renderMilestones(json.data.status_name);
+                        const hist = json.data.history || json.data.tracking_events || json.data.events || [];
+                        renderMilestones(json.data.status_name, hist.length > 0);
                     }
                 } else {
                     document.getElementById('live-tracking-log').innerHTML = `

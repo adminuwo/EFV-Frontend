@@ -2,9 +2,12 @@
 class EFVChatbot {
     constructor() {
         this.isOpen = false;
+        this.isRegistered = !!localStorage.getItem('efv_bot_registered');
+        this.userEmail = localStorage.getItem('efv_bot_registered_email') || '';
         this.history = [];
         const base = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : 'http://localhost:8080';
         this.apiUrl = `${base}/api/chat/message`;
+        this.registerUrl = `${base}/api/chat/register`;
         this.init();
     }
 
@@ -39,19 +42,19 @@ class EFVChatbot {
                 <!-- Floating Chat Button -->
                 <button id="efv-chat-toggle" class="efv-chat-button" aria-label="Open EFV Intelligence">
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 1C12 1 12.5 9.5 23 12C12.5 14.5 12 23 12 23C12 23 11.5 14.5 1 12C11.5 9.5 12 1 12 1Z" fill="#F4D03F"/>
-                        <path d="M5 4C5 4 5.2 6 7.5 6.5C5.2 7 5 9 5 9C5 9 4.8 7 2.5 6.5C4.8 6 5 4 5 4Z" fill="#F4D03F" opacity="0.6"/>
+                        <path d="M12 1C12 1 12.5 9.5 23 12C12.5 14.5 12 23 12 23C12 23 11.5 14.5 1 12C11.5 9.5 12 1 12 1Z" fill="#D6A85F"/>
+                        <path d="M5 4C5 4 5.2 6 7.5 6.5C5.2 7 5 9 5 9C5 9 4.8 7 2.5 6.5C4.8 6 5 4 5 4Z" fill="#D6A85F" opacity="0.6"/>
                     </svg>
                 </button>
                 
                 <!-- Tooltip with curved arrow -->
                 <div class="efv-chat-tooltip">
-                    <span class="efv-tooltip-text">EFV BOT</span>
+                    <span class="efv-tooltip-text">EFV<sup>™</sup> BOT</span>
                     <svg class="efv-curved-arrow" xmlns="http://www.w3.org/2000/svg" width="60" height="40" viewBox="0 0 60 40">
-                        <path d="M 10 5 Q 15 35, 50 35" stroke="#d4af37" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                        <path d="M 10 5 Q 15 35, 50 35" stroke="#D6A85F" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
                         <defs>
                             <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                                <polygon points="0 0, 10 3, 0 6" fill="#d4af37" />
+                                <polygon points="0 0, 10 3, 0 6" fill="#D6A85F" />
                             </marker>
                         </defs>
                     </svg>
@@ -71,11 +74,7 @@ class EFVChatbot {
                     </div>
 
                     <div id="efv-chat-messages" class="efv-chat-messages">
-                        <div class="efv-message efv-ai-message">
-                            <div class="efv-message-content">
-                                Welcome to EFV™. Let's measure your alignment.
-                            </div>
-                        </div>
+                        <!-- Initial Welcome Message (Dynamic) -->
                     </div>
 
                     <div class="efv-chat-input-container">
@@ -101,16 +100,16 @@ class EFVChatbot {
                     <div class="efv-intro-header">
                         <div class="efv-intro-icon-glow">
                              <svg width="60" height="60" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2C12 2 12.5 9.5 23 12C12.5 14.5 12 22 12 22C12 22 11.5 14.5 1 12C11.5 9.5 12 2 12 2Z" fill="#D4AF37"/>
+                                <path d="M12 2C12 2 12.5 9.5 23 12C12.5 14.5 12 22 12 22C12 22 11.5 14.5 1 12C11.5 9.5 12 2 12 2Z" fill="#D6A85F"/>
                             </svg>
                         </div>
-                        <h2>MEET EFV ASSISTANT</h2>
-                        <span class="efv-intro-subtitle">Your intelligent guide across the EFV platform.</span>
+                        <h2>MEET EFV<sup>™</sup> ASSISTANT</h2>
+                        <span class="efv-intro-subtitle">Your intelligent guide across the EFV<sup>™</sup> platform.</span>
                     </div>
                     
                     <div class="efv-intro-body">
-                        <p>Welcome to EFV™.</p>
-                        <p>If you ever need help exploring the platform, finding books, understanding features, or asking questions, our EFV Assistant is always here for you.</p>
+                        <p>Welcome to EFV<sup>™</sup>.</p>
+                        <p>If you ever need help exploring the platform, finding books, understanding features, or asking questions, our EFV<sup>™</sup> Assistant is always here for you.</p>
                         <p class="efv-highlight-text">Simply click the glowing star icon in the bottom-right corner to start chatting.</p>
                     </div>
 
@@ -122,7 +121,7 @@ class EFVChatbot {
                     <!-- Short Elegant Pointer -->
                     <div class="efv-card-pointer">
                         <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                            <path d="M5 5 L35 35 M35 15 L35 35 L15 35" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M5 5 L35 35 M35 15 L35 35 L15 35" stroke="#D6A85F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
                 </div>
@@ -218,16 +217,172 @@ class EFVChatbot {
         const chatWindow = document.getElementById('efv-chat-window');
         const toggleBtn = document.getElementById('efv-chat-toggle');
         const overlay = document.getElementById('efv-chat-overlay');
+        const messagesContainer = document.getElementById('efv-chat-messages');
 
         if (this.isOpen) {
             chatWindow.classList.add('active');
             if (overlay) overlay.classList.add('active');
             toggleBtn.style.display = 'none';
+
+            if (!this.isRegistered) {
+                this.disableChatInput();
+            } else {
+                this.enableChatInput();
+            }
+
+            // If empty, show welcome (use children.length to ignore HTML comments)
+            if (messagesContainer.children.length === 0) {
+                this.showInitialGreeting();
+            }
         } else {
             chatWindow.classList.remove('active');
             if (overlay) overlay.classList.remove('active');
             toggleBtn.style.display = 'flex';
         }
+    }
+
+    disableChatInput() {
+        const input = document.getElementById('efv-chat-input');
+        const sendBtn = document.getElementById('efv-chat-send');
+        if (input) {
+            input.disabled = true;
+            input.placeholder = 'Register above to chat...';
+            input.style.opacity = '0.5';
+            input.style.cursor = 'not-allowed';
+        }
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.style.opacity = '0.5';
+            sendBtn.style.cursor = 'not-allowed';
+        }
+    }
+
+    enableChatInput() {
+        const input = document.getElementById('efv-chat-input');
+        const sendBtn = document.getElementById('efv-chat-send');
+        if (input) {
+            input.disabled = false;
+            input.placeholder = 'Ask about alignment, books, or EFV™...';
+            input.style.opacity = '1';
+            input.style.cursor = 'text';
+        }
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.style.opacity = '1';
+            sendBtn.style.cursor = 'pointer';
+        }
+    }
+
+    showInitialGreeting() {
+        if (!this.isRegistered) {
+            this.addMessage("Welcome to EFV<sup>™</sup> Intelligence – Alignment Intelligence System.<br>We’re here to guide you on your journey.<br><br><b>👉 Join EFV<sup>™</sup> Intelligence to continue</b>", 'ai');
+            this.showRegistrationBox();
+        } else {
+            this.addMessage("Welcome back to EFV<sup>™</sup>. Let's measure your alignment.", 'ai');
+        }
+    }
+
+    showRegistrationBox() {
+        const messagesContainer = document.getElementById('efv-chat-messages');
+        const regDiv = document.createElement('div');
+        regDiv.className = 'efv-registration-box-container';
+        regDiv.innerHTML = `
+            <div class="efv-registration-box">
+                <div class="efv-reg-header">
+                    <h4>Join EFV<sup>™</sup> Intelligence</h4>
+                </div>
+                <div class="efv-reg-body">
+                    <input type="text" id="efv-reg-name" placeholder="Full Name *" required />
+                    <input type="email" id="efv-reg-email" placeholder="Email Address *" required />
+                    <input type="tel" id="efv-reg-phone" placeholder="Phone Number (Optional)" />
+                    <button id="efv-reg-submit" class="efv-reg-btn">👉 Join EFV<sup>™</sup></button>
+                    <div id="efv-reg-error" class="efv-reg-error"></div>
+                </div>
+            </div>
+        `;
+        messagesContainer.appendChild(regDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Attach listener
+        const submitBtn = regDiv.querySelector('#efv-reg-submit');
+        submitBtn.onclick = () => this.handleRegistration();
+    }
+
+    async handleRegistration() {
+        const nameInput = document.getElementById('efv-reg-name');
+        const emailInput = document.getElementById('efv-reg-email');
+        const phoneInput = document.getElementById('efv-reg-phone');
+        const errorDiv = document.getElementById('efv-reg-error');
+        const submitBtn = document.getElementById('efv-reg-submit');
+
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        const phone = phoneInput.value.trim();
+
+        if (!name) {
+            errorDiv.textContent = 'Please enter your full name.';
+            return;
+        }
+
+        if (!email || !email.includes('@')) {
+            errorDiv.textContent = 'Please enter a valid email address.';
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Registering... <span style="display:inline-block; margin-left:5px;">⏳</span>';
+
+        try {
+            const response = await fetch(this.registerUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, phone })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Remove registration box
+                document.querySelector('.efv-registration-box-container').remove();
+
+                // Set as registered
+                this.isRegistered = true;
+                this.userEmail = email;
+                localStorage.setItem('efv_bot_registered', 'true');
+                localStorage.setItem('efv_bot_registered_email', email);
+
+                // Add success message
+                this.addMessage("✅ Thank you for joining EFV<sup>™</sup> Intelligence.<br>You can now continue your journey.", 'ai');
+                this.showContinueButton();
+            } else {
+                errorDiv.textContent = data.error || 'Registration failed. Please try again.';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '👉 Join EFV';
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            errorDiv.textContent = 'Connection error. Please try again later.';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '👉 Join EFV';
+        }
+    }
+
+    showContinueButton() {
+        const messagesContainer = document.getElementById('efv-chat-messages');
+        const contDiv = document.createElement('div');
+        contDiv.className = 'efv-continue-box-container';
+        contDiv.innerHTML = `
+            <div style="text-align: center; margin-top: 25px; margin-bottom: 30px;">
+                <button id="efv-continue-btn" class="efv-reg-btn" style="width: auto; padding: 18px 45px !important;">👉 Continue to EFV<sup>™</sup></button>
+            </div>
+        `;
+        messagesContainer.appendChild(contDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        contDiv.querySelector('#efv-continue-btn').onclick = () => {
+            contDiv.remove();
+            this.enableChatInput();
+        };
     }
 
     closeChat() {
@@ -247,6 +402,11 @@ class EFVChatbot {
 
         if (!message) return;
 
+        // If not registered, return early (button shouldn't be accessible, but safety check)
+        if (!this.isRegistered) {
+            return;
+        }
+
         // Add user message to UI
         this.addMessage(message, 'user');
         input.value = '';
@@ -258,7 +418,7 @@ class EFVChatbot {
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message, history: this.history })
+                body: JSON.stringify({ message, history: this.history, email: this.userEmail })
             });
 
             const data = await response.json();
@@ -294,7 +454,7 @@ class EFVChatbot {
             // Professional Formatting for AI
             let formattedText = text
                 .replace(/\n/g, '<br>') // Support newlines
-                .replace(/\*\*(.*?)\*\*/g, '<span style="color: #d4af37; font-weight: bold;">$1</span>') // Highlight **words** as Gold Bold
+                .replace(/\*\*(.*?)\*\*/g, '<span style="color: #D6A85F; font-weight: bold;">$1</span>') // Highlight **words** as Gold Bold
                 .replace(/• (.*?)(?=<br>|$)/g, '<div style="margin-left: 15px; margin-bottom: 5px;">• $1</div>'); // Indent bullet points
 
             contentDiv.innerHTML = formattedText;
