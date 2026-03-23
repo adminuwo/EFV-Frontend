@@ -4077,11 +4077,17 @@ window.viewOrderDetail = async function (id, mode = 'details') {
         // Address Helper
         const getDisplayAddress = (a) => {
             if (!a) return 'No address provided';
-            if (typeof a.address === 'string') return a.address;
+            // Option 1: Address is already a direct string
+            if (typeof a.address === 'string' && a.address.length > 5) return a.address;
+            
+            // Option 2: Address is a structured object
             if (typeof a.address === 'object' && a.address !== null) {
                 const addrObj = a.address;
-                const parts = [addrObj.house, addrObj.area, addrObj.street, addrObj.landmark];
-                return parts.filter(Boolean).join(', ');
+                const lines = [];
+                if (addrObj.house || addrObj.street) lines.push(addrObj.house || addrObj.street);
+                if (addrObj.area) lines.push(addrObj.area);
+                if (addrObj.landmark) lines.push(`Landmark: ${addrObj.landmark}`);
+                return lines.join(', ');
             }
             return 'No address provided';
         };
@@ -4090,11 +4096,16 @@ window.viewOrderDetail = async function (id, mode = 'details') {
         const addr = order.customer;
         const addrContainer = document.getElementById('modal-shipping-address');
         if (addrContainer) {
+            const displayAddr = getDisplayAddress(addr);
+            const city = addr.city || addr.address?.city || 'Unknown City';
+            const state = addr.state || addr.address?.state || '';
+            const pincode = addr.zip || addr.address?.pincode || addr.address?.zip || '000000';
+            
             addrContainer.innerHTML = `
-                <strong style="color:white;">${addr.name}</strong><br>
-                ${getDisplayAddress(addr)}<br>
-                ${addr.city || addr.address?.city || 'Unknown'}, ${addr.zip || addr.address?.pincode || '000000'}<br>
-                <span style="opacity:0.6;"><i class="fas fa-phone-alt" style="font-size:0.7rem;"></i> ${addr.phone}</span>
+                <strong style="color:white;">${addr.name || 'Customer'}</strong><br>
+                ${displayAddr}<br>
+                ${city}${state ? (', ' + state) : ''} - ${pincode}<br>
+                <span style="opacity:0.6;"><i class="fas fa-phone-alt" style="font-size:0.7rem;"></i> ${addr.phone || 'N/A'}</span>
             `;
         }
 

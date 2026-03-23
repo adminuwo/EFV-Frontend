@@ -3519,7 +3519,10 @@ window.filterAdminOrders = function () {
             <td style="padding: 12px; font-weight:bold;">₹${o.totalAmount}</td>
             <td style="padding: 12px;"><span class="badge ${o.paymentStatus === 'Paid' ? 'green' : 'gold'}">${o.paymentStatus}</span></td>
             <td style="padding: 12px;">
-                <select onchange="updateOrderStatus('${o._id}', this.value)" style="background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,211,105,0.3); padding: 4px; border-radius: 4px; font-size: 0.8rem;">
+                <div style="font-size:0.75rem; font-weight:bold; color:var(--gold-text); margin-bottom:5px;">
+                    ${[...new Set(o.items.map(i => i.type))].join(', ')}
+                </div>
+                <select onchange="updateOrderStatus('${o._id}', this.value)" style="background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,211,105,0.3); padding: 4px; border-radius: 4px; font-size: 0.8rem; width: 100%;">
                     ${['Pending', 'Processing', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned', 'Failed'].map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
             </td>
@@ -4109,7 +4112,7 @@ window.viewAdminOrderDetail = async function (id) {
                         <p><strong>Customer:</strong> ${order.customer.name}</p>
                         <p><strong>Email:</strong> ${order.customer.email}</p>
                         <p><strong>Phone:</strong> ${order.customer.phone || 'N/A'}</p>
-                        <p><strong>Address:</strong> ${order.customer.address}, ${order.customer.city} - ${order.customer.zip}</p>
+                        <p><strong>Address:</strong> ${typeof order.customer.address === 'object' ? ([order.customer.address.house, order.customer.address.area, order.customer.address.street].filter(Boolean).join(', ')) : order.customer.address}, ${order.customer.city || order.customer.address?.city || ''} - ${order.customer.zip || order.customer.address?.pincode || ''}</p>
                         <hr style="opacity:0.1; margin:15px 0;">
                         <h4 style="margin-bottom:10px;">Items</h4>
                         <div style="font-family:monospace; font-size:0.9rem;">
@@ -4157,12 +4160,19 @@ window.viewAdminOrderDetail = async function (id) {
 
             if (typeof addr.address === 'object' && addr.address !== null) {
                 const a = addr.address;
-                addressHtml += `<br>${a.street || a.house || ''}<br>${a.city || ''} ${a.zip || a.pincode || ''}`;
+                const lines = [];
+                if (a.house || a.street) lines.push(a.house || a.street);
+                if (a.area) lines.push(a.area);
+                if (a.landmark) lines.push(`Landmark: ${a.landmark}`);
+                
+                addressHtml += `<br>${lines.join(', ')}`;
+                addressHtml += `<br>${a.city || addr.city || ''}, ${a.state || addr.state || ''} ${a.pincode || a.zip || addr.zip || addr.pincode || ''}`;
             } else {
                 addressHtml += `<br>${addr.address || 'N/A'}`;
+                if (addr.city || addr.zip) addressHtml += `<br>${addr.city || ''} ${addr.zip || ''}`;
             }
 
-            addressHtml += `<br>Phone: ${addr.phone || order.phone || 'N/A'}`;
+            addressHtml += `<br>Phone: ${addr.phone || order.phone || order.customer?.phone || 'N/A'}`;
             addrContainer.innerHTML = addressHtml;
         }
 
