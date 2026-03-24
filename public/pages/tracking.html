@@ -1253,6 +1253,11 @@
                 'Packed': 1,
                 'Booked': 1,
                 'Manifested': 1,
+                'Pending Pickup': 1,
+                'Pickup Scheduled': 1,
+                'Out for Pickup': 1,
+                'Picked Up': 1,
+                'Pickedup': 1,
                 'Shipped': 2,
                 'In Transit': 2,
                 'Dispatched': 2,
@@ -1273,13 +1278,13 @@
                 if (s.includes('delivered') && !s.includes('out')) activeIdx = 4;
                 else if (s.includes('out') || s.includes('delivery agent') || s.includes('ofp')) activeIdx = 3;
                 else if (s.includes('transit') || s.includes('shipped') || s.includes('hub') || s.includes('dispatched') || s.includes('in-transit')) activeIdx = 2;
-                else if (s.includes('picked') || s.includes('packed') || s.includes('manifested') || s.includes('booked')) activeIdx = 1;
+                else if (s.includes('picked') || s.includes('pickup') || s.includes('packed') || s.includes('manifested') || s.includes('booked')) activeIdx = 1;
                 else activeIdx = 0;
             }
 
-            // 3. Fallback: If status is unknown/generic but we HAVE history, it must be at least Picked Up
+            // 3. Fallback: If status is unknown/generic but we HAVE history, it should at least be in progress (milestone 1)
             if (activeIdx === 0 && hasHistory) {
-                activeIdx = 2; // Usually history only appears once it's in transit or at hub
+                activeIdx = 1; // Milestone 1 is 'Picked Up' (which also represents 'Being Picked Up')
             }
 
             const total = 4; // 0..4
