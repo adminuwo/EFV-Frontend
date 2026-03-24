@@ -4212,199 +4212,45 @@ window.closeOrderDetailModal = () => {
 
 // --- TRACKING & INVOICE HELPERS ---
 window.downloadInvoice = async function (orderId) {
+    const btn = event?.target?.closest('button') || { innerHTML: '', disabled: false };
+    const originalHTML = btn.innerHTML;
+
     try {
+        if (btn.tagName === 'BUTTON') {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+        }
+
         const token = localStorage.getItem('authToken');
-        const res = await fetch(`${API_BASE}/api/orders/track/${orderId}`, {
+        const res = await fetch(`${API_BASE}/api/orders/${orderId}/invoice`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const order = await res.json();
-        if (!res.ok) throw new Error(order.message);
 
-        // Robust jsPDF Constructor Access
-        let jsPDFConstructor;
-        if (window.jspdf && window.jspdf.jsPDF) {
-            jsPDFConstructor = window.jspdf.jsPDF;
-        } else if (window.jsPDF) {
-            jsPDFConstructor = window.jsPDF;
-        } else {
-            throw new Error("PDF Library (jsPDF) not loaded. Please refresh.");
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || 'Invoice generation failed');
         }
 
-        const doc = new jsPDFConstructor();
+        // Handle Blob for PDF download
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `EFV_Invoice_${orderId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
 
-        // --- PDF Design & Branding ---
-        const primaryColor = [212, 175, 55]; // EFV Gold
-        const darkColor = [20, 20, 20];
-        const textColor = [60, 60, 60];
-
-        // Header Background
-        doc.setFillColor(...darkColor);
-        doc.rect(0, 0, 210, 45, 'F');
-
-        // Logo / Title
-        doc.setTextColor(...primaryColor);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(28);
-        doc.text("EFV™", 20, 25);
-
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "normal");
-        doc.text("OFFICIAL TAX INVOICE", 20, 35);
-
-        // Order Info Box
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
-        doc.text(`Invoice No: INV-${order.orderId.split('-').pop()}`, 150, 20);
-        doc.text(`Order ID: #${order.orderId}`, 150, 27);
-        doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString('en-GB')}`, 150, 34);
-
-        // Merchant Details (Left)
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text("SOLD BY:", 20, 60);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.text("EFV™ - Educational Future Vision", 20, 67);
-        doc.text("Madhya Pradesh, India", 20, 72);
-        doc.text("GSTIN: 23EFVPA0000Z1Z1", 20, 77); // Placeholder GST
-        doc.text("Support: admin@uwo24.com", 20, 82);
-
-        // Bill To Details (Right)
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text("BILL TO:", 120, 60);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.text(order.customer.name || 'Valued Customer', 120, 67);
-
-        // Handle address extraction safely
-        let displayAddr = 'Digital Purchase';
-        const addr = order.customer.address;
-        if (addr) {
-            if (typeof addr === 'string') displayAddr = addr;
-            else if (typeof addr === 'object') {
-                displayAddr = [addr.house, addr.area, addr.street, addr.landmark].filter(Boolean).join(', ');
-            }
-        }
-        doc.text(displayAddr, 120, 72, { maxWidth: 75 });
-        doc.text(`${order.customer.city || ''} ${order.customer.zip || ''}`, 120, 87);
-        doc.text(`Contact: ${order.customer.phone || 'N/A'}`, 120, 92);
-
-        // --- Table Section ---
-        const tableY = 105;
-        doc.setFillColor(245, 245, 245);
-        doc.rect(20, tableY, 170, 10, 'F');
-        doc.setFont("helvetica", "bold");
-        doc.text("ITEM DESCRIPTION", 25, tableY + 6.5);
-        doc.text("TYPE", 100, tableY + 6.5);
-        doc.text("QTY", 130, tableY + 6.5);
-        doc.text("PRICE", 150, tableY + 6.5);
-        doc.text("TOTAL", 175, tableY + 6.5);
-
-        // Items logic
-        doc.setFont("helvetica", "normal");
-        let currentY = tableY + 18;
-        order.items.forEach((item, index) => {
-            // Zebra striping
-            if (index % 2 === 0) {
-                doc.setFillColor(250, 250, 250);
-                doc.rect(20, currentY - 6, 170, 10, 'F');
-            }
-
-            doc.text(item.title, 25, currentY, { maxWidth: 70 });
-            doc.text(item.type, 100, currentY);
-            doc.text(item.quantity.toString(), 132, currentY);
-            doc.text(`INR ${item.price}`, 150, currentY);
-            doc.text(`INR ${item.price * item.quantity}`, 175, currentY);
-            currentY += 10;
-        });
-
-        // Totals Section
-        const totalBoxY = currentY + 10;
-        doc.setDrawColor(230, 230, 230);
-        doc.line(120, totalBoxY, 190, totalBoxY);
-
-        currentY = totalBoxY + 8;
-        doc.setFontSize(10);
-
-        const itemsTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const shipping = Number(order.shippingCharges) || 0;
-        const cod = Number(order.codCharges) || 0;
-        const totalAmount = Number(order.totalAmount) || 0;
-        
-        // SMART MATH: Ensure the math on the invoice adds up to the ACTUAL paid total
-        // If the reported total is less than the calculation, it means a heavy discount was applied (e.g. ₹1 promo)
-        let displayDiscount = Number(order.discountAmount) || 0;
-        const calculatedPreDiscount = itemsTotal + shipping + cod;
-        if (totalAmount < calculatedPreDiscount) {
-            displayDiscount = calculatedPreDiscount - totalAmount;
-        }
-
-        doc.text("Items Total:", 130, currentY);
-        doc.text(`INR ${itemsTotal.toFixed(2)}`, 175, currentY);
-
-        if (shipping > 0) {
-            currentY += 8;
-            doc.text("Shipping Charges:", 130, currentY);
-            doc.text(`INR ${shipping.toFixed(2)}`, 175, currentY);
-        }
-
-        if (cod > 0) {
-            currentY += 8;
-            doc.text("COD Charges:", 130, currentY);
-            doc.text(`INR ${cod.toFixed(2)}`, 175, currentY);
-        }
-
-        if (displayDiscount > 0) {
-            currentY += 8;
-            doc.setTextColor(200, 0, 0); // Red for discount
-            // Clean up the coupon code for display (e.g., ABHA-EFV-6740 -> ABHA)
-            let displayCoupon = order.couponCode || 'PROMO';
-            if (displayCoupon.includes('-EFV-')) displayCoupon = displayCoupon.split('-')[0];
-            
-            doc.text(`Discount (${displayCoupon}):`, 130, currentY);
-            doc.text(`- INR ${displayDiscount.toFixed(2)}`, 175, currentY);
-            doc.setTextColor(0, 0, 0); // Reset
-        }
-
-        currentY += 10;
-        doc.setDrawColor(245, 245, 245);
-        doc.line(130, currentY - 5, 190, currentY - 5);
-
-        doc.text("Taxable Value:", 130, currentY);
-        doc.text(`INR ${(totalAmount / 1.18).toFixed(2)}`, 175, currentY);
-
-        currentY += 8;
-        doc.text("GST (18%):", 130, currentY);
-        doc.text(`INR ${(totalAmount - (totalAmount / 1.18)).toFixed(2)}`, 175, currentY);
-
-        currentY += 12;
-        doc.setFillColor(...darkColor);
-        doc.rect(125, currentY - 7, 65, 10, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold");
-        doc.text("GRAND TOTAL:", 130, currentY);
-        doc.text(`INR ${totalAmount}`, 173, currentY);
-
-        // Footer & Terms
-        doc.setTextColor(150, 150, 150);
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "italic");
-        doc.text("Terms & Conditions:", 20, 260);
-        doc.text("1. This is a computer-generated invoice and requires no signature.", 20, 265);
-        doc.text("2. Digital products (E-books/Audiobooks) are non-refundable once accessed.", 20, 270);
-
-        doc.setTextColor(...primaryColor);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text("THANK YOU FOR YOUR TRUST IN EFV™", 105, 280, { align: "center" });
-
-        doc.save(`EFV_Invoice_${order.orderId}.pdf`);
         showToast("Invoice downloaded successfully", "success");
     } catch (e) {
         console.error(e);
-        showToast(e.message || "Failed to generate invoice", "error");
+        showToast(e.message || "Failed to download invoice", "error");
+    } finally {
+        if (btn.tagName === 'BUTTON') {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
     }
 };
 

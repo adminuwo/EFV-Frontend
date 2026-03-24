@@ -29,8 +29,8 @@
             --text-dim: rgba(255, 255, 255, 0.55);
             --border: rgba(255, 211, 105, 0.18);
             --success: #22c55e;
-            --pending: rgba(212, 175, 55, 0.6);
             --error: #ef4444;
+            --accent-blue: #3b82f6;
         }
 
         * {
@@ -47,19 +47,21 @@
             overflow-x: hidden;
         }
 
-        /* Animated starfield background */
+        /* Animated Starfield Background */
         body::before {
             content: '';
             position: fixed;
             inset: 0;
-            background:
+            background: 
                 radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.04) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 70%, rgba(100, 160, 255, 0.03) 0%, transparent 60%);
+                radial-gradient(ellipse at 80% 70%, rgba(59, 130, 246, 0.03) 0%, transparent 60%),
+                url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
             pointer-events: none;
             z-index: 0;
+            opacity: 0.4;
         }
 
-        /* ── NAVBAR ── */
+        /* Header / Nav */
         .track-nav {
             position: fixed;
             top: 0;
@@ -69,1371 +71,578 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 18px 40px;
-            background: rgba(7, 11, 20, 0.9);
+            padding: 16px 40px;
+            background: rgba(7, 11, 20, 0.85);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
         }
 
-        .track-nav .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
+        .track-nav .logo img { height: 32px; }
 
-        .track-nav .logo img {
-            height: 38px;
-            width: auto;
-            transition: transform 0.3s ease;
-        }
+        .track-nav .nav-links { display: flex; gap: 24px; list-style: none; }
+        .track-nav .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; transition: 0.3s; }
+        .track-nav .nav-links a:hover { color: var(--gold); }
 
-        .track-nav .logo .logo-text {
-            color: var(--gold);
-            font-family: 'Cinzel', serif;
-            font-size: 1.2rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: baseline;
-        }
-
-        .track-nav .logo .logo-text sup {
-            font-size: 0.5rem;
-            color: var(--gold-light);
-            vertical-align: super;
-            margin-left: 2px;
-            position: relative;
-            top: -4px;
-        }
-
-        .track-nav .logo:hover img {
-            transform: scale(1.05);
-        }
-
-
-
-        .track-nav .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            list-style: none;
-        }
-
-        .track-nav .nav-links a {
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.2s;
-        }
-
-        .track-nav .nav-links a:hover {
-            color: var(--gold);
-        }
-
-        /* ── PAGE WRAPPER ── */
         .page-wrapper {
             position: relative;
             z-index: 1;
-            min-height: 100vh;
-            padding: 120px 20px 80px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 110px 20px 60px;
+            max-width: 900px;
+            margin: 0 auto;
         }
 
-        /* ── HERO SECTION ── */
-        .track-hero {
+        /* ── SEARCH AREA ── */
+        .hero-banner {
             text-align: center;
-            margin-bottom: 50px;
-            max-width: 600px;
-        }
-
-        .track-hero .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--gold-dim);
-            border: 1px solid var(--border);
-            border-radius: 50px;
-            padding: 6px 18px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--gold);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 24px;
-        }
-
-        .track-hero h1 {
-            font-family: 'Cinzel', serif;
-            font-size: clamp(2rem, 5vw, 3.2rem);
-            font-weight: 700;
-            line-height: 1.15;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, #fff 0%, var(--gold) 60%, #fff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .track-hero p {
-            color: var(--text-dim);
-            font-size: 1rem;
-            line-height: 1.7;
-        }
-
-        /* ── SEARCH BOX ── */
-        .search-card {
-            width: 100%;
-            max-width: 680px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 36px;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(212, 175, 55, 0.05);
             margin-bottom: 40px;
         }
 
-        .search-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--gold);
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .search-row {
-            display: flex;
-            gap: 14px;
-        }
-
-        .search-input {
-            flex: 1;
-            padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 211, 105, 0.2);
-            border-radius: 12px;
-            color: white;
-            font-size: 1rem;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.3s;
-            outline: none;
-        }
-
-        .search-input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
-        }
-
-        .search-input:focus {
-            border-color: rgba(212, 175, 55, 0.6);
-            background: rgba(255, 255, 255, 0.06);
-            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.08);
-        }
-
-        .btn-track {
-            padding: 16px 28px;
-            background: linear-gradient(135deg, var(--gold) 0%, #B8860B 100%);
-            border: none;
-            border-radius: 12px;
-            color: #000;
-            font-weight: 700;
-            font-size: 0.95rem;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
-            white-space: nowrap;
-        }
-
-        .btn-track:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
-        }
-
-        .btn-track:active {
-            transform: translateY(0);
-        }
-
-        .search-hint {
-            margin-top: 14px;
-            font-size: 0.8rem;
-            color: var(--text-dim);
-        }
-
-        .search-hint span {
-            color: var(--gold);
-            font-weight: 600;
-        }
-
-        /* ── LOADING ── */
-        #loading-state {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-            padding: 40px;
-            color: var(--gold);
-        }
-
-        .spinner-ring {
-            width: 56px;
-            height: 56px;
-            border: 3px solid rgba(212, 175, 55, 0.15);
-            border-top-color: var(--gold);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ── ERROR ── */
-        #error-state {
-            display: none;
-            text-align: center;
-            padding: 40px;
-            background: rgba(239, 68, 68, 0.06);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 16px;
-            max-width: 520px;
-            width: 100%;
-        }
-
-        #error-state i {
-            font-size: 2rem;
-            color: var(--error);
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        #error-state h3 {
-            color: var(--error);
-            margin-bottom: 8px;
-        }
-
-        #error-state p {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-        }
-
-        /* ── TRACKING RESULT ── */
-        #tracking-result {
-            display: none;
-            width: 100%;
-            max-width: 820px;
-            flex-direction: column;
-            gap: 24px;
-            animation: fadeInUp 0.5s ease;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ── STATUS HERO CARD ── */
-        .status-hero-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 32px;
-            backdrop-filter: blur(20px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .status-hero-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .status-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-bottom: 28px;
-        }
-
-        .order-meta small {
-            display: block;
-            font-size: 0.72rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--text-dim);
-            margin-bottom: 6px;
-        }
-
-        .order-meta h2 {
+        .hero-banner h1 {
             font-family: 'Cinzel', serif;
-            font-size: 1.5rem;
-            color: var(--gold);
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #fff 30%, var(--gold) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .order-meta .placed-date {
-            margin-top: 4px;
-            font-size: 0.82rem;
-            color: var(--text-dim);
-        }
-
-        .current-status-badge {
-            display: inline-flex;
+        .live-status-ribbon {
+            display: none;
+            background: var(--gold-dim);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            padding: 8px 20px;
+            font-size: 0.85rem;
+            color: var(--gold-light);
+            margin: 0 auto 24px;
+            width: fit-content;
             align-items: center;
             gap: 10px;
-            padding: 12px 22px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
+            animation: fadeInDown 0.6s ease;
         }
 
-        .current-status-badge.delivered {
-            background: rgba(34, 197, 94, 0.12);
-            border: 1.5px solid rgba(34, 197, 94, 0.3);
-            color: var(--success);
-        }
-
-        .current-status-badge.in-transit,
-        .current-status-badge.shipped,
-        .current-status-badge.processing {
-            background: rgba(212, 175, 55, 0.1);
-            border: 1.5px solid rgba(212, 175, 55, 0.3);
-            color: var(--gold);
-        }
-
-        .current-status-badge.out-delivery {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1.5px solid rgba(59, 130, 246, 0.3);
-            color: #60a5fa;
-        }
-
-        .current-status-badge .pulse-dot {
+        .live-status-ribbon .dot {
             width: 8px;
             height: 8px;
+            background: var(--gold);
             border-radius: 50%;
-            background: currentColor;
-            animation: pulse 1.5s ease-in-out infinite;
+            animation: pulse 1.5s infinite;
         }
 
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.5;
-                transform: scale(1.4);
-            }
+        .search-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
         }
 
-        /* ── INFO PILLS ── */
-        .info-pills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .info-pill {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 18px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 12px;
+        .search-group { display: flex; gap: 12px; }
+        .search-group input {
             flex: 1;
-            min-width: 180px;
-        }
-
-        .pill-icon {
-            width: 36px;
-            height: 36px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 10px;
-            background: var(--gold-dim);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .pill-icon i {
-            color: var(--gold);
-            font-size: 0.85rem;
-        }
-
-        .pill-text small {
-            display: block;
-            font-size: 0.7rem;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--text-dim);
-            margin-bottom: 3px;
-        }
-
-        .pill-text span {
-            font-weight: 600;
-            font-size: 0.9rem;
+            padding: 14px 20px;
             color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+        .search-group input:focus { border-color: var(--gold); background: rgba(255,255,255,0.08); }
+
+        .btn-track {
+            background: linear-gradient(135deg, var(--gold), #B8860B);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            padding: 0 25px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-track:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(212,175,55,0.3); }
+
+        /* ── LOADING ── */
+        .loader-wrap { display: none; text-align: center; padding: 40px; }
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid var(--gold-dim); border-top-color: var(--gold);
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 15px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── RESULT UI ── */
+        #tracking-result { display: none; flex-direction: column; gap: 24px; }
+
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
         }
 
-        /* ── MILESTONE TIMELINE ── */
-        .timeline-card {
+        .meta-group { display: flex; flex-direction: column; gap: 4px; }
+        .meta-group small { color: var(--text-dim); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        .meta-group span { font-weight: 600; color: #fff; font-size: 1.1rem; }
+
+        /* ── PROGRESS TRACKER ── */
+        .progress-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 20px;
-            padding: 32px;
-            backdrop-filter: blur(20px);
+            padding: 40px 30px;
+            margin-bottom: 24px;
+            position: relative;
         }
 
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 32px;
-        }
-
-        .section-header .icon-box {
-            width: 38px;
-            height: 38px;
-            background: var(--gold-dim);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .section-header .icon-box i {
-            color: var(--gold);
-            font-size: 0.85rem;
-        }
-
-        .section-header h3 {
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        /* Milestone steps */
-        .milestones {
+        .step-container {
             display: flex;
             justify-content: space-between;
             position: relative;
-            margin-bottom: 40px;
+            z-index: 1;
         }
 
-        .milestones::before {
+        .step-container::before {
             content: '';
             position: absolute;
-            top: 28px;
-            left: 10%;
-            right: 10%;
+            top: 25px;
+            left: 5%;
+            right: 5%;
             height: 2px;
-            background: rgba(255, 255, 255, 0.06);
-            z-index: 0;
+            background: rgba(255,255,255,0.05);
+            z-index: -1;
         }
 
-        .milestone-progress-bar {
+        .progress-bar-fill {
             position: absolute;
-            top: 28px;
-            left: 10%;
+            top: 25px;
+            left: 5%;
             height: 2px;
-            background: linear-gradient(90deg, var(--gold), rgba(212, 175, 55, 0.4));
-            z-index: 1;
-            transition: width 1s ease;
-            box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+            background: var(--gold);
+            z-index: 0;
+            width: 0%;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px var(--gold);
         }
 
-        .milestone {
+        .step {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            text-align: center;
+            gap: 12px;
             flex: 1;
-            position: relative;
-            z-index: 2;
+            text-align: center;
         }
 
-        .ms-circle {
-            width: 56px;
-            height: 56px;
+        .step-dot {
+            width: 50px;
+            height: 50px;
+            background: #0d121d;
+            border: 2px solid rgba(255,255,255,0.08);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.03);
-            transition: all 0.5s ease;
-            font-size: 1.1rem;
+            transition: 0.5s;
             position: relative;
         }
 
-        .ms-circle i {
-            color: rgba(255, 255, 255, 0.2);
-            transition: all 0.5s;
-        }
+        .step-dot i { color: rgba(255,255,255,0.2); font-size: 1.1rem; transition: 0.5s; }
 
-        .milestone.completed .ms-circle {
-            background: rgba(34, 197, 94, 0.12);
-            border-color: rgba(34, 197, 94, 0.3);
-        }
+        .step.completed .step-dot { background: rgba(34, 197, 94, 0.1); border-color: var(--success); }
+        .step.completed .step-dot i { color: var(--success); }
 
-        .milestone.completed .ms-circle i {
-            color: var(--success);
-        }
-
-        .milestone.active .ms-circle {
+        .step.active .step-dot {
             background: var(--gold-dim);
             border-color: var(--gold);
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.35), 0 0 0 6px rgba(212, 175, 55, 0.06);
-            animation: activeGlow 2s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(212,175,55,0.4);
+            animation: stepPulse 2s infinite;
+        }
+        .step.active .step-dot i { color: var(--gold); }
+
+        .step-label { font-size: 0.72rem; font-weight: 600; color: var(--text-dim); transition: 0.4s; }
+        .step.active .step-label { color: var(--gold); }
+        .step.completed .step-label { color: #fff; }
+
+        @keyframes stepPulse {
+            0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(212,175,55,0); }
+            100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); }
         }
 
-        .milestone.active .ms-circle i {
-            color: var(--gold);
+        /* ── TIMELINE ── */
+        .timeline-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
         }
 
-        @keyframes activeGlow {
-
-            0%,
-            100% {
-                box-shadow: 0 0 20px rgba(212, 175, 55, 0.35), 0 0 0 6px rgba(212, 175, 55, 0.06);
-            }
-
-            50% {
-                box-shadow: 0 0 30px rgba(212, 175, 55, 0.5), 0 0 0 8px rgba(212, 175, 55, 0.1);
-            }
-        }
-
-        .ms-label {
-            font-size: 0.72rem;
-            font-weight: 600;
-            color: var(--text-dim);
-            letter-spacing: 0.5px;
-            max-width: 80px;
-            transition: color 0.5s;
-        }
-
-        .milestone.completed .ms-label,
-        .milestone.active .ms-label {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .milestone.active .ms-label {
-            color: var(--gold);
-        }
-
-        .ms-check {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            width: 18px;
-            height: 18px;
-            background: var(--success);
-            border-radius: 50%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .ms-check i {
-            font-size: 0.55rem;
-            color: white;
-        }
-
-        .milestone.completed .ms-check {
-            display: flex;
-        }
-
-        /* ── LIVE TRACKING LOG ── */
-        .tracking-log-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--text-dim);
-            margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tracking-log-title .live-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--gold);
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        .tracking-event {
-            display: flex;
-            gap: 18px;
-            padding: 14px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-            position: relative;
-        }
-
-        .tracking-event:last-child {
-            border-bottom: none;
-        }
-
-        .event-marker {
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .event-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            margin-top: 4px;
-        }
-
-        .tracking-event.latest .event-dot {
-            background: var(--gold);
-            border-color: var(--gold);
-            box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
-        }
-
-        .event-line {
-            flex: 1;
-            width: 1px;
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .event-body {
-            flex: 1;
-        }
-
-        .event-status {
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 4px;
-        }
-
-        .tracking-event.latest .event-status {
-            color: var(--gold);
-        }
-
-        .event-location {
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .event-time {
-            font-size: 0.72rem;
-            color: rgba(255, 255, 255, 0.3);
-            margin-top: 4px;
-        }
-
-        /* ── NO TRACKING YET ── */
-        .no-tracking {
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .no-tracking i {
-            font-size: 2.5rem;
-            color: rgba(212, 175, 55, 0.2);
-            margin-bottom: 16px;
-            display: block;
-        }
-
-        .no-tracking p {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-            line-height: 1.6;
-        }
-
-        /* ── REFRESH BUTTON ── */
-        .refresh-row {
+        .timeline-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 28px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
-        .awb-display {
+        .timeline-header h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); }
+
+        .log-item {
             display: flex;
-            flex-direction: column;
-            gap: 3px;
+            gap: 20px;
+            position: relative;
+            padding-bottom: 24px;
         }
 
-        .awb-display small {
-            font-size: 0.68rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--text-dim);
+        .log-item::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 15px;
+            bottom: 0;
+            width: 1px;
+            background: rgba(255,255,255,0.05);
         }
 
-        .awb-display span {
-            font-family: monospace;
-            font-size: 1rem;
-            font-weight: 700;
-            color: white;
-            letter-spacing: 1px;
+        .log-item:last-child { padding-bottom: 0; }
+        .log-item:last-child::before { display: none; }
+
+        .log-indicator {
+            width: 15px; height: 15px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid var(--bg-primary);
+            flex-shrink: 0;
+            margin-top: 4px;
+            z-index: 1;
         }
 
+        .log-item.active .log-indicator {
+            background: var(--gold);
+            box-shadow: 0 0 8px var(--gold);
+            transform: scale(1.2);
+        }
+
+        .log-content { flex: 1; }
+        .log-status { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; transition: 0.3s; }
+        .log-item.active .log-status { color: var(--gold); font-size: 1.05rem; }
+        
+        .log-details { font-size: 0.8rem; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
+        .log-time { font-size: 0.75rem; color: rgba(255,255,255,0.3); margin-top: 4px; }
+
+        .log-item.active {
+            background: rgba(212,175,55,0.03);
+            border-radius: 12px;
+            padding: 15px;
+            margin-left: -15px;
+            margin-right: -15px;
+            border: 1px solid rgba(212,175,55,0.1);
+            transform: scale(1.02);
+        }
+
+        /* ── UTILS ── */
         .btn-refresh {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--gold);
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
+            background: none; border: 1px solid var(--border); color: var(--gold);
+            padding: 8px 16px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; transition: 0.3s;
         }
+        .btn-refresh:hover { background: var(--gold-dim); }
 
-        .btn-refresh:hover {
-            background: var(--gold-dim);
-            border-color: rgba(212, 175, 55, 0.4);
-        }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .btn-refresh.loading i {
-            animation: spin 1s linear infinite;
-        }
-
-        /* ── NO AWB STATE ── */
-        .no-awb-card {
-            background: rgba(212, 175, 55, 0.04);
-            border: 1px dashed rgba(212, 175, 55, 0.2);
-            border-radius: 16px;
-            padding: 32px;
-            text-align: center;
-        }
-
-        .no-awb-card i {
-            font-size: 2rem;
-            color: rgba(212, 175, 55, 0.3);
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        .no-awb-card h4 {
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 8px;
-        }
-
-        .no-awb-card p {
-            color: var(--text-dim);
-            font-size: 0.85rem;
-        }
-
-        /* ── FOOTER ── */
-
-
-        /* ── RESPONSIVE ── */
-        @media (max-width: 640px) {
-            .track-nav {
-                padding: 16px 20px;
-            }
-
-            .track-nav .nav-links {
-                display: none;
-            }
-
-            .search-row {
-                flex-direction: column;
-            }
-
-            .btn-track {
-                justify-content: center;
-            }
-
-            .milestones {
-                gap: 4px;
-            }
-
-            .ms-circle {
-                width: 44px;
-                height: 44px;
-                font-size: 0.9rem;
-            }
-
-            .ms-label {
-                font-size: 0.62rem;
-                max-width: 60px;
-            }
-
-            .milestones::before {
-                top: 22px;
-            }
-
-            .milestone-progress-bar {
-                top: 22px;
-            }
-
-            .status-top {
-                flex-direction: column;
-            }
+        @media (max-width: 600px) {
+            .step-label { display: none; }
+            .step.active .step-label { display: block; position: absolute; top: 60px; width: 100px; }
+            .summary-card { flex-direction: column; align-items: flex-start; }
+            .track-nav { padding: 16px 20px; }
+            .track-nav .nav-links { display: none; }
         }
     </style>
 </head>
 
 <body>
-    <!-- NAVBAR -->
     <nav class="track-nav">
-        <a href="../index.html" class="logo">
-            <img src="../assets/images/AISA.svg" alt="Logo">
-            <span class="logo-text">EFV<sup>TM</sup></span>
+        <a href="/" class="logo">
+            <img src="/img/logo.png" alt="EFV™ Logo">
         </a>
         <ul class="nav-links">
-            <li><a href="../index.html">Home</a></li>
-            <li><a href="marketplace.html">Store</a></li>
-            <li><a href="profile.html">My Account</a></li>
+            <li><a href="/">Home</a></li>
+            <li><a href="/store.html">Store</a></li>
+            <li><a href="/profile.html?tab=orders">My Orders</a></li>
         </ul>
     </nav>
 
     <div class="page-wrapper">
-        <!-- HERO -->
-        <div class="track-hero">
-            <div class="badge">
-                <i class="fas fa-satellite-dish"></i>
-                Live Shipment Tracking
+        <div class="hero-banner">
+            <div class="live-status-ribbon" id="status-ribbon">
+                <div class="dot"></div>
+                <span id="ribbon-text">Real-time sync active</span>
             </div>
-            <h1>Track Your Package</h1>
-            <p>Enter your Order ID below to see real-time updates from our logistics partner NimbusPost — including
-                current location, courier status, and full delivery timeline.</p>
+            <h1>Track Your Shipment</h1>
         </div>
 
-        <!-- SEARCH CARD -->
         <div class="search-card">
-            <div class="search-label">
-                <i class="fas fa-search"></i>
-                Enter Order ID or AWB Number
-            </div>
-            <form id="tracking-form">
-                <div class="search-row">
-                    <input type="text" id="order-id-input" class="search-input" placeholder="e.g. ORD-123456789"
-                        autocomplete="off" required>
-                    <button type="submit" class="btn-track" id="track-btn">
-                        <i class="fas fa-search"></i>
-                        Track Now
-                    </button>
-                </div>
+            <form id="tracking-form" class="search-group">
+                <input type="text" id="order-id-input" placeholder="Enter Order ID (e.g., ORD-123456)" required>
+                <button type="submit" class="btn-track">TRACK NOW</button>
             </form>
-            <div class="search-hint">
-                Your Order ID can be found in your <span>purchase confirmation email</span> or under <a
-                    href="profile.html?tab=orders" style="color: var(--gold);">My Orders</a>.
-            </div>
         </div>
 
-        <!-- LOADING -->
-        <div id="loading-state">
-            <div class="spinner-ring"></div>
-            <p style="color: var(--text-dim); font-size: 0.9rem;">Fetching live tracking data...</p>
+        <div class="loader-wrap" id="loading-state">
+            <div class="spinner"></div>
+            <p style="color: var(--gold); font-size: 0.9rem;">Fetching live data from Nimbus Dashboard...</p>
         </div>
 
-        <!-- ERROR -->
-        <div id="error-state">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h3 id="error-title">Order Not Found</h3>
-            <p id="error-msg">Please check your Order ID and try again. Your order ID looks like ORD-XXXXXX.</p>
-        </div>
-
-        <!-- TRACKING RESULT -->
         <div id="tracking-result">
-
-            <!-- STATUS HERO -->
-            <div class="status-hero-card">
-                <div class="status-top">
-                    <div class="order-meta">
-                        <small>Order Tracking ID</small>
-                        <h2 id="result-order-id">—</h2>
-                        <div class="placed-date" id="result-date">—</div>
-                    </div>
-                    <div id="current-status-badge" class="current-status-badge processing">
-                        <div class="pulse-dot"></div>
-                        <span id="current-status-text">Processing</span>
-                    </div>
+            <!-- Order Meta -->
+            <div class="summary-card">
+                <div class="meta-group">
+                    <small>Current Status</small>
+                    <span id="display-status" style="color: var(--gold);">—</span>
                 </div>
+                <div class="meta-group">
+                    <small>Est. Delivery</small>
+                    <span id="display-eta">Pending Sync</span>
+                </div>
+                <div class="meta-group">
+                    <small>Last Location</small>
+                    <span id="display-location">Checking...</span>
+                </div>
+                <div class="meta-group">
+                    <small>Order ID</small>
+                    <span id="display-order-id">—</span>
+                </div>
+                <div class="meta-group">
+                    <small>Tracking AWB</small>
+                    <span id="display-awb">—</span>
+                </div>
+            </div>
 
-                <!-- INFO PILLS -->
-                <div class="info-pills">
-                    <div class="info-pill">
-                        <div class="pill-icon"><i class="fas fa-truck"></i></div>
-                        <div class="pill-text">
-                            <small>Courier</small>
-                            <span id="pill-courier">—</span>
-                        </div>
+            <!-- Progress Bar -->
+            <div class="progress-card">
+                <div class="progress-bar-fill" id="pb-fill"></div>
+                <div class="step-container">
+                    <div class="step" id="step-0">
+                        <div class="step-dot"><i class="fas fa-check-circle"></i></div>
+                        <div class="step-label">Confirmed</div>
                     </div>
-                    <div class="info-pill">
-                        <div class="pill-icon"><i class="fas fa-map-marker-alt"></i></div>
-                        <div class="pill-text">
-                            <small>Last Location</small>
-                            <span id="pill-location">—</span>
-                        </div>
+                    <div class="step" id="step-1">
+                        <div class="step-dot"><i class="fas fa-box"></i></div>
+                        <div class="step-label">Picked Up</div>
                     </div>
-                    <div class="info-pill">
-                        <div class="pill-icon"><i class="fas fa-credit-card"></i></div>
-                        <div class="pill-text">
-                            <small>Payment</small>
-                            <span id="pill-payment">—</span>
-                        </div>
+                    <div class="step" id="step-2">
+                        <div class="step-dot"><i class="fas fa-truck-loading"></i></div>
+                        <div class="step-label">In Transit</div>
                     </div>
-                    <div class="info-pill">
-                        <div class="pill-icon"><i class="fas fa-rupee-sign"></i></div>
-                        <div class="pill-text">
-                            <small>Order Total</small>
-                            <span id="pill-amount">—</span>
-                        </div>
+                    <div class="step" id="step-3">
+                        <div class="step-dot"><i class="fas fa-motorcycle"></i></div>
+                        <div class="step-label">Out for Delivery</div>
+                    </div>
+                    <div class="step" id="step-4">
+                        <div class="step-dot"><i class="fas fa-home"></i></div>
+                        <div class="step-label">Delivered</div>
                     </div>
                 </div>
             </div>
 
-            <!-- MILESTONE TIMELINE CARD -->
-            <div class="timeline-card">
-                <div class="section-header">
-                    <div class="icon-box"><i class="fas fa-route"></i></div>
-                    <h3>Delivery Progress</h3>
-                </div>
-
-                <div class="milestones" id="milestones-row">
-                    <div class="milestone-progress-bar" id="progress-bar" style="width: 0%"></div>
-
-                    <div class="milestone" id="ms-0">
-                        <div class="ms-circle">
-                            <i class="fas fa-check-circle"></i>
-                            <div class="ms-check"><i class="fas fa-check"></i></div>
-                        </div>
-                        <div class="ms-label">Order Confirmed</div>
-                    </div>
-
-                    <div class="milestone" id="ms-1">
-                        <div class="ms-circle">
-                            <i class="fas fa-box"></i>
-                            <div class="ms-check"><i class="fas fa-check"></i></div>
-                        </div>
-                        <div class="ms-label">Picked Up</div>
-                    </div>
-
-                    <div class="milestone" id="ms-2">
-                        <div class="ms-circle">
-                            <i class="fas fa-shipping-fast"></i>
-                            <div class="ms-check"><i class="fas fa-check"></i></div>
-                        </div>
-                        <div class="ms-label">In Transit</div>
-                    </div>
-
-                    <div class="milestone" id="ms-3">
-                        <div class="ms-circle">
-                            <i class="fas fa-motorcycle"></i>
-                            <div class="ms-check"><i class="fas fa-check"></i></div>
-                        </div>
-                        <div class="ms-label">Out for Delivery</div>
-                    </div>
-
-                    <div class="milestone" id="ms-4">
-                        <div class="ms-circle">
-                            <i class="fas fa-home"></i>
-                            <div class="ms-check"><i class="fas fa-check"></i></div>
-                        </div>
-                        <div class="ms-label">Delivered</div>
-                    </div>
-                </div>
-
-                <!-- LIVE TRACKING LOG -->
-                <div id="live-log-section">
-                    <div class="tracking-log-title">
-                        <div class="live-dot"></div>
-                        Live Tracking Updates
-                    </div>
-                    <div id="live-tracking-log">
-                        <div class="no-tracking">
-                            <i class="fas fa-satellite-dish"></i>
-                            <p>Loading live carrier updates...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AWB + Refresh -->
-                <div id="awb-refresh-row" class="refresh-row" style="display: none;">
-                    <div class="awb-display">
-                        <small>AWB Number</small>
-                        <span id="awb-number-display">—</span>
-                    </div>
-                    <button class="btn-refresh" id="refresh-btn" onclick="refreshLiveTracking()">
-                        <i class="fas fa-sync-alt"></i>
-                        Refresh
+            <!-- Timeline -->
+            <div class="timeline-container">
+                <div class="timeline-header">
+                    <h3>Tracking Updates</h3>
+                    <button class="btn-refresh" onclick="trackOrder(currentOrderId)">
+                        <i class="fas fa-sync-alt"></i> REFRESH
                     </button>
                 </div>
-
-                <!-- NO AWB STATE -->
-                <div id="no-awb-state" class="no-awb-card" style="display: none; margin-top: 24px;">
-                    <i class="fas fa-box-open"></i>
-                    <h4>Shipment Not Yet Dispatched</h4>
-                    <p>Your order has been confirmed and is being prepared. Tracking will be available once our team
-                        dispatches your package.</p>
+                <div id="timeline-log">
+                    <!-- Events will be injected here -->
                 </div>
             </div>
-
         </div>
-
-
+    </div>
 
     <script>
         const API_BASE = (typeof CONFIG !== 'undefined') ? CONFIG.API_BASE_URL : 'http://localhost:8080';
-
-        // ── State ──
-        let currentAWB = null;
         let currentOrderId = null;
-        let isLoggedIn = false;
+        let pollingInterval = null;
 
-        // ── Check Auth ──
-        const token = localStorage.getItem('authToken');
-        const user = JSON.parse(localStorage.getItem('efv_user') || 'null');
-        isLoggedIn = !!(token && user);
+        // ── STATUS MAPPING ──
+        const MILESTONE_MAP = {
+            'confirmed': 0, 'booked': 0, 'manifested': 0, 'processing': 0, 'paid': 0,
+            'picked up': 1, 'pickedup': 1, 'in depot': 1, 'pickup scheduled': 1,
+            'in transit': 2, 'shipped': 2, 'reached at hub': 2, 'departed from hub': 2, 'at hub': 2, 'dispatched': 2,
+            'out for delivery': 3, 'outfordelivery': 3, 'delivery': 3, 'reached destination': 3,
+            'delivered': 4, 'complete': 4, 'delivered successfully': 4
+        };
 
-        // ── URL Params ──
+        const LABELS = ['Order Confirmed', 'Picked Up', 'In Transit', 'Out for Delivery', 'Delivered'];
+
+        // ── Handle URL Params ──
         const urlParams = new URLSearchParams(window.location.search);
-        const paramId = urlParams.get('id') || urlParams.get('order');
-        if (paramId) {
-            document.getElementById('order-id-input').value = paramId;
-            setTimeout(() => trackOrder(paramId), 300);
+        const pid = urlParams.get('id') || urlParams.get('order');
+        if (pid) {
+            document.getElementById('order-id-input').value = pid;
+            setTimeout(() => trackOrder(pid), 500);
         }
 
-        // ── Form Submit ──
         document.getElementById('tracking-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const val = document.getElementById('order-id-input').value.trim();
             if (val) trackOrder(val);
         });
 
-        // ── Main track function ──
         async function trackOrder(orderId) {
             currentOrderId = orderId;
             showLoading();
 
             try {
-                let data;
+                const token = localStorage.getItem('authToken');
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                
+                const res = await fetch(`${API_BASE}/api/shipments/track-by-order/${encodeURIComponent(orderId)}`, { headers });
+                const json = await res.json();
 
-                if (isLoggedIn) {
-                    // Authenticated: use secure endpoint that also returns live tracking
-                    const res = await fetch(`${API_BASE}/api/shipments/track-by-order/${encodeURIComponent(orderId)}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    const json = await res.json();
-
-                    if (!res.ok) {
-                        // Fallback to public order track if 403/404
-                        if (res.status === 403) {
-                            showError('Access Denied', 'You are not authorized to track this order. Please ensure you are logged in with the correct account.');
-                            return;
-                        }
-                        throw new Error(json.message || 'Order not found');
-                    }
-
-                    if (!json.status) throw new Error(json.message || 'Order not found');
-                    data = json.data;
-                } else {
-                    // Public: use orders/track endpoint (no live Nimbus data)
-                    const res = await fetch(`${API_BASE}/api/orders/track/${encodeURIComponent(orderId)}`);
-                    const json = await res.json();
-                    if (!res.ok) throw new Error(json.message || 'Order not found');
-                    data = json;
-                    data.liveTracking = null; // No live data without auth
-                }
-
-                renderTrackingResult(data);
+                if (!res.ok) throw new Error(json.message || 'Tracking failed');
+                
+                renderResult(json.data);
+                startPolling();
             } catch (err) {
-                showError('Tracking Failed', err.message || 'Unable to find this order. Please check your Order ID.');
+                console.error(err);
+                alert(err.message || "Order not found or tracking unavailable yet.");
+                hideAll();
             }
         }
 
-        // ── Render result ──
-        function renderTrackingResult(data) {
-            hideAll();
+        function renderResult(data) {
+            hideLoading();
             document.getElementById('tracking-result').style.display = 'flex';
+            
+            // Basic Info
+            document.getElementById('display-order-id').textContent = data.orderId || '—';
+            document.getElementById('display-awb').textContent = data.awbNumber || 'Awaiting Sync';
+            
+            // ETA & Location
+            const nData = data.liveTracking?.data || {};
+            const eta = nData.expected_date || nData.edd || nData.eta || 'Calculating...';
+            const loc = nData.current_location || nData.last_location || nData.delivery_city || 'In Transit';
+            document.getElementById('display-eta').textContent = (eta && eta !== 'Calculating...') ? new Date(eta).toLocaleDateString() : eta;
+            document.getElementById('display-location').textContent = loc;
+            
+            const rawStatus = (data.shippingStatus || data.status || '').toLowerCase();
+            const mIdx = determineMilestone(rawStatus);
+            document.getElementById('display-status').textContent = LABELS[mIdx] || data.status;
 
-            currentAWB = data.awbNumber;
+            // Update Ribbon
+            document.getElementById('status-ribbon').style.display = 'flex';
+            document.getElementById('ribbon-text').textContent = `Status: ${LABELS[mIdx] || data.status}`;
 
-            // ORDER META
-            document.getElementById('result-order-id').textContent = `#${data.orderId}`;
-            document.getElementById('result-date').textContent = `Placed on ${new Date(data.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+            // Render Progress
+            updateProgress(mIdx);
 
-            // CURRENT STATUS BADGE
-            renderStatusBadge(data.status);
-
-            // INFO PILLS
-            document.getElementById('pill-courier').textContent = data.courierName || 'NimbusPost';
-            document.getElementById('pill-payment').textContent = data.paymentMethod || 'Prepaid';
-            document.getElementById('pill-amount').textContent = `₹${(data.totalAmount || 0).toLocaleString('en-IN')}`;
-
-            // MILESTONE PROGRESS
-            const initialHist = (data.liveTracking && data.liveTracking.data) ? (data.liveTracking.data.history || data.liveTracking.data.tracking_events || data.liveTracking.data.events || []) : [];
-            renderMilestones(data.status, initialHist.length > 0);
-
-            // LIVE TRACKING
-            if (data.awbNumber) {
-                document.getElementById('awb-number-display').textContent = data.awbNumber;
-                document.getElementById('awb-refresh-row').style.display = 'flex';
-                document.getElementById('no-awb-state').style.display = 'none';
-
-                if (data.liveTracking && data.liveTracking.status && data.liveTracking.data) {
-                    renderLiveLog(data.liveTracking.data);
-                } else {
-                    renderLiveLog(null); // Prompt refresh
-                }
-            } else {
-                document.getElementById('awb-refresh-row').style.display = 'none';
-                document.getElementById('no-awb-state').style.display = 'block';
-                document.getElementById('live-log-section').style.display = 'none';
-
-                // Update location pill
-                document.getElementById('pill-location').textContent = 'Awaiting dispatch';
-            }
+            // Render Timeline
+            renderTimeline(data.liveTracking?.data || { history: [] }, mIdx);
         }
 
-        // ── Render Status Badge ──
-        function renderStatusBadge(status) {
-            const badge = document.getElementById('current-status-badge');
-            const text = document.getElementById('current-status-text');
-            text.textContent = status;
-
-            badge.className = 'current-status-badge';
-            const s = (status || '').toLowerCase();
-            if (s.includes('deliver')) badge.classList.add('delivered');
-            else if (s.includes('out')) badge.classList.add('out-delivery');
-            else if (s.includes('transit') || s.includes('shipped')) badge.classList.add('in-transit');
-            else badge.classList.add('processing');
+        function determineMilestone(status) {
+            const s = status.toLowerCase();
+            // Complex keyword matching
+            if (s.includes('delivered')) return 4;
+            if (s.includes('out for delivery') || s.includes('outfordelivery')) return 3;
+            if (s.includes('transit') || s.includes('shipped') || s.includes('hub') || s.includes('departed')) return 2;
+            if (s.includes('picked') || s.includes('pickup') || s.includes('manifested')) return 1;
+            return 0;
         }
 
-        // ── Render Milestones ──
-        function renderMilestones(status, hasHistory = false) {
-            const statusMap = {
-                'Pending': 0,
-                'Processing': 0,
-                'Paid': 0,
-                'Packed': 1,
-                'Booked': 1,
-                'Manifested': 1,
-                'Pending Pickup': 1,
-                'Pickup Scheduled': 1,
-                'Out for Pickup': 1,
-                'Picked Up': 1,
-                'Pickedup': 1,
-                'Shipped': 2,
-                'In Transit': 2,
-                'Dispatched': 2,
-                'Dispatched to Hub': 2,
-                'Reached at Hub': 2,
-                'Out for Delivery': 3,
-                'Delivered': 4,
-            };
+        function updateProgress(activeIdx) {
+            const bar = document.getElementById('pb-fill');
+            const pct = activeIdx === 0 ? 0 : (activeIdx / 4) * 90;
+            bar.style.width = `${pct}%`;
 
-            let activeIdx = 0;
-            const s = (status || '').toLowerCase();
-
-            // 1. Direct map lookup
-            if (statusMap[status] !== undefined) {
-                activeIdx = statusMap[status];
-            } else {
-                // 2. Fallback to keyword matching
-                if (s.includes('delivered') && !s.includes('out')) activeIdx = 4;
-                else if (s.includes('out') || s.includes('delivery agent') || s.includes('ofp')) activeIdx = 3;
-                else if (s.includes('transit') || s.includes('shipped') || s.includes('hub') || s.includes('dispatched') || s.includes('in-transit')) activeIdx = 2;
-                else if (s.includes('picked') || s.includes('pickup') || s.includes('packed') || s.includes('manifested') || s.includes('booked')) activeIdx = 1;
-                else activeIdx = 0;
-            }
-
-            // 3. Fallback: If status is unknown/generic but we HAVE history, it should at least be in progress (milestone 1)
-            if (activeIdx === 0 && hasHistory) {
-                activeIdx = 1; // Milestone 1 is 'Picked Up' (which also represents 'Being Picked Up')
-            }
-
-            const total = 4; // 0..4
-            for (let i = 0; i <= total; i++) {
-                const el = document.getElementById(`ms-${i}`);
+            for (let i = 0; i <= 4; i++) {
+                const el = document.getElementById(`step-${i}`);
                 if (!el) continue;
-                el.classList.remove('completed', 'active');
+                el.classList.remove('active', 'completed');
                 if (i < activeIdx) el.classList.add('completed');
                 else if (i === activeIdx) el.classList.add('active');
             }
-
-            // Progress bar width (span is 80% because it starts at 10% and ends at 90%)
-            const pct = activeIdx === 0 ? 0 : ((activeIdx / total) * 80);
-            document.getElementById('progress-bar').style.width = `${pct}%`;
         }
 
-        // ── Render Live Log ──
-        function renderLiveLog(trackingData) {
-            const container = document.getElementById('live-tracking-log');
-
-            if (!trackingData) {
-                container.innerHTML = `
-                    <div class="no-tracking">
-                        <i class="fas fa-satellite-dish"></i>
-                        <p>Click <strong style="color: var(--gold)">Refresh</strong> to fetch the latest carrier updates from NimbusPost.</p>
-                    </div>
-                `;
-                document.getElementById('pill-location').textContent = 'Click Refresh';
-                return;
-            }
-
-            // Update location pill with latest location from tracking data
-            const latestLoc = trackingData.current_location || trackingData.delivery_city || '';
-            if (latestLoc) document.getElementById('pill-location').textContent = latestLoc;
-            else document.getElementById('pill-location').textContent = 'In Transit';
-
-            // Render history events
-            const history = trackingData.history || trackingData.tracking_events || trackingData.events || [];
-            const hasHistory = history.length > 0;
-
-            // Update current status from live data
-            if (trackingData.status_name) {
-                renderStatusBadge(trackingData.status_name);
-                renderMilestones(trackingData.status_name, hasHistory);
-            }
+        function renderTimeline(nimbusData, activeMilestoneIdx) {
+            const container = document.getElementById('timeline-log');
+            const history = nimbusData.history || nimbusData.tracking_events || nimbusData.events || [];
 
             if (history.length === 0) {
-                container.innerHTML = `
-                    <div class="no-tracking">
-                        <i class="fas fa-clock"></i>
-                        <p>Carrier updates will appear here once your package is picked up.</p>
-                    </div>
-                `;
+                container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--text-dim); font-size:0.85rem;">Carrier logs will appear here live once dispatched.</p>`;
                 return;
             }
 
-            // Newest first (Nimbus often returns newest first, so we don't reverse by default if it's already sorted)
-            // But to be sure, we sort by timestamp/event_time descending
-            const sorted = [...history].sort((a, b) => {
-                const timeA = new Date(a.event_time || a.timestamp || a.date || a.datetime || 0);
-                const timeB = new Date(b.event_time || b.timestamp || b.date || b.datetime || 0);
-                return timeB - timeA;
-            });
+            // Sort history DESC
+            const sorted = [...history].sort((a,b) => new Date(b.event_time || b.timestamp || 0) - new Date(a.event_time || a.timestamp || 0));
 
             container.innerHTML = sorted.map((ev, idx) => {
-                const evStatus = ev.status_name || ev.activity || ev.status || ev.statusName || ev.status_desc || ev.statusDescription || ev.event_description || ev.remark || ev.remarks || ev.scan_status || ev.scanStatus || ev.scan_status_desc || ev.scanStatusDesc || ev.activity_description || ev.activityDescription || ev.event || ev.description || ev.Activity || ev.Status || ev.StatusName || 'Update';
-                const evLoc = ev.location || ev.city || ev.hub || '';
-                const evTime = ev.event_time || ev.timestamp || ev.date || ev.datetime;
-                const formatted = evTime ? new Date(evTime).toLocaleString('en-IN', {
-                    day: 'numeric', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
+                const rawName = (ev.status_name || ev.activity || ev.status || 'Update').toLowerCase();
+                const mappedIdx = determineMilestone(rawName);
+                
+                // If it matches the current milestone, use the clean label
+                const displayStatus = (mappedIdx === activeMilestoneIdx && idx === 0) ? LABELS[mappedIdx] : (ev.status_name || ev.activity || ev.status || 'Update');
+                const loc = ev.location || ev.city || ev.hub || '';
+                const time = ev.event_time || ev.timestamp;
+                const formattedTime = time ? new Date(time).toLocaleString('en-IN', {
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                 }) : '';
 
                 return `
-                    <div class="tracking-event ${idx === 0 ? 'latest' : ''}">
-                        <div class="event-marker">
-                            <div class="event-dot"></div>
-                            ${idx < sorted.length - 1 ? '<div class="event-line"></div>' : ''}
-                        </div>
-                        <div class="event-body">
-                            <div class="event-status">${evStatus}</div>
-                            ${evLoc ? `<div class="event-location"><i class="fas fa-map-marker-alt" style="font-size:0.65rem; color: var(--gold);"></i>${evLoc}</div>` : ''}
-                            ${formatted ? `<div class="event-time">${formatted}</div>` : ''}
+                    <div class="log-item ${idx === 0 ? 'active' : ''}">
+                        <div class="log-indicator"></div>
+                        <div class="log-content">
+                            <div class="log-status">${displayStatus}</div>
+                            ${loc ? `<div class="log-details"><i class="fas fa-map-marker-alt" style="color:var(--gold)"></i> ${loc}</div>` : ''}
+                            <div class="log-time">${formattedTime}</div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        // ── Refresh live tracking ──
-        async function refreshLiveTracking() {
-            if (!currentAWB) return;
-            const btn = document.getElementById('refresh-btn');
-            btn.classList.add('loading');
-            btn.disabled = true;
+        function startPolling() {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(() => {
+                if (currentOrderId) trackOrderPolling(currentOrderId);
+            }, 15000); // 15 sec
+        }
 
+        async function trackOrderPolling(orderId) {
             try {
-                const res = await fetch(`${API_BASE}/api/shipments/track/${encodeURIComponent(currentAWB)}`, {
-                    headers: isLoggedIn ? { 'Authorization': `Bearer ${token}` } : {}
-                });
+                const token = localStorage.getItem('authToken');
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                const res = await fetch(`${API_BASE}/api/shipments/track-by-order/${encodeURIComponent(orderId)}`, { headers });
                 const json = await res.json();
-
-                if (json.status && json.data) {
-                    renderLiveLog(json.data);
-                    if (json.data.status_name) {
-                        renderStatusBadge(json.data.status_name);
-                        const hist = json.data.history || json.data.tracking_events || json.data.events || [];
-                        renderMilestones(json.data.status_name, hist.length > 0);
-                    }
-                } else {
-                    document.getElementById('live-tracking-log').innerHTML = `
-                        <div class="no-tracking">
-                            <i class="fas fa-clock"></i>
-                            <p>${json.message || 'Tracking info not yet available. Check back once your package leaves the warehouse.'}</p>
-                        </div>
-                    `;
-                }
-            } catch (e) {
-                document.getElementById('live-tracking-log').innerHTML = `
-                    <div class="no-tracking">
-                        <i class="fas fa-wifi" style="color: var(--error);"></i>
-                        <p>Unable to connect to tracking service. Please try again in a few minutes.</p>
-                    </div>
-                `;
-            } finally {
-                btn.classList.remove('loading');
-                btn.disabled = false;
-            }
+                if (res.ok) renderResult(json.data);
+            } catch (e) {}
         }
 
-        // ── UI helpers ──
         function showLoading() {
-            hideAll();
-            document.getElementById('loading-state').style.display = 'flex';
+            document.getElementById('loading-state').style.display = 'block';
+            document.getElementById('tracking-result').style.display = 'none';
         }
 
-        function showError(title, msg) {
-            hideAll();
-            document.getElementById('error-state').style.display = 'block';
-            document.getElementById('error-title').textContent = title;
-            document.getElementById('error-msg').textContent = msg;
-        }
-
-        function hideAll() {
+        function hideLoading() {
             document.getElementById('loading-state').style.display = 'none';
-            document.getElementById('error-state').style.display = 'none';
+        }
+        
+        function hideAll() {
+            hideLoading();
             document.getElementById('tracking-result').style.display = 'none';
         }
     </script>
 </body>
-
 </html>
