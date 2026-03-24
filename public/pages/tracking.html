@@ -1350,7 +1350,7 @@
             });
 
             container.innerHTML = sorted.map((ev, idx) => {
-                const evStatus = ev.status_name || ev.activity || ev.status || ev.event_description || ev.remark || ev.scan_status || ev.scan_status_desc || ev.activity_description || ev.activity_desc || ev.remarks || ev.event || ev.description || ev.Activity || ev.Status || 'Update';
+                const evStatus = ev.status_name || ev.activity || ev.status || ev.statusName || ev.status_desc || ev.statusDescription || ev.event_description || ev.remark || ev.remarks || ev.scan_status || ev.scanStatus || ev.scan_status_desc || ev.scanStatusDesc || ev.activity_description || ev.activityDescription || ev.event || ev.description || ev.Activity || ev.Status || ev.StatusName || 'Update';
                 const evLoc = ev.location || ev.city || ev.hub || '';
                 const evTime = ev.event_time || ev.timestamp || ev.date || ev.datetime;
                 const formatted = evTime ? new Date(evTime).toLocaleString('en-IN', {

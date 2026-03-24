@@ -1272,9 +1272,9 @@ async function renderOrdersTab(filter = 'all') {
                                 <i class="fas fa-ban"></i> Cancelled
                             </span>
                             ${order.awbNumber ? `
-                                <button class="btn btn-outline" style="font-size: 0.65rem; padding: 4px 8px; border-color: rgba(255,150,80,0.3); color: #ff9800; border-radius: 6px;" 
-                                    onclick="confirmCancelOrder('${order.orderId}')" title="Ensure NimbusPost is also cancelled">
-                                    <i class="fas fa-sync"></i> Nimbus Sync
+                                <button class="btn btn-outline" style="font-size: 0.65rem; padding: 4px 8px; border-color: rgba(255,211,105,0.3); color: var(--gold-text); border-radius: 6px;" 
+                                    onclick="syncSingleOrderStatus('${order.orderId}')" title="Sync live status from NimbusPost">
+                                    <i class="fas fa-sync"></i> Sync Live Status
                                 </button>
                             ` : ''}
                         </div>
@@ -1392,6 +1392,26 @@ async function syncOrdersStatus() {
             syncBtn.innerHTML = originalText;
             syncBtn.disabled = false;
         }
+    }
+}
+
+async function syncSingleOrderStatus(orderId) {
+    const token = localStorage.getItem('authToken');
+    if (typeof showToast === 'function') showToast(`🔄 Syncing status for #${orderId}...`, 'info');
+    try {
+        const res = await fetch(`${API_BASE}/api/orders/track-by-order/${orderId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+            if (typeof showToast === 'function') showToast(`✅ Status updated to: ${data.status}`, 'success');
+            if (typeof renderOrdersTab === 'function') renderOrdersTab();
+        } else {
+            if (typeof showToast === 'function') showToast(data.message || 'Sync failed', 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        if (typeof showToast === 'function') showToast('Sync failed. Please try later.', 'error');
     }
 }
 
@@ -4309,26 +4329,42 @@ window.downloadInvoice = async function (orderId) {
         doc.setFontSize(10);
 
         const itemsTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const shipping = Number(order.shippingCharges) || 0;
+        const cod = Number(order.codCharges) || 0;
+        const totalAmount = Number(order.totalAmount) || 0;
+        
+        // SMART MATH: Ensure the math on the invoice adds up to the ACTUAL paid total
+        // If the reported total is less than the calculation, it means a heavy discount was applied (e.g. ₹1 promo)
+        let displayDiscount = Number(order.discountAmount) || 0;
+        const calculatedPreDiscount = itemsTotal + shipping + cod;
+        if (totalAmount < calculatedPreDiscount) {
+            displayDiscount = calculatedPreDiscount - totalAmount;
+        }
+
         doc.text("Items Total:", 130, currentY);
         doc.text(`INR ${itemsTotal.toFixed(2)}`, 175, currentY);
 
-        if (order.shippingCharges > 0) {
+        if (shipping > 0) {
             currentY += 8;
             doc.text("Shipping Charges:", 130, currentY);
-            doc.text(`INR ${order.shippingCharges.toFixed(2)}`, 175, currentY);
+            doc.text(`INR ${shipping.toFixed(2)}`, 175, currentY);
         }
 
-        if (order.codCharges > 0) {
+        if (cod > 0) {
             currentY += 8;
             doc.text("COD Charges:", 130, currentY);
-            doc.text(`INR ${order.codCharges.toFixed(2)}`, 175, currentY);
+            doc.text(`INR ${cod.toFixed(2)}`, 175, currentY);
         }
 
-        if (order.discountAmount > 0) {
+        if (displayDiscount > 0) {
             currentY += 8;
             doc.setTextColor(200, 0, 0); // Red for discount
-            doc.text(`Discount (${order.couponCode || 'COUPON'}):`, 130, currentY);
-            doc.text(`- INR ${order.discountAmount.toFixed(2)}`, 175, currentY);
+            // Clean up the coupon code for display (e.g., ABHA-EFV-6740 -> ABHA)
+            let displayCoupon = order.couponCode || 'PROMO';
+            if (displayCoupon.includes('-EFV-')) displayCoupon = displayCoupon.split('-')[0];
+            
+            doc.text(`Discount (${displayCoupon}):`, 130, currentY);
+            doc.text(`- INR ${displayDiscount.toFixed(2)}`, 175, currentY);
             doc.setTextColor(0, 0, 0); // Reset
         }
 
@@ -4337,11 +4373,11 @@ window.downloadInvoice = async function (orderId) {
         doc.line(130, currentY - 5, 190, currentY - 5);
 
         doc.text("Taxable Value:", 130, currentY);
-        doc.text(`INR ${(order.totalAmount / 1.18).toFixed(2)}`, 175, currentY);
+        doc.text(`INR ${(totalAmount / 1.18).toFixed(2)}`, 175, currentY);
 
         currentY += 8;
         doc.text("GST (18%):", 130, currentY);
-        doc.text(`INR ${(order.totalAmount - (order.totalAmount / 1.18)).toFixed(2)}`, 175, currentY);
+        doc.text(`INR ${(totalAmount - (totalAmount / 1.18)).toFixed(2)}`, 175, currentY);
 
         currentY += 12;
         doc.setFillColor(...darkColor);
@@ -4349,7 +4385,7 @@ window.downloadInvoice = async function (orderId) {
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
         doc.text("GRAND TOTAL:", 130, currentY);
-        doc.text(`INR ${order.totalAmount}`, 173, currentY);
+        doc.text(`INR ${totalAmount}`, 173, currentY);
 
         // Footer & Terms
         doc.setTextColor(150, 150, 150);
@@ -4406,7 +4442,7 @@ window.refreshTrackingData = async function (awb) {
                     <div style="background: rgba(255,211,105,0.04); border-radius: 12px; padding: 18px; border: 1px solid rgba(255,211,105,0.12); margin-top: 4px;">
                         <p style="margin: 0 0 14px; font-size: 0.72rem; font-weight: 800; color: var(--gold-text); text-transform: uppercase; letter-spacing: 2px;">NimbusPost Live Updates</p>
                         ${sorted.map((ev, i) => {
-                            const evStatus = ev.status_name || ev.activity || ev.status || ev.event_description || ev.remark || ev.scan_status || ev.scan_status_desc || ev.activity_description || ev.activity_desc || ev.remarks || ev.event || ev.description || ev.Activity || ev.Status || ev.StatusName || 'Update';
+                            const evStatus = ev.status_name || ev.activity || ev.status || ev.statusName || ev.status_desc || ev.statusDescription || ev.event_description || ev.remark || ev.remarks || ev.scan_status || ev.scanStatus || ev.scan_status_desc || ev.scanStatusDesc || ev.activity_description || ev.activityDescription || ev.event || ev.description || ev.Activity || ev.Status || ev.StatusName || 'Update';
                             const evLoc = ev.location || ev.city || ev.hub || '';
                             const evTime = ev.event_time || ev.timestamp || ev.date || ev.datetime;
                             const timeStr = evTime ? new Date(evTime).toLocaleString('en-IN', {
