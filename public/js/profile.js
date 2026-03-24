@@ -1724,6 +1724,7 @@ function renderLibraryTab(directData = null, typeFilter = null) {
         const prodId = item.productId || item.id || item._id;
         const progress = await fetchProgress(prodId);
 
+        const rawType = (item.type || '').toLowerCase();
         const isAudio = rawType.includes('audio');
         const actionLabel = isAudio ? 'Listen Now' : 'Read Now';
         const icon = isAudio ? 'fa-headphones' : 'fa-book-open';
