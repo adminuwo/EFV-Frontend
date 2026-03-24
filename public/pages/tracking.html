@@ -1341,11 +1341,16 @@
                 return;
             }
 
-            // Newest first
-            const sorted = [...history].reverse();
+            // Newest first (Nimbus often returns newest first, so we don't reverse by default if it's already sorted)
+            // But to be sure, we sort by timestamp/event_time descending
+            const sorted = [...history].sort((a, b) => {
+                const timeA = new Date(a.event_time || a.timestamp || a.date || a.datetime || 0);
+                const timeB = new Date(b.event_time || b.timestamp || b.date || b.datetime || 0);
+                return timeB - timeA;
+            });
 
             container.innerHTML = sorted.map((ev, idx) => {
-                const evStatus = ev.status || ev.event_description || ev.activity || 'Update';
+                const evStatus = ev.status_name || ev.activity || ev.status || ev.event_description || ev.remark || ev.scan_status || 'Update';
                 const evLoc = ev.location || ev.city || ev.hub || '';
                 const evTime = ev.event_time || ev.timestamp || ev.date || ev.datetime;
                 const formatted = evTime ? new Date(evTime).toLocaleString('en-IN', {
