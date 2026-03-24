@@ -4386,24 +4386,34 @@ window.refreshTrackingData = async function (awb) {
         const res = await fetch(`${API_BASE}/api/shipments/track/${awb}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
+        const json = await res.json();
+        const data = json.data;
 
-        if (res.ok && data.status && data.data) {
-            const tracking = data.data;
+        if (res.ok && json.status && data) {
+            const tracking = data;
             // Get history — NimbusPost may use various field names
             const history = tracking.history || tracking.tracking_events || tracking.events || [];
 
             if (history.length > 0) {
-                const sorted = [...history].reverse(); // Newest first
+                // Use robust date-based sort descending (newest first)
+                const sorted = [...history].sort((a, b) => {
+                    const timeA = new Date(a.event_time || a.timestamp || a.date || a.datetime || 0);
+                    const timeB = new Date(b.event_time || b.timestamp || b.date || b.datetime || 0);
+                    return timeB - timeA;
+                });
+                
                 logs.innerHTML = `
                     <div style="background: rgba(255,211,105,0.04); border-radius: 12px; padding: 18px; border: 1px solid rgba(255,211,105,0.12); margin-top: 4px;">
                         <p style="margin: 0 0 14px; font-size: 0.72rem; font-weight: 800; color: var(--gold-text); text-transform: uppercase; letter-spacing: 2px;">NimbusPost Live Updates</p>
-                        ${sorted.slice(0, 5).map((h, i) => {
-                    const evStatus = h.status || h.event_description || h.activity || 'Update';
-                    const evLoc = h.location || h.city || h.hub || '';
-                    const evTime = h.event_time || h.timestamp || h.date || h.datetime;
-                    const timeStr = evTime ? new Date(evTime).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-                    return `
+                        ${sorted.map((ev, i) => {
+                            const evStatus = ev.status_name || ev.activity || ev.status || ev.event_description || ev.remark || ev.scan_status || ev.scan_status_desc || ev.activity_description || ev.activity_desc || ev.remarks || ev.event || ev.description || ev.Activity || ev.Status || ev.StatusName || 'Update';
+                            const evLoc = ev.location || ev.city || ev.hub || '';
+                            const evTime = ev.event_time || ev.timestamp || ev.date || ev.datetime;
+                            const timeStr = evTime ? new Date(evTime).toLocaleString('en-IN', {
+                                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true
+                            }) : '';
+
+                            return `
                                 <div style="display: flex; gap: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
                                     <div style="flex-shrink: 0; margin-top: 4px;">
                                         <div style="width: 10px; height: 10px; border-radius: 50%; background: ${i === 0 ? 'var(--gold-text)' : 'rgba(255,255,255,0.15)'}; box-shadow: ${i === 0 ? '0 0 8px rgba(212,175,55,0.5)' : 'none'};"></div>
@@ -4415,7 +4425,7 @@ window.refreshTrackingData = async function (awb) {
                                     </div>
                                 </div>
                             `;
-                }).join('')}
+                        }).join('')}
                     </div>
                 `;
                 showToast('Live tracking updated', 'success');
