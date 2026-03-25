@@ -3915,70 +3915,91 @@ if (productForm) {
         btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Processing...';
         btn.disabled = true;
 
+        // START OF CHUNKED ENGINE
         try {
             const token = localStorage.getItem('authToken');
-            const formData = new FormData();
-
             const cover = document.getElementById('admin-file-cover').files[0];
             const ebook = document.getElementById('admin-file-ebook').files[0];
             const galleryFiles = document.getElementById('admin-file-gallery')?.files;
             const productType = document.getElementById('admin-prod-type').value;
 
-            if (cover) formData.append('cover', cover);
-            if (ebook) formData.append('ebook', ebook);
+            const allFiles = [];
+            if (cover) allFiles.push({ file: cover, fieldname: 'cover' });
+            if (ebook) allFiles.push({ file: ebook, fieldname: 'ebook' });
             if (galleryFiles && galleryFiles.length > 0) {
-                Array.from(galleryFiles).forEach(file => formData.append('gallery', file));
+                Array.from(galleryFiles).forEach(f => allFiles.push({ file: f, fieldname: 'gallery' }));
             }
-
-            // Handle Chapter & Main Audio Uploads
             if (productType === 'AUDIOBOOK') {
                 const audio = document.getElementById('admin-file-audio') ? document.getElementById('admin-file-audio').files[0] : null;
-                if (audio) formData.append('audio', audio);
+                if (audio) allFiles.push({ file: audio, fieldname: 'audio' });
 
                 const chapterCards = document.querySelectorAll('.chapter-card');
                 chapterCards.forEach(card => {
                     const index = card.dataset.index;
                     const fileInput = document.getElementById(`chapter-audio-${index}`);
                     if (fileInput && fileInput.files[0]) {
-                        formData.append(`chapter_${index}`, fileInput.files[0]);
+                        allFiles.push({ file: fileInput.files[0], fieldname: `chapter_${index}` });
                     }
                 });
             }
 
             let uploadData = {};
-            // Check if any files are selected (including chapters)
-            let hasFiles = !!(cover || ebook || (galleryFiles && galleryFiles.length > 0));
-            if (productType === 'AUDIOBOOK') {
-                const mainAudio = document.getElementById('admin-file-audio')?.files[0];
-                if (mainAudio) hasFiles = true;
+            let chapterPaths = {};
+            let galleryPaths = [];
 
-                const chapterFiles = document.querySelectorAll('.chapter-card input[type="file"]');
-                for (let input of chapterFiles) {
-                    if (input.files.length > 0) {
-                        hasFiles = true;
-                        break;
+            if (allFiles.length > 0) {
+                for (let i = 0; i < allFiles.length; i++) {
+                    const fileObj = allFiles[i];
+                    const file = fileObj.file;
+                    const fieldname = fileObj.fieldname;
+
+                    const CHUNK_SIZE = 5 * 1024 * 1024; 
+                    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+                    const fileId = Date.now() + '_' + i;
+                    
+                    let finalPath = '';
+                    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+                        const start = chunkIndex * CHUNK_SIZE;
+                        const end = Math.min(start + CHUNK_SIZE, file.size);
+                        const chunk = file.slice(start, end);
+
+                        const chunkFormData = new FormData();
+                        chunkFormData.append('chunk', chunk, file.name);
+                        chunkFormData.append('fileId', fileId);
+                        chunkFormData.append('chunkIndex', chunkIndex);
+                        chunkFormData.append('totalChunks', totalChunks);
+                        chunkFormData.append('fieldname', fieldname);
+                        chunkFormData.append('originalname', file.name);
+
+                        const chunkRes = await fetch(API_BASE + '/api/upload/chunked', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + token },
+                            body: chunkFormData
+                        });
+
+                        if (!chunkRes.ok) throw new Error('Chunked upload failed for ' + file.name);
+                        
+                        const pct = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading ' + (i+1) + '/' + allFiles.length + ' (' + pct + '%)';
+
+                        const chunkData = await chunkRes.json();
+                        if (chunkData.completed) {
+                            finalPath = chunkData.storagePath;
+                        }
+                    }
+
+                    if (fieldname === 'cover') uploadData.coverPath = finalPath;
+                    else if (fieldname === 'ebook') uploadData.ebookPath = finalPath;
+                    else if (fieldname === 'audio') uploadData.audioPath = finalPath;
+                    else if (fieldname === 'gallery') galleryPaths.push(finalPath);
+                    else if (fieldname.startsWith('chapter_')) {
+                        const idx = fieldname.split('_')[1];
+                        chapterPaths[idx] = finalPath;
                     }
                 }
-            }
-
-            if (hasFiles) {
-                const uploadRes = await fetch(`${API_BASE}/api/upload`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
-
-                const version = uploadRes.headers.get('X-Upload-Version');
-                console.log('📡 Server Upload Version:', version || 'OLD');
-
-                const result = await uploadRes.json();
-                if (!uploadRes.ok) {
-                    if (!version) {
-                        throw new Error(`Outdated Server (No Version Found). Please restart your backend terminal!`);
-                    }
-                    throw new Error(result.message || 'File upload failed');
-                }
-                if (result.paths) uploadData = result.paths;
+                
+                if (galleryPaths.length > 0) uploadData.galleryPaths = galleryPaths;
+                if (Object.keys(chapterPaths).length > 0) uploadData.chapterPaths = chapterPaths;
             }
 
             const productId = document.getElementById('admin-prod-id').value;
