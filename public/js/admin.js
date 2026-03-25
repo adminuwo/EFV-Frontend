@@ -3971,23 +3971,33 @@ if (productForm) {
                         chunkFormData.append('fieldname', fieldname);
                         chunkFormData.append('originalname', file.name);
 
-                        const chunkRes = await fetch(API_BASE + '/api/upload/chunked', {
-                            method: 'POST',
-                            headers: { 'Authorization': 'Bearer ' + token },
-                            body: chunkFormData
-                        });
-
-                        if (!chunkRes.ok) throw new Error('Chunked upload failed for ' + file.name);
+                        // --- ATOMIC RETRY LOOP (RESILIENCE) ---
+                        let chunkRes;
+                        for (let attempt = 1; attempt <= 3; attempt++) {
+                            try {
+                                chunkRes = await fetch(API_BASE + '/api/upload/chunked', {
+                                    method: 'POST',
+                                    headers: { 'Authorization': 'Bearer ' + token },
+                                    body: chunkFormData
+                                });
+                                if (chunkRes.ok) break; // Success!
+                                if (attempt === 3) throw new Error('Permanent error after 3 retries');
+                                console.warn(`⚠️ Chunk upload failed (Attempt ${attempt}/3). Retrying in 2s...`);
+                                await new Promise(r => setTimeout(r, 2000));
+                            } catch (e) {
+                                if (attempt === 3) throw e;
+                                await new Promise(r => setTimeout(r, 2000));
+                            }
+                        }
                         
                         const pct = Math.round(((chunkIndex + 1) / totalChunks) * 100);
-                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading ' + (i+1) + '/' + allFiles.length + ' (' + pct + '%)';
+                        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Uploading ${i+1}/${allFiles.length} (${pct}%)`;
 
                         const chunkData = await chunkRes.json();
                         if (chunkData.completed) {
                             finalPath = chunkData.storagePath;
                         }
                     }
-
                     if (fieldname === 'cover') uploadData.coverPath = finalPath;
                     else if (fieldname === 'ebook') uploadData.ebookPath = finalPath;
                     else if (fieldname === 'audio') uploadData.audioPath = finalPath;
@@ -3996,6 +4006,9 @@ if (productForm) {
                         const idx = fieldname.split('_')[1];
                         chapterPaths[idx] = finalPath;
                     }
+
+                    // Small cooldown between files
+                    await new Promise(r => setTimeout(r, 500));
                 }
                 
                 if (galleryPaths.length > 0) uploadData.galleryPaths = galleryPaths;
