@@ -2577,7 +2577,7 @@ function renderLibraryTab(directData = null, typeFilter = null) {
 
             // Deduplicate by Content Key (Name + Type) - most reliable
             const key = item.uniqueContentKey;
-            if (!isAdmin && uniqueMap.has(key)) return false;
+            if (uniqueMap.has(key)) return false;
             uniqueMap.set(key, true);
             return true;
         });
@@ -5131,3 +5131,84 @@ window.deleteRagFile = async function (name) {
         alert('Delete Error');
     }
 };
+
+
+// --- LIBRARY SYNCHRONIZATION (Professional implementation with feedback) ---
+window.syncLibraryWithBackend = async function () {
+    const user = JSON.parse(localStorage.getItem('efv_user') || '{}');
+    const userEmail = user.email || 'Admin';
+    const token = localStorage.getItem('authToken');
+    
+    // Safety check for user session
+    if (!token) return;
+
+    // UI Feedback: Start Sync
+    if (typeof showToast === 'function') {
+        showToast('🔄 Synchronizing your library...', 'info');
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/api/library/my-library`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (response.ok && Array.isArray(data)) {
+            const libKey = getUserKey('efv_digital_library');
+
+            // Clear localStorage first to avoid duplicate merging logic errors
+            localStorage.removeItem(libKey);
+
+            const localLibrary = data.map(prod => ({
+                id: (prod.productId || prod._id || '').toString(),        // keep 'id' field for cart.js compatibility
+                productId: (prod.productId || prod._id || '').toString(), // keep 'productId' for profile.js
+                name: prod.title || prod.name,
+                title: prod.title || prod.name,
+                type: prod.type,
+                thumbnail: prod.thumbnail,
+                filePath: prod.filePath,
+                language: prod.language || '',
+                subtitle: prod.subtitle || '',
+                date: prod.purchasedAt ? new Date(prod.purchasedAt).toLocaleDateString() : new Date().toLocaleDateString()
+            }));
+            
+            // Atomically update localStorage
+            localStorage.setItem(libKey, JSON.stringify(localLibrary));
+            console.log(`📂 [syncLibraryWithBackend] LocalStorage updated for ${userEmail}. Count: ${localLibrary.length}`);
+
+            // UI Feedback: Success
+            if (typeof showToast === 'function') {
+                showToast('✅ Library Synced! Latest versions are now available.', 'success');
+            }
+
+            // --- INTELLIGENT UI REFRESH ---
+            // Detect which library sub-tab is currently active
+            const activeTab = document.querySelector('.library-sub-tab.active');
+            const activeMode = activeTab ? activeTab.getAttribute('data-library-tab') : 'all';
+            
+            console.log(`🔄 [syncLibraryWithBackend] Refreshing active view mode: ${activeMode}`);
+
+            if (activeMode === 'audiobooks') {
+                 if (typeof renderAudiobooksGrid === 'function') await renderAudiobooksGrid();
+            } else if (activeMode === 'ebooks') {
+                 if (typeof renderLibraryTab === 'function') renderLibraryTab(localLibrary, 'ebook');
+            } else {
+                 if (typeof renderLibraryTab === 'function') renderLibraryTab(localLibrary);
+            }
+
+            if (typeof updateStats === 'function') updateStats();
+        } else {
+            console.warn('❌ [syncLibraryWithBackend] Failed:', (data && data.message) || 'Status: ' + response.status);
+            if (typeof showToast === 'function') {
+                showToast('Failed to sync library: ' + ((data && data.message) || 'Server error'), 'error');
+            }
+        }
+    } catch (error) { 
+        console.error('❌ [syncLibraryWithBackend] Error:', error); 
+        if (typeof showToast === 'function') {
+            showToast('Unable to connect to server for library sync.', 'error');
+        }
+    }
+}
+
+

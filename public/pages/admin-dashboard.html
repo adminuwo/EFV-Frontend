@@ -2826,7 +2826,7 @@
                                 <div style="font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: white;">${p.title}</div>
                                 <div style="font-size: 0.7rem; color: var(--gold-text); opacity: 0.8; margin-bottom: 8px;">${p.type} • ${p.language || 'Edition'}</div>
                             </div>
-                            <button onclick="addToLibraryDirect('${p._id.toString()}')" class="p-btn small ${isAdded ? 'p-btn-secondary' : 'p-btn-primary'}" 
+                            <button onclick="addToLibraryDirect('${(p._id || p.id || '').toString()}')" class="p-btn small ${isAdded ? 'p-btn-secondary' : 'p-btn-primary'}" 
                                 style="padding: 6px 12px; font-size: 0.75rem; white-space: nowrap;" ${isAdded ? 'disabled' : ''}>
                                 ${isAdded ? '<i class="fas fa-check"></i> Added' : '<i class="fas fa-plus"></i> Add'}
                             </button>
@@ -2842,26 +2842,49 @@
             };
 
             window.addToLibraryDirect = async function (prodId) {
+                console.log("📥 [addToLibraryDirect] Initializing for Product ID:", prodId);
                 const token = localStorage.getItem('authToken');
+                
+                // Determine API_BASE safely
+                const apiBaseUrl = (typeof API_BASE !== 'undefined') ? API_BASE : 
+                                   ((typeof PARTNER_API_BASE !== 'undefined') ? PARTNER_API_BASE : 'http://localhost:8080');
+
                 try {
-                    const res = await fetch(`${API_BASE}/api/library/add`, {
+                    console.log(`📤 [addToLibraryDirect] Sending request to: ${apiBaseUrl}/api/library/add`);
+                    const res = await fetch(`${apiBaseUrl}/api/library/add`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ productId: prodId })
+                        body: JSON.stringify({ productId: prodId.toString() })
                     });
+
+                    console.log(`📥 [addToLibraryDirect] Received Response. Status: ${res.status}`);
+                    
                     if (res.ok) {
+                        const successData = await res.json();
+                        console.log("✅ [addToLibraryDirect] Success:", successData.message);
                         showToast('Product added to your library!', 'success');
-                        if (window.syncLibraryWithBackend) await window.syncLibraryWithBackend();
-                        renderAddLibraryList(window.allMarketplaceProducts); // Update UI
+                        
+                        // Force refresh library state
+                        if (typeof window.syncLibraryWithBackend === 'function') {
+                            console.log("🔄 [addToLibraryDirect] Refreshing local library storage...");
+                            await window.syncLibraryWithBackend();
+                        }
+                        
+                        // Re-render the list to update button styles to 'Added'
+                        if (typeof renderAddLibraryList === 'function') {
+                            renderAddLibraryList(window.allMarketplaceProducts || []);
+                        }
                     } else {
                         const err = await res.json();
-                        showToast(err.message || 'Failed to add', 'error');
+                        console.error("❌ [addToLibraryDirect] Server Error:", err.message);
+                        showToast(err.message || 'Failed to add item', 'error');
                     }
                 } catch (e) {
-                    showToast('Network error', 'error');
+                    console.error("❌ [addToLibraryDirect] Network Error:", e);
+                    showToast('Connection error. Please check your internet.', 'error');
                 }
             };
 

@@ -391,6 +391,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
 
+        if (typeof showToast === 'function') {
+            showToast('🔄 Synchronizing your library...', 'info');
+        }
+
         try {
             const response = await fetch(`${API_BASE}/api/library/my-library`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -400,11 +404,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 const libKey = getUserKey('efv_digital_library');
 
+                // IMPORTANT: Clear localStorage first to avoid stale data
+                localStorage.removeItem(libKey);
+
                 const localLibrary = data.map(prod => ({
                     id: (prod.productId || prod._id || '').toString(),
                     productId: (prod.productId || prod._id || '').toString(),
-                    name: prod.title,
-                    title: prod.title,
+                    name: prod.title || prod.name,
+                    title: prod.title || prod.name,
                     language: prod.language || '',
                     subtitle: prod.subtitle || '',
                     type: prod.type,
@@ -413,16 +420,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     date: prod.purchasedAt ? new Date(prod.purchasedAt).toLocaleDateString() : new Date().toLocaleDateString()
                 }));
 
-                // Update only if data is valid array
                 if (Array.isArray(localLibrary)) {
                     localStorage.setItem(libKey, JSON.stringify(localLibrary));
                 }
 
+                if (typeof showToast === 'function') {
+                    showToast('✅ Library Synced! Latest versions are now available.', 'success');
+                }
+
                 if (typeof updateLibraryDisplay === 'function') updateLibraryDisplay();
                 if (typeof updateMarketplaceButtons === 'function') updateMarketplaceButtons();
+            } else {
+                if (typeof showToast === 'function') {
+                    showToast('Failed to sync library.', 'error');
+                }
             }
         } catch (error) {
             console.error('Library sync error:', error);
+            if (typeof showToast === 'function') {
+                showToast('Network error during library sync.', 'error');
+            }
         }
     }
     window.syncLibraryWithBackend = syncLibraryWithBackend;

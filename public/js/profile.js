@@ -857,7 +857,11 @@ async function updateReadingProgressShortcuts() {
 window.syncLibraryWithBackend = async function () {
     const user = JSON.parse(localStorage.getItem('efv_user'));
     const token = localStorage.getItem('authToken');
-    if (!user || !token) return;
+    if (!token) return;
+
+    if (typeof showToast === 'function') {
+        showToast('🔄 Synchronizing your library...', 'info');
+    }
 
     try {
         const response = await fetch(`${API_BASE}/api/library/my-library`, {
@@ -869,8 +873,6 @@ window.syncLibraryWithBackend = async function () {
             const libKey = getUserKey('efv_digital_library');
 
             // IMPORTANT: Clear localStorage and replace with clean backend data.
-            // This prevents stale items (with 'id' field) from mixing with fresh
-            // backend items (with 'productId' field) causing duplicates.
             localStorage.removeItem(libKey);
 
             const localLibrary = data.map(prod => ({
@@ -887,15 +889,29 @@ window.syncLibraryWithBackend = async function () {
             }));
             localStorage.setItem(libKey, JSON.stringify(localLibrary));
 
+            if (typeof showToast === 'function') {
+                showToast('✅ Library Synced! Latest versions are now available.', 'success');
+            }
+
             const activeSub = document.querySelector('.library-sub-tab.active');
             if (activeSub) {
-                filterLibraryView(activeSub.dataset.libraryTab);
+                if (typeof filterLibraryView === 'function') filterLibraryView(activeSub.dataset.libraryTab);
             } else {
-                renderLibraryTab(localLibrary);
+                if (typeof renderLibraryTab === 'function') renderLibraryTab(localLibrary);
             }
-            updateStats();
+            if (typeof updateStats === 'function') updateStats();
+        } else {
+            console.warn('Library sync failed:', data.message);
+            if (typeof showToast === 'function') {
+                showToast('Failed to sync library: ' + (data.message || 'Server error'), 'error');
+            }
         }
-    } catch (error) { console.error('Library sync error:', error); }
+    } catch (error) { 
+        console.error('Library sync error:', error); 
+        if (typeof showToast === 'function') {
+            showToast('Unable to connect to server for library sync.', 'error');
+        }
+    }
 }
 
 
