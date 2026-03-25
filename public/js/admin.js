@@ -5154,14 +5154,13 @@ window.syncLibraryWithBackend = async function () {
         const data = await response.json();
 
         if (response.ok && Array.isArray(data)) {
+            console.log(`📊 [syncLibraryWithBackend] Received ${data.length} items from server truth.`);
             const libKey = getUserKey('efv_digital_library');
 
-            // Clear localStorage first to avoid duplicate merging logic errors
-            localStorage.removeItem(libKey);
-
+            // --- PROTECTIVE LOCAL STORAGE SYNC ---
             const localLibrary = data.map(prod => ({
-                id: (prod.productId || prod._id || '').toString(),        // keep 'id' field for cart.js compatibility
-                productId: (prod.productId || prod._id || '').toString(), // keep 'productId' for profile.js
+                id: (prod.productId || prod.id || '').toString(),        
+                productId: (prod.productId || prod.id || '').toString(), 
                 name: prod.title || prod.name,
                 title: prod.title || prod.name,
                 type: prod.type,
@@ -5172,9 +5171,10 @@ window.syncLibraryWithBackend = async function () {
                 date: prod.purchasedAt ? new Date(prod.purchasedAt).toLocaleDateString() : new Date().toLocaleDateString()
             }));
             
-            // Atomically update localStorage
+            // Atomically update localStorage (no remove needed, setItem overwrites current value)
             localStorage.setItem(libKey, JSON.stringify(localLibrary));
-            console.log(`📂 [syncLibraryWithBackend] LocalStorage updated for ${userEmail}. Count: ${localLibrary.length}`);
+            console.log(`📂 [syncLibraryWithBackend] LocalStorage (${libKey}) updated. Count: ${localLibrary.length}`);
+            console.log("📄 [syncLibraryWithBackend] Raw Data for inspection:", localLibrary);
 
             // UI Feedback: Success
             if (typeof showToast === 'function') {

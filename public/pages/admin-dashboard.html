@@ -2766,69 +2766,72 @@
                 setTimeout(() => modal.style.display = 'none', 400);
             };
 
+            // --- PREMIUM RENDER ADD MODAL LIST (STRICT FILTER) ---
             function renderAddLibraryList(products) {
                 const list = document.getElementById('add-library-list');
+                if (!list || !products) return;
+
                 const libKey = getUserKey('efv_digital_library');
                 const myLibrary = JSON.parse(localStorage.getItem(libKey)) || [];
                 const ownedIds = new Set(myLibrary.map(item => (item.productId || item.id || '').toString()));
 
-                if (products.length === 0) {
-                    list.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; opacity: 0.5;">No digital products found.</div>';
+                // 🎯 STRICT FILTERING: Only EBOOK & AUDIOBOOK
+                const allowedTypes = ['EBOOK', 'AUDIOBOOK'];
+                const displayProducts = products.filter(p => allowedTypes.includes((p.type || '').toUpperCase()));
+
+                if (displayProducts.length === 0) {
+                    list.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 50px 20px; color: rgba(255,255,255,0.4); border: 2px dashed rgba(255,255,255,0.05); border-radius: 20px;">
+                            <div style="font-size: 2rem; margin-bottom: 15px;"><i class="fas fa-layer-group"></i></div>
+                            <div style="font-weight: 700; font-family: 'Cinzel', serif; letter-spacing: 1px;">No Digital Content Available</div>
+                            <p style="font-size: 0.8rem; margin-top: 5px;">Only E-Books and Audiobooks are permitted in this collection.</p>
+                        </div>
+                    `;
                     return;
                 }
 
-                list.innerHTML = products.map(p => {
+                // Inject Styles Dynamically
+                if (!document.getElementById('library-premium-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'library-premium-styles';
+                    style.innerHTML = `
+                        .lib-item-card { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+                        .lib-item-card:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+                        .item-added-success { border-color: var(--gold-energy) !important; background: rgba(212, 175, 55, 0.05) !important; box-shadow: 0 0 15px rgba(212, 175, 55, 0.15) !important; }
+                        .p-btn-success-state { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.15) !important; color: #27ae60 !important; font-weight: 800 !important; cursor: default !important; }
+                    `;
+                    document.head.appendChild(style);
+                }
+
+                list.innerHTML = displayProducts.map(p => {
                     const isAdded = ownedIds.has(p._id.toString());
-                    let fullThumb = p.thumbnail || '';
-                    let isFallback = false;
-
-                    if (!fullThumb || (typeof fullThumb === 'string' && (fullThumb.includes('vol1-cover.png') || fullThumb.includes('english_v1.jpeg')))) {
-                        isFallback = true;
-                        const title = (p.title || '').toUpperCase();
-                        if (typeof window.getImageForProduct === 'function') {
-                            fullThumb = window.getImageForProduct(p.title);
-                        } else if (title.includes('VOL 2') || title.includes('MINDOS')) {
-                            fullThumb = '../assets/images/vol 2.png';
-                        } else if (title.includes('VOL 1') || title.includes('ORIGIN')) {
-                            fullThumb = '../assets/images/vol1-cover.png';
-                        } else {
-                            fullThumb = '../assets/images/english_v1.jpeg';
-                        }
-                    }
-
-                    // Only prefix with API_BASE if it's a real thumbnail from backend (e.g. uploads/...)
-                    // Skip if it's a local asset path
-                    if (!isFallback && typeof fullThumb === 'string') {
-                        const isLocalAsset = fullThumb.startsWith('assets/') || fullThumb.startsWith('../assets/') || fullThumb.includes('/assets/images/');
-
-                        if (!isLocalAsset) {
-                            let cleanPath = fullThumb.replace(/^(\.\.\/|\.\/|\/)/, '');
-                            if (!fullThumb.startsWith('http') && !fullThumb.startsWith(API_BASE)) {
-                                fullThumb = API_BASE + '/' + cleanPath;
-                            }
-                        } else if (fullThumb.startsWith('assets/')) {
-                            // Convert to relative for the current page if needed
-                            fullThumb = '../' + fullThumb;
-                        }
-                    }
-
-                    // Final encoding to handle spaces in filenames safely
-                    if (typeof fullThumb === 'string') {
-                        fullThumb = encodeURI(fullThumb).replace(/%25/g, '%');
+                    const type = (p.type || 'EBOOK').toUpperCase();
+                    
+                    let thumb = p.thumbnail || '../assets/images/vol1-cover.png';
+                    if (thumb && !thumb.startsWith('http') && !thumb.startsWith('.') && !thumb.startsWith('/assets')) {
+                         thumb = API_BASE + '/' + thumb.replace(/^\/+/, '');
                     }
 
                     return `
-                        <div class="glass-panel" style="display: flex; gap: 15px; padding: 12px; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
-                            <img src="${fullThumb}" 
-                                onerror="this.src='../assets/images/english_v1.jpeg'"
-                                style="width: 50px; height: 70px; object-fit: cover; border-radius: 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: white;">${p.title}</div>
-                                <div style="font-size: 0.7rem; color: var(--gold-text); opacity: 0.8; margin-bottom: 8px;">${p.type} • ${p.language || 'Edition'}</div>
+                        <div class="glass-panel lib-item-card ${isAdded ? 'item-added-success' : ''}" 
+                            style="display: flex; gap: 15px; padding: 12px; align-items: center; border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
+                            
+                            <div style="position: relative; flex-shrink: 0;">
+                                <img src="${thumb}" onerror="this.src='../assets/images/vol1-cover.png'"
+                                    style="width: 50px; height: 70px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                                <span style="position: absolute; top: -5px; right: -5px; background: #000; border: 1px solid var(--gold-energy); color: var(--gold-energy); font-size: 7px; padding: 2px 4px; border-radius: 3px; font-weight: 900;">${type}</span>
                             </div>
-                            <button onclick="addToLibraryDirect('${(p._id || p.id || '').toString()}')" class="p-btn small ${isAdded ? 'p-btn-secondary' : 'p-btn-primary'}" 
-                                style="padding: 6px 12px; font-size: 0.75rem; white-space: nowrap;" ${isAdded ? 'disabled' : ''}>
-                                ${isAdded ? '<i class="fas fa-check"></i> Added' : '<i class="fas fa-plus"></i> Add'}
+
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 800; font-size: 0.9rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Cinzel', serif;">${p.title}</div>
+                                <div style="font-size: 0.7rem; color: var(--gold-text); margin-top: 3px; opacity: 0.7;">Digital Edition • ${p.language || 'English'}</div>
+                            </div>
+
+                            <button onclick="addToLibraryDirect('${p._id.toString()}')" 
+                                class="p-btn small ${isAdded ? 'p-btn-success-state' : 'p-btn-primary'}" 
+                                style="width: 90px; height: 35px; font-size: 0.7rem; font-weight: 800;" 
+                                ${isAdded ? 'disabled' : ''}>
+                                ${isAdded ? '<i class="fas fa-check"></i> ADDED' : '<i class="fas fa-plus"></i> ADD'}
                             </button>
                         </div>
                     `;
