@@ -412,6 +412,43 @@
     box-shadow: 0 0 30px rgba(214, 168, 95, 0.1);
 }
 
+.efv-mic-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    color: #D6A85F;
+}
+
+.efv-mic-btn:hover {
+    background: rgba(214, 168, 95, 0.15);
+    border-color: rgba(214, 168, 95, 0.3);
+    transform: translateY(-3px) scale(1.05);
+}
+
+.efv-mic-btn:active {
+    transform: scale(0.95);
+}
+
+@keyframes efv-mic-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(214, 168, 95, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(214, 168, 95, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(214, 168, 95, 0); }
+}
+
+.efv-mic-active {
+    background: rgba(214, 168, 95, 0.3) !important;
+    border-color: #D6A85F !important;
+    color: #fff !important;
+    animation: efv-mic-pulse 1.5s infinite;
+}
+
 .efv-send-btn {
     width: 60px;
     height: 60px;

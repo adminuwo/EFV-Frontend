@@ -5,6 +5,8 @@ class EFVChatbot {
         this.isRegistered = !!localStorage.getItem('efv_bot_registered');
         this.userEmail = localStorage.getItem('efv_bot_registered_email') || '';
         this.history = [];
+        this.isListening = false;
+        this.recognition = null;
         const base = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL : 'http://localhost:8080';
         this.apiUrl = `${base}/api/chat/message`;
         this.registerUrl = `${base}/api/chat/register`;
@@ -84,6 +86,14 @@ class EFVChatbot {
                             placeholder="Ask about alignment, books, or EFV™..." 
                             autocomplete="off"
                         />
+                        <button id="efv-chat-mic" class="efv-mic-btn" aria-label="Use Microphone">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </button>
                         <button id="efv-chat-send" class="efv-send-btn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -197,13 +207,15 @@ class EFVChatbot {
         const closeBtn = document.getElementById('efv-chat-close');
         const sendBtn = document.getElementById('efv-chat-send');
         const input = document.getElementById('efv-chat-input');
+        const micBtn = document.getElementById('efv-chat-mic');
 
-        toggleBtn.addEventListener('click', () => this.toggleChat());
-        closeBtn.addEventListener('click', () => this.closeChat());
-        sendBtn.addEventListener('click', () => this.sendMessage());
-        input.addEventListener('keypress', (e) => {
+        if (toggleBtn) toggleBtn.addEventListener('click', () => this.toggleChat());
+        if (closeBtn) closeBtn.addEventListener('click', () => this.closeChat());
+        if (sendBtn) sendBtn.addEventListener('click', () => this.sendMessage());
+        if (input) input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.sendMessage();
         });
+        if (micBtn) micBtn.addEventListener('click', () => this.startVoiceRecognition());
 
         // Click overlay to close
         const overlay = document.getElementById('efv-chat-overlay');
@@ -223,6 +235,7 @@ class EFVChatbot {
             chatWindow.classList.add('active');
             if (overlay) overlay.classList.add('active');
             toggleBtn.style.display = 'none';
+            document.body.style.overflow = 'hidden';
 
             if (!this.isRegistered) {
                 this.disableChatInput();
@@ -238,12 +251,14 @@ class EFVChatbot {
             chatWindow.classList.remove('active');
             if (overlay) overlay.classList.remove('active');
             toggleBtn.style.display = 'flex';
+            document.body.style.overflow = '';
         }
     }
 
     disableChatInput() {
         const input = document.getElementById('efv-chat-input');
         const sendBtn = document.getElementById('efv-chat-send');
+        const micBtn = document.getElementById('efv-chat-mic');
         if (input) {
             input.disabled = true;
             input.placeholder = 'Register above to chat...';
@@ -255,11 +270,17 @@ class EFVChatbot {
             sendBtn.style.opacity = '0.5';
             sendBtn.style.cursor = 'not-allowed';
         }
+        if (micBtn) {
+            micBtn.disabled = true;
+            micBtn.style.opacity = '0.5';
+            micBtn.style.cursor = 'not-allowed';
+        }
     }
 
     enableChatInput() {
         const input = document.getElementById('efv-chat-input');
         const sendBtn = document.getElementById('efv-chat-send');
+        const micBtn = document.getElementById('efv-chat-mic');
         if (input) {
             input.disabled = false;
             input.placeholder = 'Ask about alignment, books, or EFV™...';
@@ -270,6 +291,11 @@ class EFVChatbot {
             sendBtn.disabled = false;
             sendBtn.style.opacity = '1';
             sendBtn.style.cursor = 'pointer';
+        }
+        if (micBtn) {
+            micBtn.disabled = false;
+            micBtn.style.opacity = '1';
+            micBtn.style.cursor = 'pointer';
         }
     }
 
@@ -394,6 +420,12 @@ class EFVChatbot {
         if (chatWindow) chatWindow.classList.remove('active');
         if (overlay) overlay.classList.remove('active');
         if (toggleBtn) toggleBtn.style.display = 'flex';
+        document.body.style.overflow = '';
+        
+        // Stop currently playing audio when chat is closed
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
     }
 
     async sendMessage() {
@@ -489,6 +521,66 @@ class EFVChatbot {
         const typingDiv = document.getElementById('efv-typing');
         if (typingDiv) typingDiv.remove();
     }
+
+    startVoiceRecognition() {
+        const input = document.getElementById('efv-chat-input');
+        const micBtn = document.getElementById('efv-chat-mic');
+
+        if (this.isListening && this.recognition) {
+            this.recognition.stop();
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Voice input is not supported in your browser.");
+            return;
+        }
+
+        this.recognition = new SpeechRecognition();
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        
+        // Don't fix language to en-US. Provide fallback or let it detect from browser.
+        this.recognition.lang = document.documentElement.lang || navigator.language || 'en-US';
+
+        let finalTranscript = input.value ? input.value + (input.value.endsWith(' ') ? '' : ' ') : '';
+
+        this.recognition.onstart = () => {
+            this.isListening = true;
+            micBtn.classList.add('efv-mic-active');
+            input.placeholder = 'Listening...';
+        };
+
+        this.recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let currentFinal = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    currentFinal += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+
+            finalTranscript += currentFinal;
+            input.value = finalTranscript + interimTranscript;
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error("Speech recognition error", event.error);
+        };
+
+        this.recognition.onend = () => {
+            this.isListening = false;
+            micBtn.classList.remove('efv-mic-active');
+            input.placeholder = 'Ask about alignment, books, or EFV™...';
+        };
+
+        this.recognition.start();
+    }
+
 }
 
 // Initialize chatbot when DOM is ready
