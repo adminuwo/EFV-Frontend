@@ -400,6 +400,95 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial sync
     syncFooterConfig();
 
+    // --- NOTIFY ME FUNCTIONALITY (NEW) ---
+    const notifyModal = document.getElementById('notify-modal');
+    if (notifyModal) {
+        const bookNameElem = document.getElementById('notify-book-name');
+        const closeNotifyBtn = document.getElementById('close-notify-modal');
+        const notifyForm = document.getElementById('notify-form');
+        const notifyEmailInput = document.getElementById('notify-email');
+        const notifyConfirmMsg = document.getElementById('notify-confirm-msg');
+        const notifySubmitBtn = document.getElementById('notify-submit-btn');
+
+        // Use event delegation for notify triggers to support dynamically added elements
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.notify-trigger');
+            if (btn) {
+                const bookTitle = btn.getAttribute('data-book');
+                if (bookNameElem) bookNameElem.textContent = bookTitle;
+                
+                notifyModal.style.display = 'flex';
+                setTimeout(() => notifyModal.classList.add('active'), 10);
+                document.body.classList.add('modal-open');
+                
+                // Pre-fill email if user is logged in
+                const user = JSON.parse(localStorage.getItem('efv_user'));
+                if (user && user.email && notifyEmailInput) {
+                    notifyEmailInput.value = user.email;
+                }
+            }
+        });
+
+        const closeNotify = () => {
+            notifyModal.classList.remove('active');
+            document.body.classList.remove('modal-open');
+            setTimeout(() => {
+                notifyModal.style.display = 'none';
+                notifyConfirmMsg.style.display = 'none';
+                notifyForm.style.display = 'block';
+                notifySubmitBtn.disabled = false;
+                notifySubmitBtn.innerText = 'NOTIFY ME';
+            }, 400);
+        };
+
+        if (closeNotifyBtn) closeNotifyBtn.addEventListener('click', closeNotify);
+        notifyModal.addEventListener('click', (e) => {
+            if (e.target === notifyModal) closeNotify();
+        });
+
+        if (notifyForm) {
+            notifyForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = notifyEmailInput ? notifyEmailInput.value.trim() : '';
+                const bookTitle = bookNameElem ? bookNameElem.textContent.trim() : '';
+
+                if (!email || !bookTitle) {
+                    alert('Please provide both email and book title.');
+                    return;
+                }
+
+                notifySubmitBtn.disabled = true;
+                notifySubmitBtn.innerText = 'WAITING...';
+
+                try {
+                    const response = await fetch(`${CONFIG.API_BASE_URL}/api/notifications/notify-me`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, bookTitle, productTitle: bookTitle })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        notifyForm.style.display = 'none';
+                        notifyConfirmMsg.style.display = 'block';
+                        // Keep modal open for a few seconds then close
+                        setTimeout(closeNotify, 5000);
+                    } else {
+                        alert(data.message || 'Error occurred. Please try again.');
+                        notifySubmitBtn.disabled = false;
+                        notifySubmitBtn.innerText = 'NOTIFY ME';
+                    }
+                } catch (err) {
+                    console.error('Notify submission error:', err);
+                    alert('Server error. Please try again later.');
+                    notifySubmitBtn.disabled = false;
+                    notifySubmitBtn.innerText = 'NOTIFY ME';
+                }
+            });
+        }
+    }
+
     // Export for admin dashboard to trigger immediate updates
     window.syncFooterConfig = syncFooterConfig;
 

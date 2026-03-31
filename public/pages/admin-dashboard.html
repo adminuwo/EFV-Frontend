@@ -125,6 +125,9 @@
                     <i class="fas fa-comments"></i> <span>Partner Messages</span>
                     <span id="admin-msg-badge" class="badge red hidden">0</span>
                 </button>
+                <button class="nav-item admin-nav hidden" data-tab="admin-notify">
+                    <i class="fas fa-bullhorn"></i> <span>Notify Users</span>
+                </button>
                 <button class="nav-item admin-nav hidden" data-tab="admin-contacts">
                     <i class="fas fa-envelope-open-text"></i> <span>Contact Messages</span>
                 </button>
@@ -229,11 +232,11 @@
                                 class="fas fa-sliders-h"></i></div>
                         <span style="font-weight: 600;">Store Configuration</span>
                     </button>
-                    <button class="stat-card glass-panel shine-hover" onclick="alert('Feature coming in v2.0')"
-                        style="cursor: pointer; padding: 20px; align-items: center; justify-content: flex-start; gap: 15px; opacity: 0.6; color: #fff;">
+                    <button class="stat-card glass-panel shine-hover" onclick="switchTab('admin-notify')"
+                        style="cursor: pointer; padding: 20px; align-items: center; justify-content: flex-start; gap: 15px; color: #fff;">
                         <div class="icon-box red" style="width: 45px; height: 45px; font-size: 1.1rem;"><i
                                 class="fas fa-bullhorn"></i></div>
-                        <span style="font-weight: 600;">Create Announcement</span>
+                        <span style="font-weight: 600;">Check Notifications</span>
                     </button>
                 </div>
 
@@ -1334,6 +1337,44 @@
                 </div>
             </section>
 
+            <!-- NOTIFY USERS (ADMIN SIDE) -->
+            <section id="admin-notify" class="content-section">
+                <header class="content-header">
+                    <h1>Notify <span class="gold-text">Users</span></h1>
+                    <p>Manage book release notification requests</p>
+                </header>
+                <div class="settings-card glass-panel" style="padding: 20px; overflow-x: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <div class="search-box" style="width: 100%; max-width: 300px; position: relative;">
+                            <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.7; color: black; z-index: 1;"></i>
+                            <input type="text" id="notify-search" placeholder="Search requests..." style="width: 100%; padding: 10px 15px 10px 45px; background: var(--gold-text); border: 1px solid var(--gold-text); border-radius: 8px; color: black; font-weight: 600;">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-outline small" onclick="loadNotifyRequests()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; min-width: 900px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; background: rgba(255,255,255,0.02);">
+                                <th style="padding: 15px; color: var(--gold-text);">Email</th>
+                                <th style="padding: 15px; color: var(--gold-text);">Book Title</th>
+                                <th style="padding: 15px; color: var(--gold-text);">Requested On</th>
+                                <th style="padding: 15px; color: var(--gold-text);">Status</th>
+                                <th style="padding: 15px; color: var(--gold-text);">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-notify-table-body">
+                            <!-- Populated via JS -->
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 40px; opacity: 0.5;">Loading requests...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <!-- REPORTS PAGE -->
             <section id="admin-reports" class="content-section">
                 <!-- ... existing reports content ... -->
@@ -1709,6 +1750,37 @@
                     <div class="p-form-group">
                         <textarea id="admin-prod-desc" class="p-input" placeholder=" "></textarea>
                         <label class="p-label">Description</label>
+                    </div>
+
+                    <!-- Section: Regional Pricing (NEW) -->
+                    <div class="form-section-header">
+                        <i class="fas fa-globe-americas"></i>
+                        <h3>Regional Pricing</h3>
+                    </div>
+                    <p style="font-size: 0.75rem; opacity: 0.6; margin-bottom: 15px;">Enter specific prices for different regions. Leave blank to use default price.</p>
+                    <div class="premium-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div class="p-form-group">
+                            <input type="number" id="admin-prod-price-us" class="p-input regional-price-input" data-region="US" step="0.01" placeholder=" ">
+                            <label class="p-label">US Price ($)</label>
+                        </div>
+                        <div class="p-form-group">
+                            <input type="number" id="admin-prod-price-gb" class="p-input regional-price-input" data-region="GB" step="0.01" placeholder=" ">
+                            <label class="p-label">UK Price (£)</label>
+                        </div>
+                        <div class="p-form-group">
+                            <input type="number" id="admin-prod-price-eu" class="p-input regional-price-input" data-region="EU" step="0.01" placeholder=" ">
+                            <label class="p-label">EU Price (€)</label>
+                        </div>
+                    </div>
+                    <div class="premium-grid" style="grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div class="p-form-group">
+                            <input type="number" id="admin-prod-price-ca" class="p-input regional-price-input" data-region="CA" step="0.01" placeholder=" ">
+                            <label class="p-label">CA Price ($)</label>
+                        </div>
+                        <div class="p-form-group">
+                            <input type="number" id="admin-prod-price-au" class="p-input regional-price-input" data-region="AU" step="0.01" placeholder=" ">
+                            <label class="p-label">AU Price ($)</label>
+                        </div>
                     </div>
 
                     <!-- Section 2: Dimensions & Weight -->

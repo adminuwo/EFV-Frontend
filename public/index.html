@@ -183,9 +183,8 @@
                             <p style="margin: 10px 0; opacity: 0.8; font-size: 0.8rem;">An exploration of how thoughts
                                 and emotions shape our inner world. It breaks down the architecture of the human mind in
                                 a clear, practical way.</p>
-                            <span class="btn btn-disabled"
-                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Coming
-                                Soon</span>
+                            <button class="btn btn-notify notify-trigger" data-book="MINDOS"
+                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Notify Me</button>
                         </div>
 
                         <!-- Volume 3 -->
@@ -200,9 +199,8 @@
                                 untapped
                                 potential within you. It helps you recognize and activate the deeper frequencies that
                                 drive growth and clarity.</p>
-                            <span class="btn btn-disabled"
-                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Coming
-                                Soon</span>
+                            <button class="btn btn-notify notify-trigger" data-book="UNIVERSAL ACTIVATION"
+                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Notify Me</button>
                         </div>
 
                         <!-- Volume 4 -->
@@ -216,9 +214,8 @@
                             <p style="margin: 10px 0; opacity: 0.8; font-size: 0.8rem;">Bridges the gap between human
                                 awareness and universal intelligence. This volume shows how alignment creates flow,
                                 intuition, and meaningful synchronicity.</p>
-                            <span class="btn btn-disabled"
-                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Coming
-                                Soon</span>
+                            <button class="btn btn-notify notify-trigger" data-book="RESONANCE BRIDGE"
+                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Notify Me</button>
                         </div>
 
                         <!-- Volume 5 -->
@@ -232,9 +229,8 @@
                             <p style="margin: 10px 0; opacity: 0.8; font-size: 0.8rem;">A fresh look at the human
                                 operating system how we think, decide, evolve, and build the future. It connects human
                                 consciousness with the next era of AI.</p>
-                            <span class="btn btn-disabled"
-                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Coming
-                                Soon</span>
+                            <button class="btn btn-notify notify-trigger" data-book="HUMAN OS"
+                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Notify Me</button>
                         </div>
 
                         <!-- Volume 6 -->
@@ -248,9 +244,8 @@
                             <p style="margin: 10px 0; opacity: 0.8; font-size: 0.8rem;">Explains emotional intelligence
                                 as a powerful stabilizing force. It shows how emotional calibration creates harmony
                                 between humans and intelligent systems.</p>
-                            <span class="btn btn-disabled"
-                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Coming
-                                Soon</span>
+                            <button class="btn btn-notify notify-trigger" data-book="EMOTIONOS"
+                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Notify Me</button>
                         </div>
 
                         <!-- Volume 7 -->
@@ -264,9 +259,8 @@
                             <p style="margin: 10px 0; opacity: 0.8; font-size: 0.8rem;">Explores memory as the thread
                                 that holds identity together. It examines how continuity across time shapes who we are
                                 and who we become.</p>
-                            <span class="btn btn-disabled"
-                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Coming
-                                Soon</span>
+                            <button class="btn btn-notify notify-trigger" data-book="MEMORIOS"
+                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Notify Me</button>
                         </div>
 
                         <!-- Volume 8 -->
@@ -280,9 +274,8 @@
                             <p style="margin: 10px 0; opacity: 0.8; font-size: 0.8rem;">Unpacks the rise of autonomous
                                 intelligence and intelligent agents. A practical blueprint for understanding the
                                 agent-driven world ahead.</p>
-                            <span class="btn btn-disabled"
-                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Coming
-                                Soon</span>
+                            <button class="btn btn-notify notify-trigger" data-book="AGENTOS"
+                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Notify Me</button>
                         </div>
 
                         <!-- Volume 9 -->
@@ -296,9 +289,8 @@
                             <p style="margin: 10px 0; opacity: 0.8; font-size: 0.8rem;">Focuses on ethics, alignment,
                                 and responsibility in an AI-powered civilization. It defines the principles that ensure
                                 technology evolves with wisdom.</p>
-                            <span class="btn btn-disabled"
-                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Coming
-                                Soon</span>
+                            <button class="btn btn-notify notify-trigger" data-book="GOVERNANCEOS"
+                                style="padding: 10px 15px; width: 100%; font-size: 0.8rem; margin-top: auto;">Notify Me</button>
                         </div>
                     </div>
                 </div>
@@ -474,6 +466,31 @@
             </div>
         </div>
     </footer>
+
+    <!-- Notify Me Modal (NEW) -->
+    <div class="modal-overlay notify-modal" id="notify-modal" style="display: none;">
+        <div class="modal-card glass-panel">
+            <button class="modal-close" id="close-notify-modal" aria-label="Close Modal" style="background: transparent; border: none; color: var(--gold-energy); font-size: 1.5rem; cursor: pointer; position: absolute; top: 20px; right: 20px;">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="bell-icon">
+                <i class="fas fa-bell"></i>
+            </div>
+            <h2>GET NOTIFIED!</h2>
+            <p>We will notify you on your email when <strong id="notify-book-name" class="gold-text">MINDOS</strong> is ready.</p>
+            
+            <form id="notify-form">
+                <div class="notify-input-group">
+                    <input type="email" id="notify-email" placeholder="Enter your email address" required>
+                </div>
+                <button type="submit" class="btn btn-gold full-width" id="notify-submit-btn" style="width: 100%; padding: 15px; font-weight: bold;">NOTIFY ME</button>
+            </form>
+            
+            <div class="notify-confirm-text" id="notify-confirm-msg">
+                <i class="fas fa-check-circle"></i> Confirmation email sent! <br> If you don't see it, check your SPAM/JUNKS folder.
+            </div>
+        </div>
+    </div>
 
     <!-- JS Scripts — EFV-Website versions (security, cart, JWT all intact) -->
     <script src="js/api-config.js"></script>

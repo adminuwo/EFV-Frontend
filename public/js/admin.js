@@ -209,6 +209,8 @@ window.openProductModal = function (productId = null) {
     const totalChaptersInput = document.getElementById('admin-prod-total-chapters');
     if (totalChaptersInput) totalChaptersInput.value = '';
 
+    document.querySelectorAll('.regional-price-input').forEach(input => input.value = '');
+
     window._currentEditingProduct = null;
 
     // Reset file inputs
@@ -286,6 +288,16 @@ window.editProduct = async function (productId) {
                 }
             }
         }
+
+        // Load Regional Prices
+        document.querySelectorAll('.regional-price-input').forEach(input => {
+            const region = input.dataset.region;
+            if (product.regionalPrices && product.regionalPrices[region]) {
+                input.value = product.regionalPrices[region];
+            } else {
+                input.value = '';
+            }
+        });
 
         window._currentEditingProduct = product;
         window.toggleAdminFileFields(product.type);
@@ -796,6 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === 'admin-customers') loadAdminCustomers();
             if (targetId === 'admin-support') loadAdminSupport();
             if (targetId === 'admin-contacts') loadAdminContacts();
+            if (targetId === 'admin-notify') loadNotifyRequests();
             if (targetId === 'admin-returns') loadAdminReturns();
             if (targetId === 'admin-rag') window.loadRagFiles();
 
@@ -4036,8 +4049,18 @@ if (productForm) {
                 height: getNum('admin-prod-height'),
                 duration: getVal('admin-prod-duration'),
                 description: getVal('admin-prod-desc'),
-                category: (getVal('admin-prod-type') === 'EBOOK' || getVal('admin-prod-type') === 'AUDIOBOOK') ? 'Digital' : 'Physical'
+                category: (getVal('admin-prod-type') === 'EBOOK' || getVal('admin-prod-type') === 'AUDIOBOOK') ? 'Digital' : 'Physical',
+                regionalPrices: {}
             };
+
+            // Collect regional prices
+            document.querySelectorAll('.regional-price-input').forEach(input => {
+                const region = input.dataset.region;
+                const val = parseFloat(input.value);
+                if (!isNaN(val) && val > 0) {
+                    productData.regionalPrices[region] = val;
+                }
+            });
 
             // Persistence Logic: If no new file uploaded, keep the old one
             if (uploadData.coverPath) {
@@ -5244,5 +5267,78 @@ window.syncLibraryWithBackend = async function () {
         }
     }
 }
+
+// --- NOTIFY USERS MANAGEMENT ---
+window.loadNotifyRequests = async function() {
+    console.log("🔔 Loading Notify Requests...");
+    const tbody = document.getElementById('admin-notify-table-body');
+    if (!tbody) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${API_BASE}/api/notifications/requests`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const requests = await res.json();
+
+        if (!res.ok) throw new Error(requests.message || 'Failed to fetch');
+
+        if (requests.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; opacity: 0.5;">No notification requests found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = requests.map(req => `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 15px;">${req.email}</td>
+                <td style="padding: 15px; font-weight: 600;">${req.bookTitle}</td>
+                <td style="padding: 15px; opacity: 0.7;">${new Date(req.createdAt).toLocaleString()}</td>
+                <td style="padding: 15px;">
+                    <span class="status-badge ${req.status.toLowerCase()}" style="padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; background: ${req.status === 'Pending' ? 'rgba(255, 211, 105, 0.1)' : 'rgba(46, 204, 113, 0.1)'}; color: ${req.status === 'Pending' ? 'var(--gold-energy)' : '#2ecc71'};">
+                        ${req.status}
+                    </span>
+                </td>
+                <td style="padding: 15px;">
+                    ${req.status === 'Pending' ? `
+                        <button class="btn btn-gold small" onclick="triggerManualRelease('${req.bookTitle}')" style="padding: 5px 12px; font-size: 0.7rem;">
+                            NOTIFY MANUAL
+                        </button>
+                    ` : '<span style="opacity: 0.5;">Notified ✓</span>'}
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (e) {
+        console.error("Load Notify Requests Error:", e);
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: #ff4d4d;">Error: ${e.message}</td></tr>`;
+    }
+};
+
+window.triggerManualRelease = async function(bookTitle) {
+    if (!confirm(`Are you sure you want to notify ALL users who requested "${bookTitle}"? This will send emails & in-app notifications.`)) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch(`${API_BASE}/api/notifications/trigger-release`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ bookTitle })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            showToast(data.message, 'success');
+            loadNotifyRequests();
+        } else {
+            alert(data.message || 'Failed to trigger.');
+        }
+    } catch (e) {
+        console.error("Trigger Release error:", e);
+        alert("Server error.");
+    }
+};
 
 

@@ -354,29 +354,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createProductCard(product) {
+        const rawType = (product.type || 'PHYSICAL').toLowerCase();
+        
+        // ─── Regional Pricing Logic (Moved Up) ───
+        const selectedCountry = localStorage.getItem('efv_selected_country') || 'IN';
+        const CURRENCY_MAP = {
+            'US': '$', 'GB': '£', 'EU': '€', 'CA': '$', 'AU': '$', 'IN': '₹'
+        };
+        const activeCurrency = CURRENCY_MAP[selectedCountry] || '$';
+        
+        // Use backend's regional price if available, else derive from provided table
+        let displayPrice = product.price;
+        const regionalData = product.regionalPrices ? (product.regionalPrices instanceof Map ? Object.fromEntries(product.regionalPrices) : product.regionalPrices) : {};
+
+        if (regionalData && regionalData[selectedCountry]) {
+            displayPrice = regionalData[selectedCountry];
+        } else if (selectedCountry !== 'IN') {
+            // Intelligent Fallback Based on User Requests
+            const pricingTable = {
+                'US': { 'audiobook': 6.99, 'ebook': 8.99, 'hindi_paperback': 14.99, 'hindi_hardcover': 22.99, 'english_paperback': 17.99, 'english_hardcover': 26.99 },
+                'GB': { 'audiobook': 5.99, 'ebook': 6.99, 'hindi_paperback': 11.99, 'hindi_hardcover': 18.99, 'english_paperback': 13.99, 'english_hardcover': 21.99 },
+                'EU': { 'audiobook': 6.99, 'ebook': 7.99, 'hindi_paperback': 12.99, 'hindi_hardcover': 19.99, 'english_paperback': 14.99, 'english_hardcover': 23.99 },
+                'CA': { 'audiobook': 8.99, 'ebook': 10.99, 'hindi_paperback': 16.99, 'hindi_hardcover': 24.99, 'english_paperback': 19.99, 'english_hardcover': 29.99 },
+                'AU': { 'audiobook': 9.99, 'ebook': 11.99, 'hindi_paperback': 18.99, 'hindi_hardcover': 27.99, 'english_paperback': 21.99, 'english_hardcover': 32.99 }
+            };
+
+            const rates = pricingTable[selectedCountry] || pricingTable['US']; // Fallback to US pricing for other global countries
+            const lang = (product.language || 'Hindi').toLowerCase();
+            const lookupKey = (rawType === 'audiobook' || rawType === 'ebook') 
+                ? rawType 
+                : `${lang}_${rawType}`;
+            
+            if (rates[lookupKey]) {
+                displayPrice = rates[lookupKey];
+            } else {
+                // Global fallback for "Other Global Countries"
+                const defaultGlobal = pricingTable['US'];
+                displayPrice = defaultGlobal[lookupKey] || product.price;
+            }
+        }
+
         const card = document.createElement('div');
         card.className = 'product-card glass-panel reveal magnetic shine-box';
         card.setAttribute('data-id', product._id || product.id);
         card.setAttribute('data-name', product.title);
-        card.setAttribute('data-price', product.price);
+        card.setAttribute('data-price', displayPrice); // Now using the calculated regional price
         card.setAttribute('data-type', product.type || '');
         card.setAttribute('data-language', product.language || '');
         card.setAttribute('data-subtitle', product.subtitle || '');
 
-        const rawType = (product.type || 'book').toLowerCase();
-        const typeLabel = {
-            'hardcover': 'Hardcover',
-            'paperback': 'Paperback',
-            'audiobook': 'Audiobook',
-            'ebook': 'E-Book'
-        }[rawType] || product.type;
-
-        const typeBadgeColor = {
-            'hardcover': 'var(--gold-energy)',
-            'paperback': '#4CAF50',
-            'audiobook': '#FF6B35',
-            'ebook': '#7B68EE'
-        }[rawType] || 'var(--gold-energy)';
+        const typeBadgeData = {
+            'hardcover': { color: '#FFD700', icon: 'fa-book', label: 'HARDCOVER' },
+            'paperback': { color: '#4CAF50', icon: 'fa-book-open', label: 'PAPERBACK' },
+            'audiobook': { color: '#FF6B35', icon: 'fa-headphones', label: 'AUDIOBOOK' },
+            'ebook': { color: '#7B68EE', icon: 'fa-tablet-alt', label: 'E-BOOK' }
+        }[rawType] || { color: 'var(--gold-energy)', icon: 'fa-book', label: rawType.toUpperCase() };
 
         let imageUrl = CONFIG.BASE_PATH + 'assets/images/vol1-cover.png';
         if (product.thumbnail) {
@@ -400,10 +432,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         card.innerHTML = `
             <div class="book-cover"
-                style="width: 100%; max-width: 140px; aspect-ratio: 2/3; margin: 0 auto 8px; background: #0b132b; border-radius: 8px; overflow: hidden; border: 1px solid var(--gold-energy); position: relative;">
-                <span style="position: absolute; top: 5px; right: 5px; background: ${typeBadgeColor}; color: black; padding: 2px 8px; border-radius: 3px; font-size: 0.6rem; font-weight: 800; z-index: 5; text-transform: uppercase;">${typeLabel}</span>
+                style="width: 100%; max-width: 140px; aspect-ratio: 2/3; margin: 40px auto 12px; background: #0b132b; border-radius: 8px; overflow: visible; border: 1.5px solid var(--gold-energy); position: relative; box-shadow: 0 15px 35px rgba(0,0,0,0.6);">
+                
+                <div class="format-tag" style="position: absolute; top: -52px; left: 50%; transform: translateX(-50%); background: ${typeBadgeData.color}; color: black; padding: 4px 12px; border-radius: 50px; font-size: 0.65rem; font-weight: 900; z-index: 10; display: flex; flex-direction: row !important; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.6); white-space: nowrap; border: 1px solid rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                    <i class="fas ${typeBadgeData.icon}" style="font-size: 0.72rem; margin-top: -1px;"></i>
+                    <span style="display: inline-block;">${typeBadgeData.label}</span>
+                </div>
+
                 <img src="${imageUrl}" alt="${product.title}" loading="lazy"
-                    style="width: 100%; height: 100%; object-fit: cover;"
+                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;"
                     onerror="this.src=CONFIG.BASE_PATH + 'assets/images/vol1-cover.png'">
             </div>
             <div class="product-info" style="text-align: center;">
@@ -411,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3 style="font-size: 0.9rem; letter-spacing: 0.5px; margin-bottom: 2px; line-height: 1.2; min-height: unset; color: var(--gold-energy);">
                     ${product.title}
                 </h3>
-                <span style="color: rgba(255,255,255,0.6); font-size: 0.75rem; display: block; margin-bottom: 4px;">${typeLabel} Edition</span>
+                <span style="color: rgba(255,255,255,0.6); font-size: 0.75rem; display: block; margin-bottom: 4px;">${typeBadgeData.label} Edition</span>
             </div>
             <div class="rating" style="color: var(--gold-energy); margin: 2px 0; text-align: center; font-size: 0.7rem; opacity: 0.8;">
                 <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
@@ -419,13 +456,15 @@ document.addEventListener('DOMContentLoaded', () => {
             <p style="margin-bottom: 8px; font-size: 0.78rem; opacity: 0.7; min-height: 34px; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3;">
                 ${product.description || 'Discover the secrets of Energy and Alignment.'}
             </p>
-            <span class="price" style="font-size: 1.15rem; display: block; text-align: center; margin-bottom: 10px; font-weight: 800; color: #fff;">₹${product.price}</span>
+            <span class="price" style="font-size: 1.15rem; display: block; text-align: center; margin-bottom: 10px; font-weight: 800; color: #fff;">${activeCurrency}${displayPrice}</span>
             <div class="product-actions" style="display: flex; gap: 8px; justify-content: center; margin-top: auto;">
                 <button class="btn btn-outline view-info" ${isComingSoon ? 'disabled style="opacity: 0.5; padding: 6px 12px; font-size: 0.65rem;"' : 'style="padding: 6px 12px; font-size: 0.65rem; min-width: 95px; border-width: 1px;"'}>
                     <i class="fas fa-info-circle" style="margin-right: 5px;"></i> INFO
                 </button>
-                <button class="btn btn-gold buy-now" ${isComingSoon ? 'disabled style="background: rgba(255, 211, 105, 0.1); color: rgba(255, 211, 105, 0.5); opacity: 0.7; padding: 6px 12px; font-size: 0.65rem;"' : 'style="padding: 6px 12px; font-size: 0.65rem; min-width: 95px;"'}>
-                    <i class="fas ${isComingSoon ? 'fa-clock' : 'fa-bolt'}" style="margin-right: 5px;"></i> ${isComingSoon ? 'SOON' : 'BUY NOW'}
+                <button class="btn btn-gold ${isComingSoon ? 'notify-trigger' : 'buy-now'}" 
+                    ${isComingSoon ? `data-book="${product.title}"` : ''}
+                    style="padding: 6px 12px; font-size: 0.65rem; min-width: 95px; ${isComingSoon ? 'background: var(--gold-energy); color: #000; opacity: 1;' : ''}">
+                    <i class="fas ${isComingSoon ? 'fa-bell' : 'fa-bolt'}" style="margin-right: 5px;"></i> ${isComingSoon ? 'NOTIFY ME' : 'BUY NOW'}
                 </button>
             </div>
         `;
@@ -453,7 +492,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         const item = {
                             id: product._id || product.id,
                             name: product.title,
-                            price: product.price,
+                            price: displayPrice,
+                            currency: activeCurrency,
                             quantity: 1,
                             language: product.language || '',
                             subtitle: product.subtitle || '',
