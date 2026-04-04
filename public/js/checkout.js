@@ -5,7 +5,38 @@ let checkoutSubtotal = 0;
 let isDigitalOrder = false;
 let selectedPaymentMode = 'Online'; // Global state
 
+let currentCurrency = 'INR';
+
+function getPriceForCurrency(item) {
+    if (currentCurrency === 'USD') {
+        if (item.regionalPrices && item.regionalPrices.USD) return parseFloat(item.regionalPrices.USD);
+        return Math.round((item.price / 83.5) * 100) / 100;
+    }
+    return item.price;
+}
+
+function getCurrencySymbol() {
+    return currentCurrency === 'USD' ? '$' : '₹';
+}
+
+function convertToCurrency(inrAmount) {
+    if (currentCurrency === 'USD') {
+        return Math.round((inrAmount / 83.5) * 100) / 100;
+    }
+    return inrAmount;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Add listener for country changes to update currency
+    setTimeout(() => {
+        const countryEl = document.getElementById('ship-country');
+        if (countryEl) {
+            countryEl.addEventListener('change', () => {
+                currentCurrency = (countryEl.value !== 'India' && countryEl.value !== '') ? 'USD' : 'INR';
+                renderSummary(null, true);
+            });
+        }
+    }, 500);
     const user = JSON.parse(localStorage.getItem('efv_user'));
     if (!user) {
         window.location.href = 'index.html';
@@ -444,11 +475,22 @@ let currentCheckoutItems = [];
 
 function renderSummary(items, isRefresh = false) {
     if (items) currentCheckoutItems = items;
+    
+    // Check Currency
+    const countryEl = document.getElementById('ship-country');
+    if (countryEl && countryEl.value) {
+        currentCurrency = (countryEl.value !== 'India' && countryEl.value !== '') ? 'USD' : 'INR';
+    }
+    
     const list = document.getElementById('checkout-items-list');
     let subtotal = 0;
+    let subtotalINR = 0;
+    const sym = getCurrencySymbol();
 
     list.innerHTML = currentCheckoutItems.map(item => {
-        subtotal += item.price * item.quantity;
+        const itemPrice = getPriceForCurrency(item);
+        subtotal += itemPrice * item.quantity;
+        subtotalINR += item.price * item.quantity;
         const imgPath = item.thumbnail || (CONFIG.BASE_PATH + 'assets/images/vol1-cover.png');
         return `
             <div class="checkout-item">
@@ -456,17 +498,17 @@ function renderSummary(items, isRefresh = false) {
                 <div class="checkout-item-info">
                     <div class="checkout-item-title">${item.name}</div>
                     <div class="checkout-item-meta">${item.subtitle || ''} | Qty: ${item.quantity}</div>
-                    <div class="checkout-item-price">₹${item.price}</div>
+                    <div class="checkout-item-price">${sym}${itemPrice.toFixed(2)}</div>
                 </div>
-                <div style="font-weight: 700; align-self: center;">₹${(item.price * item.quantity).toFixed(2)}</div>
+                <div style="font-weight: 700; align-self: center;">${sym}${(itemPrice * item.quantity).toFixed(2)}</div>
             </div>
         `;
     }).join('');
 
     const currentMode = selectedPaymentMode;
-
-    const shippingCharge = calculateShipping(currentCheckoutItems);
-    const codCharge = calculateCOD(subtotal, currentMode);
+    // Calculate shipping based on INR subtotal rules, then convert to selected currency
+    const shippingCharge = convertToCurrency(calculateShipping(currentCheckoutItems));
+    const codCharge = convertToCurrency(calculateCOD(subtotalINR, currentMode));
 
     // UI elements
     const codRow = document.getElementById('cod-charge-row');
@@ -474,18 +516,18 @@ function renderSummary(items, isRefresh = false) {
     const placeBtn = document.getElementById('place-order-btn');
 
     // Update displays
-    document.getElementById('summary-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
-    document.getElementById('summary-shipping').textContent = `₹${shippingCharge.toFixed(2)}`;
+    document.getElementById('summary-subtotal').textContent = `${sym}${subtotal.toFixed(2)}`;
+    document.getElementById('summary-shipping').textContent = `${sym}${shippingCharge.toFixed(2)}`;
     
     if (codRow) {
         codRow.style.display = 'flex'; 
         if (codDisplay) {
             if (currentMode === 'COD') {
-                codDisplay.textContent = `₹${codCharge.toFixed(2)}`;
+                codDisplay.textContent = `${sym}${codCharge.toFixed(2)}`;
                 codDisplay.style.color = '#FFD369';
                 codDisplay.style.opacity = '1';
             } else {
-                codDisplay.textContent = `₹000`;
+                codDisplay.textContent = `${sym}0.00`;
                 codDisplay.style.color = 'rgba(255,255,255,0.3)';
                 codDisplay.style.opacity = '0.5';
             }
@@ -504,12 +546,13 @@ function renderSummary(items, isRefresh = false) {
         if (appliedCoupon.type === 'Percentage') {
             discount = (subtotal * appliedCoupon.value) / 100;
         } else {
-            discount = appliedCoupon.value;
+            discount = currentCurrency === 'USD' ? convertToCurrency(appliedCoupon.value) : appliedCoupon.value;
         }
     }
 
     const finalCodCharge = (currentMode === 'COD') ? codCharge : 0;
     const total = Math.max(0, subtotal - discount + shippingCharge + finalCodCharge);
+    checkoutSubtotal = subtotalINR; // Store globally for coupon logic consistency
 
     // Add/Update discount row if applicable
     let summaryBox = document.querySelector('.checkout-summary');
@@ -521,16 +564,16 @@ function renderSummary(items, isRefresh = false) {
             row.className = 'checkout-total-row';
             row.id = 'summary-discount-row';
             row.style.color = '#2ed573';
-            row.innerHTML = `<span>Discount (${appliedCoupon.code})</span> <span id="summary-discount">-₹${discount.toFixed(2)}</span>`;
+            row.innerHTML = `<span>Discount (${appliedCoupon.code})</span> <span id="summary-discount">-${sym}${discount.toFixed(2)}</span>`;
             summaryBox.insertBefore(row, document.querySelector('.grand-total'));
         } else {
-            existingDiscountRow.innerHTML = `<span>Discount (${appliedCoupon.code})</span> <span id="summary-discount">-₹${discount.toFixed(2)}</span>`;
+            existingDiscountRow.innerHTML = `<span>Discount (${appliedCoupon.code})</span> <span id="summary-discount">-${sym}${discount.toFixed(2)}</span>`;
         }
     } else if (existingDiscountRow) {
         existingDiscountRow.remove();
     }
 
-    document.getElementById('summary-total').textContent = `₹${total.toFixed(2)}`;
+    document.getElementById('summary-total').textContent = `${sym}${total.toFixed(2)}`;
 }
 
 function showToast(msg) {
@@ -593,18 +636,25 @@ function setupPlaceOrder(items, user) {
         localStorage.setItem('shippingAddress', JSON.stringify(address));
 
         // Calculate Totals using dynamic logic
-        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const shipping = calculateShipping(items);
+        let subtotal = 0;
+        let subtotalINR = 0;
+        items.forEach(item => {
+            subtotal += getPriceForCurrency(item) * item.quantity;
+            subtotalINR += item.price * item.quantity;
+        });
+
+        const shipping = convertToCurrency(calculateShipping(items));
         const checkedRadio = document.querySelector('input[name="payment-mode"]:checked');
         const mode = checkedRadio ? checkedRadio.value : 'Online';
         const isCOD = mode === 'COD';
-        const cod = isCOD ? calculateCOD(subtotal) : 0;
+        const cod = isCOD ? convertToCurrency(calculateCOD(subtotalINR)) : 0;
+        
         let discount = 0;
         if (appliedCoupon) {
             if (appliedCoupon.type === 'Percentage') {
                 discount = (subtotal * appliedCoupon.value) / 100;
             } else {
-                discount = appliedCoupon.value;
+                discount = currentCurrency === 'USD' ? convertToCurrency(appliedCoupon.value) : appliedCoupon.value;
             }
         }
 
@@ -688,6 +738,7 @@ async function initCashfree(order, couponCode = null) {
             },
             body: JSON.stringify({
                 amount       : order.totalAmount,
+                currency     : currentCurrency,
                 customerName : order.shippingAddress.name,
                 customerEmail: order.shippingAddress.email,
                 customerPhone: order.shippingAddress.phone
