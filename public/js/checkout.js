@@ -646,12 +646,73 @@ function setupPlaceOrder(items, user) {
             await placeCODOrder(orderData, appliedCoupon ? appliedCoupon.code : null);
         } else {
             showToast('Initializing Payment...');
-            await initRazorpay(orderData, appliedCoupon ? appliedCoupon.code : null);
+            await initCashfree(orderData, appliedCoupon ? appliedCoupon.code : null);
         }
     });
 }
 
 
+
+// Dynamically load Cashfree checkout JS
+function loadCashfreeScript() {
+    return new Promise((resolve, reject) => {
+        if (window.Cashfree) { resolve(); return; }
+        const script  = document.createElement('script');
+        script.src    = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load Cashfree SDK'));
+        document.head.appendChild(script);
+    });
+}
+
+async function initCashfree(order, couponCode = null) {
+    const btn = document.getElementById('place-order-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING CASHFREE...';
+
+    try {
+        const configRes = await fetch(`${API_BASE}/api/orders/config`);
+        const config    = await configRes.json();
+
+        // Save coupon code so verifyCashfreePayment can access it locally
+        if (couponCode) {
+            localStorage.setItem('efv_applied_coupon', couponCode);
+        }
+
+        const response = await fetch(`${API_BASE}/api/orders/cashfree`, {
+            method : 'POST',
+            headers: {
+                'Content-Type' : 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify({
+                amount       : order.totalAmount,
+                customerName : order.shippingAddress.name,
+                customerEmail: order.shippingAddress.email,
+                customerPhone: order.shippingAddress.phone
+            })
+        });
+
+        const cfData = await response.json();
+        if (!response.ok) throw new Error(cfData.message || 'Cashfree order creation failed');
+
+        await loadCashfreeScript();
+        
+        const cashfree = window.Cashfree({
+            mode: config.cashfreeMode === 'production' ? 'production' : 'sandbox'
+        });
+
+        cashfree.checkout({
+            paymentSessionId: cfData.payment_session_id
+        });
+
+    } catch (e) {
+        alert('Payment Error: ' + e.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
 
 async function placeCODOrder(orderData, couponCode) {
     const btn = document.getElementById('place-order-btn');
